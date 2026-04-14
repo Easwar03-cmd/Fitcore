@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../constants/app_constants.dart';
 import '../../../core/api/token_store.dart';
 import '../../../core/services/notification_service.dart';
 import '../models/auth_state.dart';
@@ -19,7 +20,7 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     _authDio = Dio(
       BaseOptions(
         baseUrl:
-            '${dotenv.env['FLUTTER_API_URL'] ?? 'http://localhost:3000'}/api/v1',
+            '${dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl}/api/v1',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
@@ -134,7 +135,7 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
 
     // Register FCM token with the backend (best-effort, never blocks login).
     final apiBaseUrl =
-        dotenv.env['FLUTTER_API_URL'] ?? 'http://localhost:3000';
+        dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl;
     NotificationService.instance
         .registerFcmToken(accessToken, apiBaseUrl)
         .ignore();
