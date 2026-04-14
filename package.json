@@ -1,0 +1,49 @@
+{
+  "name": "fitcore",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/backend",
+      "apps/mobile",
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/react-native",
+      "**/react-native/**",
+      "**/expo",
+      "**/expo/**",
+      "**/expo-router",
+      "**/expo-router/**",
+      "**/expo-linking",
+      "**/expo-linking/**",
+      "**/expo-constants",
+      "**/expo-constants/**",
+      "**/expo-modules-core",
+      "**/expo-modules-core/**",
+      "**/expo-splash-screen",
+      "**/expo-splash-screen/**",
+      "**/nativewind",
+      "**/nativewind/**",
+      "**/@react-native-community/**",
+      "**/@react-navigation/**"
+    ]
+  },
+  "scripts": {
+    "mobile": "yarn workspace @fitcore/mobile start",
+    "backend": "yarn workspace @fitcore/backend dev",
+    "build:backend": "yarn workspace @fitcore/backend build",
+    "db:migrate": "yarn workspace @fitcore/backend db:migrate",
+    "db:generate": "yarn workspace @fitcore/backend db:generate",
+    "db:studio": "yarn workspace @fitcore/backend db:studio",
+    "typecheck": "yarn workspaces run typecheck",
+    "lint": "yarn workspaces run lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "packageManager": "yarn@1.22.22"
+}

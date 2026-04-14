@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "866853384721",
+    "project_id": "fitcore-547a0",
+    "storage_bucket": "fitcore-547a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866853384721:android:f8e0940b1e4513f1d5f7b0",
+        "android_client_info": {
+          "package_name": "com.fitcore.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACL8gC4ldKl7fJW5HpL9Mh7NiJ4REfctU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

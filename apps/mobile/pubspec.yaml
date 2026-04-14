@@ -1,0 +1,97 @@
+name: fitcore
+description: FitCore — cross-platform fitness app (iOS + Android)
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Animations & charts
+  flutter_animate: ^4.5.0
+  fl_chart: ^0.68.0
+
+  # Local DB (offline-first SQLite ORM)
+  drift: ^2.18.0
+  drift_flutter: ^0.2.0
+  sqlite3_flutter_libs: ^0.5.24
+
+  # Secure storage & prefs
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.1
+
+  # Forms
+  flutter_form_builder: ^10.3.0
+  form_builder_validators: ^11.1.2
+
+  # HTTP client
+  dio: ^5.4.3+1
+
+  # Auth / JWT decoding (client-side)
+  jwt_decoder: ^2.0.1
+
+  # Barcode / QR scanner
+  mobile_scanner: ^5.2.3
+
+  # Apple Health + Google Fit
+  health: ^12.0.0
+
+  # Push notifications
+  firebase_core: ^3.3.0
+  firebase_messaging: ^15.1.0
+  flutter_local_notifications: ^17.2.4
+  timezone: ^0.9.4
+
+  # Food photo / ML Kit
+  google_mlkit_text_recognition: ^0.14.0
+  google_mlkit_image_labeling: ^0.13.0
+
+  # Logging
+  logger: ^2.4.0
+
+  # Env vars
+  flutter_dotenv: ^5.1.0
+
+  # Connectivity monitoring
+  connectivity_plus: ^6.0.0
+
+  # GPS tracking
+  geolocator: ^13.0.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Image handling
+  cached_network_image: ^3.3.1
+  image_picker: ^1.1.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+  # Code generation
+  riverpod_generator: ^2.4.3
+  build_runner: ^2.4.11
+  drift_dev: ^2.18.0
+  json_serializable: ^6.8.0
+  json_annotation: ^4.9.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env

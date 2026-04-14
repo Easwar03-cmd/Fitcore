@@ -1,0 +1,146 @@
+// This is your Prisma schema file — source of truth for the DB schema.
+// Run `yarn db:generate` after any change.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  name                   String
+  passwordHash           String
+  refreshTokenHash       String?
+  refreshTokenExpiresAt  DateTime?
+  avatarUrl              String?
+  dateOfBirth            DateTime?
+  gender                 String?
+  heightCm               Float?
+  fcmToken               String?   // Firebase Cloud Messaging device token
+  createdAt              DateTime  @default(now())
+
+  profile      UserProfile?
+  foodLogs     FoodLog[]
+  workoutLogs  WorkoutLog[]
+  bodyStats    BodyStat[]
+  goals        Goal[]
+  friendships  Friendship[] @relation("UserFriendships")
+  subscription Subscription?
+  moodLogs     MoodLog[]
+}
+
+model UserProfile {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  fitnessGoal    String // lose_weight | build_muscle | maintain | endurance
+  activityLevel  String // sedentary | light | moderate | active | very_active
+  targetWeightKg Float?
+  tdee           Int?   // calculated total daily energy expenditure
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model FoodLog {
+  id       String   @id @default(cuid())
+  userId   String
+  foodId   String   // references food database
+  foodName String
+  mealType String   // breakfast | lunch | dinner | snack
+  servingG Float
+  calories Float
+  proteinG Float
+  carbsG   Float
+  fatG     Float
+  fiberG   Float?
+  loggedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model WorkoutLog {
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  startedAt      DateTime
+  finishedAt     DateTime?
+  durationMin    Int?
+  caloriesBurned Int?
+  notes          String?
+  distanceM      Float?    // total GPS distance in metres (outdoor workouts only)
+  routePolyline  String?   // Google Encoded Polyline string for the GPS route
+
+  user User          @relation(fields: [userId], references: [id])
+  sets ExerciseSet[]
+}
+
+model ExerciseSet {
+  id           String @id @default(cuid())
+  workoutLogId String
+  exerciseId   String
+  exerciseName String
+  setNumber    Int
+  reps         Int?
+  weightKg     Float?
+  durationSec  Int?   // for time-based exercises
+  distanceM    Float? // for cardio
+  rpe          Int?   // rate of perceived exertion 1-10
+
+  workoutLog WorkoutLog @relation(fields: [workoutLogId], references: [id])
+}
+
+model BodyStat {
+  id           String   @id @default(cuid())
+  userId       String
+  weightKg     Float?
+  bodyFatPct   Float?
+  muscleMassKg Float?
+  bmi          Float?
+  measuredAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Goal {
+  id           String    @id @default(cuid())
+  userId       String
+  type         String    // daily_calories | weekly_workouts | steps | weight_target
+  targetValue  Float
+  currentValue Float     @default(0)
+  deadline     DateTime?
+  completed    Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  tier       String    // free | pro | coach
+  stripeId   String?
+  validUntil DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Friendship {
+  id       String @id @default(cuid())
+  userId   String
+  friendId String
+  status   String // pending | accepted
+
+  user User @relation("UserFriendships", fields: [userId], references: [id])
+}
+
+model MoodLog {
+  id       String   @id @default(cuid())
+  userId   String
+  score    Int      // 1-5
+  loggedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}

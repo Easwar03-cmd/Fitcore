@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "fitcore_app_icon", "target": "platform_ios", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "apps/mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png", "source_location": null, "weight": 1.0}], "hyperedges": []}
