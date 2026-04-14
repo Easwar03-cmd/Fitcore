@@ -45,4 +45,7 @@ COPY --from=builder /repo/apps/backend/node_modules ./apps/backend/node_modules
 EXPOSE 3000
 
 WORKDIR /repo/apps/backend
-CMD ["node", "dist/apps/backend/src/index.js"]
+
+# Run migrations then start the server.
+# Using shell form so && works; exec ensures node is PID 1 for signal handling.
+CMD ["/bin/sh", "-c", "/repo/node_modules/.bin/prisma migrate deploy && exec node dist/apps/backend/src/index.js"]
