@@ -8,7 +8,7 @@ abstract final class AppConstants {
   static const String apiBaseUrl = String.fromEnvironment(
     'FLUTTER_API_URL',
     defaultValue: bool.fromEnvironment('dart.vm.product')
-        ? 'https://fitcore-api.up.railway.app'
+        ? 'https://fitcore-production-c558.up.railway.app'
         : 'http://localhost:3000',
   );
 }
