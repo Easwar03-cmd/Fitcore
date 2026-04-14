@@ -353,7 +353,7 @@ model Friendship {
 Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ### Phase 1 — MVP Core
-- [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle)
+- [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle); Railway production deployment live at https://fitcore-production-c558.up.railway.app; GitHub Actions CD on push to main
 - [x] Auth screens (signup, login, forgot password)
 - [x] Onboarding flow (goal selection, body stats, activity level)
 - [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout)

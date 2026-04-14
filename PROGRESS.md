@@ -1,6 +1,66 @@
 # FitCore — Build Progress
 
 ## Last session
+**Date:** 2026-04-14 (session 15)
+**What was built:**
+
+### Railway production deployment + sign-in bug fixes
+
+**Infrastructure:**
+- `railway.toml` at repo root — Dockerfile builder, health check path `/health`, restart policy
+- `apps/backend/Dockerfile` — two-stage Yarn workspace build (Node 20 slim); production image preserves monorepo structure so hoisted node_modules resolve correctly; `CMD` runs `prisma migrate deploy` before starting the server
+- `.github/workflows/deploy-backend.yml` — typecheck + Railway webhook redeploy on push to `main` touching `apps/backend/**`
+- `GET /health` updated to return `{ status: 'ok', timestamp: Date.now() }`
+
+**Flutter per-environment API URL:**
+- `apps/mobile/lib/constants/app_constants.dart` — `AppConstants.apiBaseUrl` uses `String.fromEnvironment('FLUTTER_API_URL')`; falls back to `http://localhost:3000` in debug, `https://fitcore-production-c558.up.railway.app` in release (`dart.vm.product` compile-time constant)
+- `api_client.dart` and `auth_provider.dart` updated to use `AppConstants.apiBaseUrl` as dotenv fallback
+
+**Sign-in bug fixes (3 separate root causes, found in sequence):**
+1. `auth_provider.dart` still hardcoded `http://localhost:3000` — all auth requests went to localhost on device
+2. `apps/mobile/.env` had `FLUTTER_API_URL=http://192.168.1.5:3000` bundled as a Flutter asset — overrode `AppConstants` in every build including release; removed the value, left a comment explaining the pattern
+3. `User.fcmToken` column existed in `schema.prisma` but had no migration — `PrismaClientInitializationError` on every user query; created `20260414000000_add_fcm_token` migration
+
+**Railway debugging:**
+- Initial deploy failed: Dockerfile used `npm ci` but project uses Yarn workspaces — rewrote to `yarn install --frozen-lockfile` from monorepo root
+- `railway.toml` was in `apps/backend/` — Railway reads it from repo root only; moved
+- `prisma migrate deploy` in `railway.toml` startCommand was silently ignored — moved into Dockerfile `CMD` to guarantee it runs
+- `DATABASE_URL` was set to `localhost:5432` placeholder — fixed by linking Railway PostgreSQL service via `${{Postgres.DATABASE_URL}}`
+
+**Decisions made:**
+- `prisma migrate deploy` lives in Dockerfile `CMD` (not `railway.toml` startCommand) — Railway was ignoring the startCommand override; CMD is always executed
+- `.env` file stays gitignored and should never contain `FLUTTER_API_URL` — `AppConstants` handles the per-environment default; developers override locally if testing against a LAN backend
+- `railway.toml` startCommand kept as a belt-and-suspenders duplicate in case Railway starts honouring it in future
+
+**Known issues:**
+- `RAILWAY_DEPLOY_WEBHOOK_URL` GitHub Actions secret not yet set — auto-deploy via webhook not wired; Railway must be redeployed manually from the dashboard for now
+- Redis not provisioned on Railway — weekly summary push notifications disabled; BullMQ jobs won't run until Redis is added as a Railway service
+- `settings_screen.dart` still orphaned (no route points to it)
+- iOS push notifications still deferred
+
+## Next session
+**Priority task:** Phase 3 — AI coach chat (Claude API integration)
+
+1. **Backend** — implement `POST /api/v1/ai/chat` in `ai.routes.ts`:
+   - Query `CoachContext` (user profile, today's food logs, today's workout, step count) from DB
+   - Call `claude-sonnet-4-6` via `@anthropic-ai/sdk` with the FitCore Coach system prompt from CLAUDE.md
+   - Enforce 5 msg/day Redis rate limit for free tier (key: `coach:limit:{userId}`, 24h TTL) — skip gracefully if Redis unavailable
+   - Return `{ success: true, data: { reply: string, messagesUsedToday: number } }`
+
+2. **Flutter** — build out `coach_screen.dart`:
+   - Scrollable message list (user bubbles right, coach bubbles left)
+   - Text input bar with send button + loading indicator
+   - Rate-limit banner for free users showing `X / 5 messages used today`
+   - `coach_provider.dart` (`AsyncNotifier<List<ChatMessage>>`) — stores session history in memory
+
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts` — stub to implement
+- `apps/mobile/lib/features/coach/screens/coach_screen.dart` — placeholder to build out
+- `apps/backend/src/repositories/` — create `coach.repository.ts` for CoachContext DB queries
+
+---
+
+## Previous session
 **Date:** 2026-04-14 (session 14)
 **What was built:**
 
