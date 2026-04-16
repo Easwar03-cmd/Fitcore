@@ -1,10 +1,279 @@
-# FitCore — Build Progress
+# Zenfit — Build Progress
 
 ## Last session
-**Date:** 2026-04-14 (session 15)
+**Date:** 2026-04-16 (session 20)
 **What was built:**
 
-### Railway production deployment + sign-in bug fixes
+### AI Coach Chat (Phase 3 — first feature)
+
+**Backend — `src/repositories/ai.repository.ts`** (new):
+- `getTodayNutrition` — sums calories/protein/carbs/fat for today's food logs
+- `getTodayWorkout`, `getWeekWorkoutCount`, `getLatestBodyStat`, `getUserWithProfile` — all run in parallel to build coach context
+
+**Backend — `src/services/ai.service.ts`** (new):
+- `checkCoachRateLimit` — Redis key `coach:limit:{userId}`, incr + 24h TTL, 5 msg/day free; fails open if Redis unavailable; unlimited for pro/coach tiers
+- `buildContext` — assembles `<user_context>` block with goal, TDEE, today's macros, workout, weekly count, body weight
+- `sendCoachMessage` — streams `claude-sonnet-4-6` with system prompt from CLAUDE.md spec + context injected; returns `finalMessage()` text
+
+**Backend — `src/routes/ai.routes.ts`** (updated):
+- `POST /api/v1/ai/coach` — auth → subscription lookup → rate limit check → Claude call
+- Returns `{ message, remainingMessages }` (null remaining = unlimited)
+- Typed error code `RATE_LIMITED_COACH` (429) for free-tier exhaustion
+
+**Flutter — `features/coach/models/chat_message.dart`** (new):
+- `ChatMessage` with `role`, `content`, `createdAt`; `toJson()` for API payload
+
+**Flutter — `features/coach/providers/coach_provider.dart`** (new):
+- `CoachState` — `messages`, `isLoading`, `error`, `remainingMessages`, `isRateLimited`
+- `CoachNotifier` — sends full history each call; handles `RATE_LIMITED_COACH` code distinctly
+
+**Flutter — `features/coach/widgets/chat_bubble.dart`** (new):
+- User bubble (right, primary colour) + assistant bubble (left, surface variant)
+- `flutter_animate` entry slide/fade; animated `TypingIndicator` with 3-dot bounce loop
+
+**Flutter — `features/coach/screens/coach_screen.dart`** (rebuilt):
+- Full chat UI: empty state with 3 suggestion chips, message list with auto-scroll
+- AppBar shows remaining messages for free tier
+- Error/rate-limit banner with dismiss; multiline input bar with send button
+
+**Decisions made:**
+- Model: `claude-sonnet-4-6` (per CLAUDE.md spec for the coach chatbot)
+- Rate limit fails open when Redis is unavailable (better UX than blocking)
+- Full conversation history sent each API call (stateless backend, Claude has context)
+
+**What's broken / known issues:**
+- None
+
+---
+
+### Previous session (2026-04-15, session 19) — Production hardening
+
+**Flutter — `main.dart`:**
+- `SentryFlutter.init` wraps `runApp`; reads `FLUTTER_SENTRY_DSN` from dotenv; `tracesSampleRate` 0.2 in release, 0 in debug; `sendDefaultPii = false`
+- `dotenv.load` selects `.env.production` in `kReleaseMode`, falls back to `.env` if file missing (e.g. local release test)
+- `envFile` promoted to `const` (satisfies `prefer_const_declarations`)
+
+**Flutter — `app.dart`:**
+- `MaterialApp.router.builder` wraps non-production builds with a red `Banner('DEBUG', BannerLocation.topEnd)`; controlled by `kReleaseMode || dotenv['FLUTTER_ENV'] == 'production'`; dotenv access guarded against `NotInitializedError` in test environments
+
+**Flutter — `android/app/build.gradle.kts`:**
+- `isMinifyEnabled = true`, `isShrinkResources = true` in the release build type
+- Explicit `debug` block with both set to `false`
+
+**Flutter — `android/app/proguard-rules.pro`:**
+- Added keep rules for Dio/OkHttp, Riverpod, Drift/SQLite, Sentry, Firebase/FCM, Kotlin coroutines, and `GeneratedPluginRegistrant`
+
+**Flutter — `pubspec.yaml`:**
+- `sentry_flutter: ^8.4.0` added under dependencies
+- `.env.production` added to assets (stub file committed; real values injected by CI/CD)
+
+**Flutter — `lib/core/db/app_database.dart`:**
+- Added `AppDatabase.forTesting(super.executor)` named constructor for use in widget tests
+
+**Flutter — `test/widget_test.dart`:**
+- Override `appDatabaseProvider` with `NativeDatabase.memory()` via `AppDatabase.forTesting` to avoid background isolate timers in tests
+
+**Flutter — Bug fixes from `flutter analyze` (0 issues remaining):**
+- `app_database.dart` — `issueCustomQuery` → `m.database.customStatement` (deprecated API)
+- `notification_service.dart` — removed unused `token_store.dart` import
+- `sync_queue_service.dart` — `notifier.state.isSyncing` → `_ref.read(syncStatusProvider).isSyncing` (protected member access)
+- `water_tracker_card.dart` — added `const` to `Icon` and `AlwaysStoppedAnimation` constructors
+
+**Backend — `src/index.ts`:**
+- `@sentry/node` initialised at startup (when `SENTRY_DSN` is set); captures unhandled errors and startup crashes
+- `@fastify/rate-limit` registered globally (100 req/min per IP); custom `errorResponseBuilder` returns `{ success: false, error: { code: 'RATE_LIMITED' } }`
+- `bodyLimit: 10 * 1024` (10 kb) added to Fastify constructor to block oversized payloads
+- Global `setErrorHandler` — 4xx errors relay message; 5xx errors return a generic message in production and never include stack traces
+
+**Backend — `src/routes/auth.routes.ts`:**
+- `authRateLimit` config object (10 req/min) applied to all four auth endpoints: `/signup`, `/login`, `/refresh`, `/logout`
+
+**Backend — `package.json`:**
+- `"@sentry/node": "^8.0.0"` added to dependencies
+
+**Test results:** `flutter analyze` — 0 issues; `flutter test` — 14/14 passed
+
+**Decisions made:**
+- Used `kReleaseMode` (not just `FLUTTER_ENV`) as the primary banner guard so release APKs are always clean even if the env var is missing
+- `@sentry/node` config.SENTRY_DSN is optional — Sentry is silently skipped if DSN not set, preventing startup failures on dev machines
+- Rate-limit `keyGenerator` reads `x-forwarded-for` first so Railway's reverse proxy doesn't make all clients share one bucket
+
+**Known issues:**
+- Pre-existing: `RAILWAY_DEPLOY_WEBHOOK_URL` secret not set; Redis not on Railway (BullMQ jobs disabled); iOS push notifications deferred
+- `.env.production` committed as a stub template — CI/CD must overwrite it with real values at build time; add to `.gitignore` before first real release build
+
+---
+
+## Next session
+**Priority task:** Phase 3 — AI coach chat (Claude API integration)
+
+---
+
+## Previous session
+**Date:** 2026-04-15 (session 18)
+**What was built:**
+
+### Ad placeholder slots — home screen (AdMob prep)
+
+**New: `features/home/providers/ad_providers.dart`:**
+- `adBannerDismissedProvider` (`StateProvider<bool>`, init `false`) — tracks banner dismissal this session
+- `adPopupDismissedProvider` (`StateProvider<bool>`, init `false`) — tracks popup dismissal this session
+- Both reset automatically on cold start (Riverpod in-memory only; no persistence)
+
+**New: `features/home/widgets/ad_placeholders.dart`:**
+- `AdBannerPlaceholder` (`ConsumerWidget`) — `h=60`, `borderRadius=12`, surfaceVariant gradient, orange "Ad" pill badge top-left, X close button top-right, centred icon + "Advertisement" label; returns `SizedBox.shrink()` when dismissed
+- `AdPopupPlaceholder` (`ConsumerWidget`) — `w=180, h=100`, drop shadow, same badge/close pattern, same dismiss behaviour
+- Shared private `_AdBadge` and `_CloseButton` helpers
+
+**Modified: `features/home/screens/home_screen.dart`:**
+- `_HomeScreenState` gains `bool _popupVisible = false`; `initState` schedules `Future.delayed(2s)` to flip it → triggers popup appearance on cold start
+- Body wrapped in `Stack`; `Positioned(bottom: 16, left: 16)` renders `AdPopupPlaceholder` when `_popupVisible`
+- `_Dashboard` Column gets `const AdBannerPlaceholder()` as first child, between AppBar and CalorieRing card
+- `TODO(admob)` comments at both slots mark the exact swap points for `AdWidget` from `google_mobile_ads`
+
+**Decisions made:**
+- Used `StateProvider<bool>` (not `SharedPreferences`) so both ads reappear on every cold start without any persistence code — intentional for pre-launch placeholder behaviour; real AdMob integration can decide its own frequency-capping strategy
+- Providers in `providers/ad_providers.dart` (not inline in the widget file) to follow project convention; both will be deleted once AdMob widgets replace the placeholders
+- Popup delay logic lives in `_HomeScreenState` (local `setState`) rather than a provider — it's UI-only timing with no state worth persisting
+
+**Known issues:**
+- None introduced today
+- Pre-existing: `RAILWAY_DEPLOY_WEBHOOK_URL` secret not set; Redis not on Railway (BullMQ jobs disabled); `settings_screen.dart` orphaned; iOS push notifications deferred
+
+---
+
+## Next session
+**Priority task:** Phase 3 — AI coach chat (Claude API integration)
+
+1. **Backend** — implement `POST /api/v1/ai/chat` in `ai.routes.ts`:
+   - Query `CoachContext` (user profile, today's food logs, today's workout, step count) from DB
+   - Call `claude-sonnet-4-6` via `@anthropic-ai/sdk` with the FitCore Coach system prompt from CLAUDE.md
+   - Enforce 5 msg/day Redis rate limit for free tier (key: `coach:limit:{userId}`, 24h TTL) — skip gracefully if Redis unavailable
+   - Return `{ success: true, data: { reply: string, messagesUsedToday: number } }`
+
+2. **Flutter** — build out `coach_screen.dart`:
+   - Scrollable message list (user bubbles right, coach bubbles left)
+   - Text input bar with send button + loading indicator
+   - Rate-limit banner for free users showing `X / 5 messages used today`
+   - `coach_provider.dart` (`AsyncNotifier<List<ChatMessage>>`) — stores session history in memory
+
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts` — stub to implement
+- `apps/mobile/lib/features/coach/screens/coach_screen.dart` — placeholder to build out
+- `apps/backend/src/repositories/` — create `coach.repository.ts` for CoachContext DB queries
+
+---
+
+## Previous session
+**Date:** 2026-04-14 (session 17)
+**What was built:**
+
+### Nutrition screen — meal card redesign
+
+**`meal_section.dart` — complete rewrite as `MealCard`:**
+- `MealSection` replaced by `MealCard` (`ConsumerStatefulWidget`), exported from the same file
+- `_MealHeader`: emoji + meal name + kcal total (in `AppColors.calories`) + `+` `IconButton` (always navigates to `FoodSearchScreen` with `mealType` as GoRouter `extra`)
+- Empty state (`_EmptyPlaceholder`): italic muted "Tap + to add breakfast/lunch/…" text; entire `Card` is tappable via `InkWell.onTap` → `FoodSearchScreen`
+- Collapsed state (`_LoggedBody`): `_FoodChipRow` — horizontal `ListView` of `_FoodChip` pill widgets (food name capped at 110px + kcal in calories colour); "See all (N)" underline link
+- Expanded state: full `_LogItem` list (swipe-to-delete with confirm dialog preserved from old `MealSection`); "Collapse" underline link
+- Animations via `flutter_animate`: chip row re-animates on `ValueKey(logs.length)` (fade + slight slideX); expanded list items stagger with 40ms delay per item (fade + slideY)
+- `ClipRRect` ensures Dismissible delete background is clipped cleanly to card corners
+
+**`log_food_sheet.dart`:**
+- `showLogFoodSheet` gains optional `initialMealType` param
+- `_LogFoodSheet` stores `initialMealType`; `_mealType` initialised in `initState` (defaults to `'lunch'` if null)
+
+**`food_search_screen.dart`:**
+- `FoodSearchScreen` gains optional `initialMealType` constructor param
+- Forwarded to `showLogFoodSheet` so the bottom sheet opens with the correct meal pre-selected
+
+**`app_router.dart`:**
+- `food-search` route builder reads `state.extra as String?` and passes to `FoodSearchScreen`
+
+**`nutrition_screen.dart`:**
+- `MealSection` → `MealCard` (import and widget call updated)
+
+**Decisions made:**
+- Kept `meal_section.dart` filename (avoids router/import churn); only the exported class name changed to `MealCard`
+- Swipe-to-delete lives only in the expanded view — chips are read-only; avoids accidental deletions from the compact view
+- `mealType` is passed as GoRouter `extra` (not a query param) to avoid polluting the URL with transient UI state
+
+**Known issues:**
+- None introduced today
+- Pre-existing: `RAILWAY_DEPLOY_WEBHOOK_URL` secret not set; Redis not on Railway (BullMQ jobs disabled); `settings_screen.dart` orphaned; iOS push notifications deferred
+
+---
+
+## Next session
+**Priority task:** Phase 3 — AI coach chat (Claude API integration)
+
+1. **Backend** — implement `POST /api/v1/ai/chat` in `ai.routes.ts`:
+   - Query `CoachContext` (user profile, today's food logs, today's workout, step count) from DB
+   - Call `claude-sonnet-4-6` via `@anthropic-ai/sdk` with the FitCore Coach system prompt from CLAUDE.md
+   - Enforce 5 msg/day Redis rate limit for free tier (key: `coach:limit:{userId}`, 24h TTL) — skip gracefully if Redis unavailable
+   - Return `{ success: true, data: { reply: string, messagesUsedToday: number } }`
+
+2. **Flutter** — build out `coach_screen.dart`:
+   - Scrollable message list (user bubbles right, coach bubbles left)
+   - Text input bar with send button + loading indicator
+   - Rate-limit banner for free users showing `X / 5 messages used today`
+   - `coach_provider.dart` (`AsyncNotifier<List<ChatMessage>>`) — stores session history in memory
+
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts` — stub to implement
+- `apps/mobile/lib/features/coach/screens/coach_screen.dart` — placeholder to build out
+- `apps/backend/src/repositories/` — create `coach.repository.ts` for CoachContext DB queries
+
+---
+
+## Previous session
+**Date:** 2026-04-14 (session 16)
+**What was built:**
+
+### Indian food database + nutrition search improvements
+
+**New asset — `apps/mobile/assets/data/indian_foods.json`:**
+- 150 curated Indian foods with accurate IFCT-referenced macros per 100g
+- Coverage: grains (rice cooked/raw, basmati, brown rice, atta, maida, besan, rava, poha, jowar/bajra/ragi rotis), dals (toor, moong, chana, masoor — cooked), breakfast items (idli, dosa, masala dosa, rava dosa, uttapam, poha, upma, pongal, medu vada, dhokla), Indian breads (chapati, paratha, aloo paratha, puri, naan, bhatura, kulcha, methi thepla), curries and gravies (sambar, rasam, dal makhani, dal tadka, rajma, chole, butter chicken, palak paneer, paneer butter masala, kadai paneer, paneer tikka masala, aloo gobhi, aloo palak, mixed veg, kadhi, baingan bharta), non-veg (chicken/mutton/fish curry, butter chicken, tandoori chicken, egg curry, fish fry, prawn curry, seekh kebab), dairy (paneer, curd, all three milk types, lassi, buttermilk), fruits (banana, apple, mango, orange, papaya, guava, amla, chiku, watermelon, pomegranate, grapes, dates), vegetables (potato, onion, tomato, spinach, cauliflower, cabbage, beans, okra, karela, lauki, brinjal, methi, peas, cucumber, mooli, carrot, pumpkin, sweet potato, drumstick, jackfruit), beverages (tea, coffee, coconut water, turmeric milk, nimbu pani, aamras), fats/oils (ghee, butter, coconut oil, mustard oil), sweeteners (sugar, jaggery), nuts/seeds (cashew, almonds, peanuts, sesame, flaxseeds, coconut), snacks (murukku, bhel puri, puffed rice, papad), sweets (gulab jamun, rasgulla, jalebi, besan ladoo, kheer, gajar halwa, suji halwa), and other staples (sattu, vermicelli, moong sprouts)
+- Each food has `commonServings` with realistic portion labels (katori, roti, cup, piece) and gram weights
+
+**New service — `apps/mobile/lib/core/services/indian_food_service.dart`:**
+- Loads JSON asset lazily on first call; subsequent calls use in-memory cache
+- `search(query)` matches case-insensitively on both English name and Hindi (`nameHindi`)
+- Riverpod `Provider<IndianFoodService>` — injected into `OpenFoodFactsService`
+
+**Updated `FoodItem` model (`features/nutrition/models/food_item.dart`):**
+- Added `ServingOption` class (`label`, `grams`)
+- Added `nameHindi`, `commonServings`, `isIndian` fields to `FoodItem`
+- New `FoodItem.fromIndianJson` factory
+
+**Updated `open_food_facts_service.dart`:**
+- `searchByName` now runs three parallel searches: `IndianFoodService.search` + USDA + OFF
+- Merge order: Indian → USDA → OFF — Indian results always appear first when the query matches
+- `OpenFoodFactsService` now takes `IndianFoodService` via constructor (injected by Riverpod)
+
+**Updated `log_food_sheet.dart`:**
+- Indian foods (`isIndian == true`) show a "Quick select" chip row above the gram input
+- Chips are built from `commonServings` (e.g. "1 katori (~150g)", "1 medium roti (~35g)")
+- Tapping a chip sets the gram value directly and updates the text field
+- Manual text-field edits or unit-picker changes clear the chip lock — power users aren't blocked
+- Hindi name shown in the subtitle when present (instead of brand)
+
+**`pubspec.yaml`:** added `assets/data/` to bundle the JSON
+
+**Decisions made:**
+- Indian food results are prepended before USDA/OFF (not interleaved) — simpler dedup logic, and for an Indian user a local search miss is more likely than OFF/USDA knowing "idli" or "toor dal cooked"
+- Serving chips are shown in addition to (not instead of) the gram input — advanced users who want 73g of dal aren't blocked
+- `IndianFoodService` is a plain class with a lazy `List<FoodItem>` cache; no Riverpod `AsyncNotifier` needed because the asset load is fast and errors just set cache to `[]`
+
+**Known issues:**
+- None introduced today
+- Pre-existing: `RAILWAY_DEPLOY_WEBHOOK_URL` GitHub Actions secret not set; Redis not on Railway (weekly push + BullMQ jobs disabled); `settings_screen.dart` orphaned
+
+---
+
+## Previous session
+**Date:** 2026-04-14 (session 15)
 
 **Infrastructure:**
 - `railway.toml` at repo root — Dockerfile builder, health check path `/health`, restart policy

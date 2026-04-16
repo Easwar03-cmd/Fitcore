@@ -1,4 +1,4 @@
-# CLAUDE.md — FitCore Fitness App
+# CLAUDE.md — Zenfit Fitness App
 
 > This file is Claude Code's memory for this project. Read it fully at the start of every session before writing any code. Update PROGRESS.md after every session.
 
@@ -6,7 +6,7 @@
 
 ## Project overview
 
-**App name:** FitCore
+**App name:** Zenfit
 **Type:** Cross-platform mobile fitness app (iOS + Android)
 **Solo developer:** Yes — one person building this with Claude Code assistance
 **Goal:** A comprehensive fitness app covering calorie tracking, workout logging, AI coaching, wearable integration, mental wellness, and social features.
@@ -66,7 +66,7 @@
 ## Folder structure
 
 ```
-fitcore/
+zenfit/
 ├── apps/
 │   ├── mobile/                    # Flutter app
 │   │   ├── lib/
@@ -357,7 +357,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Auth screens (signup, login, forgot password)
 - [x] Onboarding flow (goal selection, body stats, activity level)
 - [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout)
-- [x] Food search + logging (Open Food Facts API)
+- [x] Food search + logging (Open Food Facts API + USDA + Indian food database) — three parallel searches; Indian results surface first; 150-item curated Indian food database bundled as `assets/data/indian_foods.json`; serving-chip quick-select in log sheet for Indian foods; NutritionScreen meal sections redesigned as tappable `MealCard` widgets (emoji + kcal header + `+` button; empty placeholder; collapsed horizontal `FoodChip` scroll + "See all" toggle; expanded full list with swipe-to-delete; flutter_animate entry animations; `mealType` passed via GoRouter `extra` to pre-select meal in `LogFoodSheet`)
 - [x] Barcode scanner
 - [x] Macro/calorie dashboard for the day
 - [x] Basic workout logger (exercise picker, set/rep/weight input)
@@ -379,7 +379,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Push notifications (reminders, streaks) — FCM token registration, local scheduled notifications (workout/food/streak), weekly summary BullMQ job
 
 ### Phase 3 — AI Features
-- [ ] AI coach chat (Claude API integration)
+- [x] AI coach chat (Claude API integration) — `claude-sonnet-4-6`; Redis rate limit (5/day free, unlimited pro/coach); live user context injected; full chat UI with suggestion chips, typing indicator, rate-limit banner
 - [ ] Adaptive daily calorie target (post-workout adjustment)
 - [ ] AI meal plan generator (weekly)
 - [ ] Grocery list from meal plan
@@ -399,6 +399,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [ ] Stripe subscription integration (Free / Pro / Coach tiers)
 - [ ] Paywall screens for premium features
 - [ ] Coach marketplace (basic)
+- [x] Ad placeholder slots (home screen banner + popup) — swap for AdWidget from google_mobile_ads before launch; TODO(admob) comments mark each slot
 
 ---
 
@@ -464,7 +465,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 
 ### System prompt (use this exactly)
 ```
-You are FitCore Coach, a knowledgeable and motivating fitness assistant. You have access to the user's fitness data including their goals, recent workouts, calorie logs, and body stats. Give concise, actionable advice. Always be encouraging but honest. Never recommend extreme diets or dangerous exercises. If the user describes symptoms that could indicate a medical issue, always recommend consulting a doctor. Keep responses under 200 words unless the user explicitly asks for more detail.
+You are Zenfit Coach, a knowledgeable and motivating fitness assistant. You have access to the user's fitness data including their goals, recent workouts, calorie logs, and body stats. Give concise, actionable advice. Always be encouraging but honest. Never recommend extreme diets or dangerous exercises. If the user describes symptoms that could indicate a medical issue, always recommend consulting a doctor. Keep responses under 200 words unless the user explicitly asks for more detail.
 ```
 
 ### Context to inject with every message
@@ -538,7 +539,7 @@ At the beginning of every Claude Code session, do this in order:
 ## PROGRESS.md template (copy this to start)
 
 ```markdown
-# FitCore — Build Progress
+# Zenfit — Build Progress
 
 ## Last session
 **Date:** YYYY-MM-DD
