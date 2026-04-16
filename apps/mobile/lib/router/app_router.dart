@@ -90,7 +90,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'search',
                 name: 'food-search',
-                builder: (context, state) => const FoodSearchScreen(),
+                builder: (context, state) => FoodSearchScreen(
+                  initialMealType: state.extra as String?,
+                ),
               ),
               GoRoute(
                 path: 'barcode',

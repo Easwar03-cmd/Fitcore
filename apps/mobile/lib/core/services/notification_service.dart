@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../api/token_store.dart';
 
 // ─── Notification IDs (stable — used to cancel/reschedule) ───────────────────
 
@@ -16,9 +15,9 @@ const _kSyncFailedBaseId = 20; // 20–29 reserved for sync-failure alerts
 
 // ─── Android notification channel IDs ────────────────────────────────────────
 
-const _kDefaultChannelId = 'fitcore_default';
-const _kDefaultChannelName = 'FitCore Notifications';
-const _kRemindersChannelId = 'fitcore_reminders';
+const _kDefaultChannelId = 'zenfit_default';
+const _kDefaultChannelName = 'Zenfit Notifications';
+const _kRemindersChannelId = 'zenfit_reminders';
 const _kRemindersChannelName = 'Daily Reminders';
 
 // ─── Top-level FCM background handler (must be top-level function) ────────────
@@ -261,7 +260,7 @@ class NotificationService {
       notifId,
       'Data may not be saved',
       'A record could not be synced after several attempts. '
-          'Check your connection and open FitCore to retry.',
+          'Check your connection and open Zenfit to retry.',
       const NotificationDetails(
         android: AndroidNotificationDetails(
           _kDefaultChannelId,

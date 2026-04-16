@@ -26,7 +26,7 @@ function hoursAgo(n: number): Date {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🌱  Seeding FitCore database...');
+  console.log('🌱  Seeding Zenfit database...');
 
   // Pre-compute password hashes for test users (all use "Password123!")
   const testPassword = 'Password123!';
@@ -51,7 +51,7 @@ async function main() {
 
   const alice = await prisma.user.create({
     data: {
-      email: 'alice@fitcore.dev',
+      email: 'alice@zenfit.dev',
       name: 'Alice Chen',
       passwordHash: aliceHash,
       gender: 'female',
@@ -242,7 +242,7 @@ async function main() {
 
   const marcus = await prisma.user.create({
     data: {
-      email: 'marcus@fitcore.dev',
+      email: 'marcus@zenfit.dev',
       name: 'Marcus Williams',
       passwordHash: marcusHash,
       gender: 'male',
@@ -403,7 +403,7 @@ async function main() {
 
   const sam = await prisma.user.create({
     data: {
-      email: 'sam@fitcore.dev',
+      email: 'sam@zenfit.dev',
       name: 'Sam Okafor',
       passwordHash: samHash,
       gender: 'male',

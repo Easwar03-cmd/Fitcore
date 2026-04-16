@@ -7,7 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../home/providers/home_provider.dart';
 import '../models/food_log.dart';
 import '../providers/nutrition_provider.dart';
-import '../widgets/meal_section.dart';
+import '../widgets/meal_section.dart' show MealCard;
 
 const _mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -49,7 +49,7 @@ class NutritionScreen extends ConsumerWidget {
               ),
               SliverList(
                 delegate: SliverChildListDelegate([
-                  ..._mealOrder.map((meal) => MealSection(
+                  ..._mealOrder.map((meal) => MealCard(
                         mealType: meal,
                         logs: dayLogs.logs
                             .where((l) => l.mealType == meal)

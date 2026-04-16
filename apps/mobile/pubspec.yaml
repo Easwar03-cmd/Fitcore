@@ -1,5 +1,5 @@
-name: fitcore
-description: FitCore — cross-platform fitness app (iOS + Android)
+name: zenfit
+description: Zenfit — cross-platform fitness app (iOS + Android)
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -62,6 +62,9 @@ dependencies:
   # Logging
   logger: ^2.4.0
 
+  # Error monitoring
+  sentry_flutter: ^8.4.0
+
   # Env vars
   flutter_dotenv: ^5.1.0
 
@@ -83,6 +86,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
 
   # Code generation
   riverpod_generator: ^2.4.3
@@ -91,7 +95,18 @@ dev_dependencies:
   json_serializable: ^6.8.0
   json_annotation: ^4.9.0
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/zenfit_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#020F0A"
+  adaptive_icon_foreground: "assets/icons/zenfit_icon.png"
+
 flutter:
   uses-material-design: true
   assets:
     - .env
+    - .env.production
+    - assets/data/
+    - assets/icons/

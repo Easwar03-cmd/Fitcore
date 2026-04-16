@@ -1,5 +1,5 @@
 {
-  "name": "@fitcore/backend",
+  "name": "@zenfit/backend",
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
@@ -14,12 +14,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
+    "@sentry/node": "^8.0.0",
     "@fastify/cors": "^10.1.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.0.0",
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/swagger": "^8.14.0",
-    "@fitcore/shared": "*",
+    "@zenfit/shared": "*",
     "@prisma/client": "^5.22.0",
     "bullmq": "^5.8.0",
     "cloudinary": "^2.3.1",

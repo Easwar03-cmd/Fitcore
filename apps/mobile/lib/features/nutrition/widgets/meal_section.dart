@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/food_log.dart';
 import '../providers/nutrition_provider.dart';
@@ -12,8 +15,13 @@ const _mealEmoji = {
   'snack': '🍎',
 };
 
-class MealSection extends ConsumerWidget {
-  const MealSection({
+/// Card-based meal section.
+///
+/// - Empty: shows placeholder text; entire card navigates to FoodSearchScreen.
+/// - With food: compact horizontal chip row + "See all" toggle for full list.
+/// - Tapping + always navigates to FoodSearchScreen with [mealType] pre-selected.
+class MealCard extends ConsumerStatefulWidget {
+  const MealCard({
     super.key,
     required this.mealType,
     required this.logs,
@@ -22,54 +30,257 @@ class MealSection extends ConsumerWidget {
   final String mealType;
   final List<FoodLog> logs;
 
-  String get _label =>
-      mealType[0].toUpperCase() + mealType.substring(1);
+  @override
+  ConsumerState<MealCard> createState() => _MealCardState();
+}
 
-  double get _sectionCalories =>
-      logs.fold(0.0, (sum, l) => sum + l.calories);
+class _MealCardState extends ConsumerState<MealCard> {
+  bool _expanded = false;
+
+  String get _label =>
+      widget.mealType[0].toUpperCase() + widget.mealType.substring(1);
+
+  double get _totalKcal =>
+      widget.logs.fold(0.0, (sum, l) => sum + l.calories);
+
+  void _navigateToSearch() =>
+      context.push(AppRoutes.foodSearch, extra: widget.mealType);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 6),
-          child: Row(
+  Widget build(BuildContext context) {
+    final hasLogs = widget.logs.isNotEmpty;
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: hasLogs ? null : _navigateToSearch,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${_mealEmoji[mealType]} $_label',
-                  style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              if (logs.isNotEmpty)
-                Text(
-                  '${_sectionCalories.round()} kcal',
-                  style: const TextStyle(
-                      color: AppColors.onSurfaceVariant, fontSize: 12),
+              _MealHeader(
+                label: _label,
+                mealType: widget.mealType,
+                totalKcal: hasLogs ? _totalKcal.round() : null,
+                onAdd: _navigateToSearch,
+              ),
+              if (!hasLogs)
+                _EmptyPlaceholder(mealType: widget.mealType)
+              else
+                _LoggedBody(
+                  logs: widget.logs,
+                  expanded: _expanded,
+                  onToggle: () => setState(() => _expanded = !_expanded),
                 ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
 
-        if (logs.isEmpty)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Text(
-              'Nothing logged yet',
-              style: TextStyle(
-                  color: AppColors.onSurfaceVariant, fontSize: 13),
+// ── Header row ────────────────────────────────────────────────────────────────
+
+class _MealHeader extends StatelessWidget {
+  const _MealHeader({
+    required this.label,
+    required this.mealType,
+    required this.totalKcal,
+    required this.onAdd,
+  });
+
+  final String label;
+  final String mealType;
+  final int? totalKcal;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 4, 8),
+      child: Row(
+        children: [
+          Text(
+            '${_mealEmoji[mealType]} $label',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const Spacer(),
+          if (totalKcal != null) ...[
+            Text(
+              '$totalKcal kcal',
+              style: const TextStyle(
+                color: AppColors.calories,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
-          )
-        else
-          ...logs.map((log) => _LogItem(log: log)),
+            const SizedBox(width: 4),
+          ],
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: onAdd,
+            iconSize: 22,
+            visualDensity: VisualDensity.compact,
+            color: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-        const Divider(height: 1, indent: 16, endIndent: 16),
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+class _EmptyPlaceholder extends StatelessWidget {
+  const _EmptyPlaceholder({required this.mealType});
+  final String mealType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Text(
+        'Tap + to add $mealType',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+      ),
+    );
+  }
+}
+
+// ── Body when foods are logged ────────────────────────────────────────────────
+
+class _LoggedBody extends StatelessWidget {
+  const _LoggedBody({
+    required this.logs,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  final List<FoodLog> logs;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!expanded) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 4),
+            child: _FoodChipRow(logs: logs)
+                .animate(key: ValueKey(logs.length))
+                .fadeIn(duration: 250.ms)
+                .slideX(begin: -0.05, end: 0),
+          ),
+          _ToggleLink(label: 'See all (${logs.length})', onTap: onToggle),
+        ] else ...[
+          for (int i = 0; i < logs.length; i++)
+            _LogItem(log: logs[i])
+                .animate(delay: (i * 40).ms)
+                .fadeIn(duration: 180.ms)
+                .slideY(begin: 0.06, end: 0),
+          _ToggleLink(label: 'Collapse', onTap: onToggle),
+        ],
       ],
     );
   }
 }
 
-// ── Individual log item with swipe-to-delete ─────────────────────────────────
+class _ToggleLink extends StatelessWidget {
+  const _ToggleLink({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 12, 12),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.primary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.primary,
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Horizontal chip row ───────────────────────────────────────────────────────
+
+class _FoodChipRow extends StatelessWidget {
+  const _FoodChipRow({required this.logs});
+  final List<FoodLog> logs;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 30,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(right: 12),
+        itemCount: logs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) => _FoodChip(log: logs[i]),
+      ),
+    );
+  }
+}
+
+class _FoodChip extends StatelessWidget {
+  const _FoodChip({required this.log});
+  final FoodLog log;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 110),
+            child: Text(
+              log.foodName,
+              style: const TextStyle(fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            '${log.calories.round()} kcal',
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.calories,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Full log item with swipe-to-delete ────────────────────────────────────────
 
 class _LogItem extends ConsumerWidget {
   const _LogItem({required this.log});
@@ -87,7 +298,6 @@ class _LogItem extends ConsumerWidget {
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
       confirmDismiss: (_) async {
-        // Step 1: ask user to confirm.
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -105,21 +315,17 @@ class _LogItem extends ConsumerWidget {
           ),
         );
         if (confirmed != true) return false;
-
-        // Step 2: call API — only dismiss if it succeeds.
         try {
           await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
           return true;
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.toString())),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(e.toString())));
           }
           return false;
         }
       },
-      // API already called in confirmDismiss; just update local state immediately.
       onDismissed: (_) =>
           ref.read(foodLogsProvider.notifier).removeLogLocally(log.id),
       child: Padding(
@@ -149,8 +355,7 @@ class _LogItem extends ConsumerWidget {
             const SizedBox(width: 12),
             Text(
               '${log.calories.round()} kcal',
-              style: const TextStyle(
-                  fontWeight: FontWeight.w600, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ],
         ),

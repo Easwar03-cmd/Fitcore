@@ -31,7 +31,7 @@ class WaterTrackerCard extends StatelessWidget {
         // Header
         Row(
           children: [
-            Icon(Icons.water_drop_rounded, color: AppColors.info, size: 18),
+            const Icon(Icons.water_drop_rounded, color: AppColors.info, size: 18),
             const SizedBox(width: 6),
             Text(
               'Water',
@@ -59,7 +59,7 @@ class WaterTrackerCard extends StatelessWidget {
               value: value,
               minHeight: 6,
               backgroundColor: AppColors.surfaceVariant,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.info),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.info),
             ),
           ),
         ),

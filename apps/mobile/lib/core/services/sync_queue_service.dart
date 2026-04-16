@@ -92,7 +92,7 @@ class SyncService {
   /// An item that exhausts all 4 retries is deleted and the user is notified.
   Future<void> flush() async {
     final notifier = _ref.read(syncStatusProvider.notifier);
-    if (notifier.state.isSyncing) return;
+    if (_ref.read(syncStatusProvider).isSyncing) return;
 
     final due = await _db.syncDao.getDueItems();
     if (due.isEmpty) return;
@@ -148,7 +148,7 @@ class SyncService {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 /// Non-autoDispose so the service persists for the full app lifetime.
-/// Initialise it once with [ref.read] from [FitCoreApp.initState].
+/// Initialise it once with [ref.read] from [ZenfitApp.initState].
 final syncServiceProvider = Provider<SyncService>((ref) {
   final service = SyncService(ref);
   ref.onDispose(service.dispose);

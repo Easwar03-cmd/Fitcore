@@ -3,20 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../features/nutrition/models/food_item.dart';
+import 'indian_food_service.dart';
 
 final _log = Logger();
 
 final openFoodFactsServiceProvider =
-    Provider<OpenFoodFactsService>((ref) => OpenFoodFactsService());
+    Provider<OpenFoodFactsService>(
+        (ref) => OpenFoodFactsService(ref.read(indianFoodServiceProvider)));
 
 class OpenFoodFactsService {
-  OpenFoodFactsService() {
+  OpenFoodFactsService(this._indianFoodService) {
     _offDio = Dio(
       BaseOptions(
         baseUrl: 'https://world.openfoodfacts.org',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 20),
-        headers: {'User-Agent': 'FitCore/1.0 (flutter)', 'Accept': 'application/json'},
+        headers: {'User-Agent': 'Zenfit/1.0 (flutter)', 'Accept': 'application/json'},
       ),
     );
     _usdaDio = Dio(
@@ -30,19 +32,26 @@ class OpenFoodFactsService {
 
   late final Dio _offDio;
   late final Dio _usdaDio;
+  final IndianFoodService _indianFoodService;
 
   static const _offFields = 'product_name,brands,nutriments,image_url';
 
   // ── Public API ────────────────────────────────────────────────────────────
 
-  /// Searches Open Food Facts + USDA in parallel and merges the results.
-  /// OFF covers packaged/branded products; USDA covers raw whole foods.
+  /// Searches Open Food Facts + USDA + Indian food database in parallel.
+  /// Indian results appear first when the query matches; then USDA (raw/whole
+  /// foods); then OFF (packaged/branded products).
   Future<List<FoodItem>> searchByName(String query) async {
     final results = await Future.wait([
       _searchOff(query),
       _searchUsda(query),
+      _indianFoodService.search(query),
     ]);
-    return _merge(results[0], results[1]);
+    return _merge(
+      off: results[0],
+      usda: results[1],
+      indian: results[2],
+    );
   }
 
   /// Barcode lookup via Open Food Facts only (USDA has no barcode index).
@@ -94,8 +103,6 @@ class OpenFoodFactsService {
           'query': query,
           'api_key': 'DEMO_KEY',
           'pageSize': '15',
-          // SR Legacy = USDA standard reference (raw/whole foods)
-          // Foundation = foundational foods data
           'dataType': 'SR Legacy,Foundation',
         },
       );
@@ -111,12 +118,16 @@ class OpenFoodFactsService {
     }
   }
 
-  /// Merges two lists, deduplicating by lower-cased name.
-  /// USDA results come first (better raw food data), then OFF (packaged goods).
-  List<FoodItem> _merge(List<FoodItem> off, List<FoodItem> usda) {
+  /// Merges three lists, deduplicating by lower-cased name.
+  /// Order: Indian (curated, most relevant for Indian users) → USDA → OFF.
+  List<FoodItem> _merge({
+    required List<FoodItem> indian,
+    required List<FoodItem> usda,
+    required List<FoodItem> off,
+  }) {
     final seen = <String>{};
     final merged = <FoodItem>[];
-    for (final item in [...usda, ...off]) {
+    for (final item in [...indian, ...usda, ...off]) {
       final key = item.name.toLowerCase().trim();
       if (key.isNotEmpty && seen.add(key)) {
         merged.add(item);

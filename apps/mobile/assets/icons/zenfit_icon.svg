@@ -1,0 +1,37 @@
+<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="60%" r="55%">
+      <stop offset="0%" stop-color="#0D3828"/>
+      <stop offset="100%" stop-color="#020F0A"/>
+    </radialGradient>
+    <linearGradient id="flameGrad" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#0D7A52"/>
+      <stop offset="45%" stop-color="#1D9E75"/>
+      <stop offset="78%" stop-color="#25C48A"/>
+      <stop offset="100%" stop-color="#6EE7BC"/>
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0%" stop-color="#0A2E1E"/>
+      <stop offset="50%" stop-color="#0D4A30"/>
+      <stop offset="100%" stop-color="#0F5C3A"/>
+    </linearGradient>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#B8FDE0"/>
+      <stop offset="40%" stop-color="#7EEDC8"/>
+      <stop offset="100%" stop-color="#25C48A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="baseGlow" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#1D9E75" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bgGlow)"/>
+  <ellipse cx="100" cy="158" rx="44" ry="8" fill="url(#baseGlow)"/>
+  <path d="M100 28 C100 28, 124 52, 132 76 C140 100, 138 118, 130 132 C122 146, 112 154, 100 156 C88 154, 78 146, 70 132 C62 118, 60 100, 68 76 C76 52, 100 28, 100 28Z" fill="url(#flameGrad)"/>
+  <path d="M100 50 C100 50, 116 68, 121 86 C126 104, 124 116, 118 126 C112 136, 107 141, 100 142 C93 141, 88 136, 82 126 C76 116, 74 104, 79 86 C84 68, 100 50, 100 50Z" fill="url(#innerGrad)"/>
+  <path d="M100 62 C100 62, 110 74, 113 86 C116 98, 114 107, 110 114 C107 120, 104 123, 100 124 C96 123, 93 120, 90 114 C86 107, 84 98, 87 86 C90 74, 100 62, 100 62Z" fill="#25C48A" opacity="0.18"/>
+  <ellipse cx="100" cy="108" rx="14" ry="18" fill="url(#coreGlow)" opacity="0.9"/>
+  <path d="M100 96 C96 100, 95 104, 96 108 C97 113, 100 116, 100 116 C100 116, 103 113, 104 108 C105 104, 104 100, 100 96Z" fill="#D4FFF0" opacity="0.85"/>
+  <ellipse cx="100" cy="155" rx="32" ry="5" fill="#1D9E75" opacity="0.12"/>
+  <ellipse cx="100" cy="157" rx="22" ry="3" fill="#25C48A" opacity="0.08"/>
+</svg>

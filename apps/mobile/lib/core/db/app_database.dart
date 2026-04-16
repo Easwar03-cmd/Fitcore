@@ -41,7 +41,11 @@ class PendingSyncItems extends Table {
 
 @DriftDatabase(tables: [PendingSyncItems], daos: [SyncDao])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(driftDatabase(name: 'fitcore'));
+  AppDatabase() : super(driftDatabase(name: 'zenfit'));
+
+  /// Opens the database on a provided [executor] — used in tests to pass an
+  /// in-memory [NativeDatabase] without touching the file system.
+  AppDatabase.forTesting(super.executor);
 
   @override
   int get schemaVersion => 2;
@@ -53,16 +57,16 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             // v1 → v2: add httpMethod, retryCount, retryAfter columns.
             // Raw SQL avoids GeneratedColumn<T> type-variance issues in Dart.
-            await m.issueCustomQuery(
+            await m.database.customStatement(
               "ALTER TABLE pending_sync_items "
               "ADD COLUMN http_method TEXT NOT NULL DEFAULT 'POST'",
             );
-            await m.issueCustomQuery(
+            await m.database.customStatement(
               'ALTER TABLE pending_sync_items '
               'ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0',
             );
             // Drift stores DateTimeColumn as INTEGER (Unix ms). NULL = immediately due.
-            await m.issueCustomQuery(
+            await m.database.customStatement(
               'ALTER TABLE pending_sync_items '
               'ADD COLUMN retry_after INTEGER',
             );

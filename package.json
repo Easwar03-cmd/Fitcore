@@ -1,5 +1,5 @@
 {
-  "name": "fitcore",
+  "name": "zenfit",
   "private": true,
   "workspaces": {
     "packages": [
@@ -29,12 +29,12 @@
     ]
   },
   "scripts": {
-    "mobile": "yarn workspace @fitcore/mobile start",
-    "backend": "yarn workspace @fitcore/backend dev",
-    "build:backend": "yarn workspace @fitcore/backend build",
-    "db:migrate": "yarn workspace @fitcore/backend db:migrate",
-    "db:generate": "yarn workspace @fitcore/backend db:generate",
-    "db:studio": "yarn workspace @fitcore/backend db:studio",
+    "mobile": "yarn workspace @zenfit/mobile start",
+    "backend": "yarn workspace @zenfit/backend dev",
+    "build:backend": "yarn workspace @zenfit/backend build",
+    "db:migrate": "yarn workspace @zenfit/backend db:migrate",
+    "db:generate": "yarn workspace @zenfit/backend db:generate",
+    "db:studio": "yarn workspace @zenfit/backend db:studio",
     "typecheck": "yarn workspaces run typecheck",
     "lint": "yarn workspaces run lint"
   },

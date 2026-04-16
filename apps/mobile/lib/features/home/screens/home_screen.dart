@@ -17,6 +17,7 @@ import '../../../features/nutrition/models/food_log.dart';
 import '../../../features/nutrition/providers/nutrition_provider.dart';
 import '../models/home_state.dart';
 import '../providers/home_provider.dart';
+import '../widgets/ad_placeholders.dart';
 import '../widgets/calorie_ring.dart';
 import '../widgets/macro_bars.dart';
 import '../widgets/step_counter_card.dart';
@@ -34,6 +35,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _popupVisible = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +44,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // finished its transition and the Navigator is fully mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _maybePromptHealthPermissions();
+    });
+    // Show the popup ad after a short delay on cold start.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _popupVisible = true);
     });
   }
 
@@ -147,34 +154,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          if (syncStatus.pendingCount > 0)
-            _SyncBanner(
-              pendingCount: syncStatus.pendingCount,
-              isSyncing: syncStatus.isSyncing,
-              onSync: () =>
-                  ref.read(syncServiceProvider).flush(),
-            ),
-          Expanded(
-            child: homeAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
-              error: (e, _) => _ErrorView(
-                message: e.toString(),
-                onRetry: () => ref.read(homeProvider.notifier).refresh(),
+          Column(
+            children: [
+              if (syncStatus.pendingCount > 0)
+                _SyncBanner(
+                  pendingCount: syncStatus.pendingCount,
+                  isSyncing: syncStatus.isSyncing,
+                  onSync: () =>
+                      ref.read(syncServiceProvider).flush(),
+                ),
+              Expanded(
+                child: homeAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => _ErrorView(
+                    message: e.toString(),
+                    onRetry: () => ref.read(homeProvider.notifier).refresh(),
+                  ),
+                  data: (home) => _Dashboard(
+                    home: home,
+                    logsAsync: logsAsync,
+                    onRefresh: () async {
+                      await ref.read(homeProvider.notifier).refresh();
+                    },
+                    onAddWater: (ml) =>
+                        ref.read(homeProvider.notifier).addWater(ml),
+                  ),
+                ),
               ),
-              data: (home) => _Dashboard(
-                home: home,
-                logsAsync: logsAsync,
-                onRefresh: () async {
-                  await ref.read(homeProvider.notifier).refresh();
-                },
-                onAddWater: (ml) =>
-                    ref.read(homeProvider.notifier).addWater(ml),
-              ),
-            ),
+            ],
           ),
+          // Popup ad — appears after a 2-second delay, bottom-left anchored.
+          if (_popupVisible)
+            const Positioned(
+              bottom: 16,
+              left: 16,
+              child: AdPopupPlaceholder(),
+            ),
         ],
       ),
     );
@@ -273,7 +291,7 @@ class _HealthPermissionsDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'FitCore would like to read and write:',
+            'Zenfit would like to read and write:',
             style: TextStyle(fontSize: 14),
           ),
           SizedBox(height: 14),
@@ -370,6 +388,9 @@ class _Dashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ── Banner ad ─────────────────────────────────────────────────
+            const AdBannerPlaceholder(),
+
             // ── Calorie ring ──────────────────────────────────────────────
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),

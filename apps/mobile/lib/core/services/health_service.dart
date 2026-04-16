@@ -19,7 +19,7 @@ const _kBaseTypes = [
 ];
 
 /// Parallel access list for the base types.
-/// WORKOUT needs READ_WRITE so FitCore can push sessions back to the health app.
+/// WORKOUT needs READ_WRITE so Zenfit can push sessions back to the health app.
 const _kBasePermissions = [
   HealthDataAccess.READ,       // STEPS
   HealthDataAccess.READ,       // HEART_RATE
@@ -79,7 +79,7 @@ class HealthService {
 
   // ── Permissions ─────────────────────────────────────────────────────────────
 
-  /// Request all permissions FitCore requires.
+  /// Request all permissions Zenfit requires.
   ///
   /// Returns true if the base types (steps, heart rate, sleep, weight, workout)
   /// were granted. Sleep stage types (deep/light/REM) are requested
@@ -310,7 +310,7 @@ class HealthService {
 
   // ── Write: workout ───────────────────────────────────────────────────────────
 
-  /// Push a completed FitCore workout to Apple Health / Google Fit so it
+  /// Push a completed Zenfit workout to Apple Health / Google Fit so it
   /// appears in the native health app alongside other activity sources.
   ///
   /// Writes active energy burned (KILOCALORIE) for the workout duration.

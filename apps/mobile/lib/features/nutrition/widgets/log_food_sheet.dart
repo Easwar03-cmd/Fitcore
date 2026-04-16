@@ -6,26 +6,34 @@ import '../../../core/theme/app_colors.dart';
 import '../models/food_item.dart';
 import '../providers/nutrition_provider.dart';
 
-// Serving unit → grams multiplier
+// Serving unit → grams multiplier (used when no serving chip is selected)
 const _unitMultipliers = {'g': 1.0, 'cup': 240.0, 'piece': 100.0};
 
 const _mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
 const _mealLabels = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
 /// Shows the log-food bottom sheet and returns true if a log was saved.
-Future<bool> showLogFoodSheet(BuildContext context, FoodItem item) async {
+///
+/// Pass [initialMealType] to pre-select a meal (e.g. 'breakfast') when
+/// navigating from a specific meal card.
+Future<bool> showLogFoodSheet(
+  BuildContext context,
+  FoodItem item, {
+  String? initialMealType,
+}) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _LogFoodSheet(item: item),
+    builder: (_) => _LogFoodSheet(item: item, initialMealType: initialMealType),
   );
   return result ?? false;
 }
 
 class _LogFoodSheet extends ConsumerStatefulWidget {
-  const _LogFoodSheet({required this.item});
+  const _LogFoodSheet({required this.item, this.initialMealType});
   final FoodItem item;
+  final String? initialMealType;
 
   @override
   ConsumerState<_LogFoodSheet> createState() => _LogFoodSheetState();
@@ -34,8 +42,18 @@ class _LogFoodSheet extends ConsumerStatefulWidget {
 class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
   final _qtyController = TextEditingController(text: '100');
   String _unit = 'g';
-  String _mealType = 'lunch';
+  late String _mealType;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mealType = widget.initialMealType ?? 'lunch';
+  }
+
+  /// When non-null, a quick-select chip has been tapped and this overrides
+  /// the text-field + unit calculation.
+  double? _chipServingG;
 
   @override
   void dispose() {
@@ -44,13 +62,33 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
   }
 
   double get _quantity => double.tryParse(_qtyController.text) ?? 0;
-  double get _servingG => _quantity * _unitMultipliers[_unit]!;
+  double get _servingG =>
+      _chipServingG ?? (_quantity * _unitMultipliers[_unit]!);
   double get _factor => _servingG / 100.0;
 
   double get _calories => widget.item.caloriesPer100g * _factor;
   double get _protein => widget.item.proteinPer100g * _factor;
   double get _carbs => widget.item.carbsPer100g * _factor;
   double get _fat => widget.item.fatPer100g * _factor;
+
+  List<ServingOption> get _servings =>
+      widget.item.commonServings ?? [];
+
+  bool get _hasServings => widget.item.isIndian && _servings.isNotEmpty;
+
+  void _selectChip(ServingOption option) {
+    setState(() {
+      _chipServingG = option.grams;
+      // Keep the text field in sync so power users can still tweak it
+      _qtyController.text = option.grams.toStringAsFixed(0);
+      _unit = 'g';
+    });
+  }
+
+  void _onManualInput(String _) {
+    // Tapping the text field after a chip was selected clears the chip lock
+    setState(() => _chipServingG = null);
+  }
 
   Future<void> _save() async {
     if (_servingG <= 0) return;
@@ -105,16 +143,52 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          if (widget.item.brand != null && widget.item.brand!.isNotEmpty)
-            Text(widget.item.brand!,
-                style: const TextStyle(
-                    color: AppColors.onSurfaceVariant, fontSize: 13)),
-          const SizedBox(height: 20),
+          if (widget.item.nameHindi != null &&
+              widget.item.nameHindi!.isNotEmpty)
+            Text(
+              widget.item.nameHindi!,
+              style: const TextStyle(
+                  color: AppColors.onSurfaceVariant, fontSize: 13),
+            )
+          else if (widget.item.brand != null && widget.item.brand!.isNotEmpty)
+            Text(
+              widget.item.brand!,
+              style: const TextStyle(
+                  color: AppColors.onSurfaceVariant, fontSize: 13),
+            ),
+          const SizedBox(height: 16),
 
-          // Serving row
+          // ── Quick-select serving chips (Indian foods only) ─────────────────
+          if (_hasServings) ...[
+            Text('Quick select', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: _servings.map((option) {
+                final selected = _chipServingG == option.grams;
+                return ChoiceChip(
+                  label: Text(option.label,
+                      style: const TextStyle(fontSize: 12)),
+                  selected: selected,
+                  onSelected: (_) => _selectChip(option),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Or enter amount',
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: AppColors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          // ── Serving row (quantity + unit) ─────────────────────────────────
           Row(
             children: [
-              // Quantity input
               SizedBox(
                 width: 100,
                 child: TextFormField(
@@ -128,20 +202,20 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
                     labelText: 'Amount',
                     isDense: true,
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: _onManualInput,
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Unit picker
               Expanded(
                 child: SegmentedButton<String>(
                   segments: _unitMultipliers.keys
                       .map((u) => ButtonSegment(value: u, label: Text(u)))
                       .toList(),
                   selected: {_unit},
-                  onSelectionChanged: (s) =>
-                      setState(() => _unit = s.first),
+                  onSelectionChanged: (s) => setState(() {
+                    _unit = s.first;
+                    _chipServingG = null; // manual unit change clears chip lock
+                  }),
                   style: const ButtonStyle(
                     visualDensity: VisualDensity.compact,
                   ),

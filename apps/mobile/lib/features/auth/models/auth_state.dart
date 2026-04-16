@@ -1,4 +1,4 @@
-/// Mirrors the backend UserDto shape from @fitcore/shared.
+/// Mirrors the backend UserDto shape from @zenfit/shared.
 class UserDto {
   const UserDto({
     required this.id,

@@ -1,4 +1,4 @@
-package com.fitcore.fitcore
+package com.fitcore.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

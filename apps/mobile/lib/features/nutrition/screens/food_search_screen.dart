@@ -10,7 +10,10 @@ import '../widgets/food_result_card.dart';
 import '../widgets/log_food_sheet.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
-  const FoodSearchScreen({super.key});
+  const FoodSearchScreen({super.key, this.initialMealType});
+
+  /// When set, pre-selects this meal in the log sheet (e.g. 'breakfast').
+  final String? initialMealType;
 
   @override
   ConsumerState<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -110,7 +113,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
   }
 
   Future<void> _onFoodSelected(FoodItem item) async {
-    final logged = await showLogFoodSheet(context, item);
+    final logged = await showLogFoodSheet(
+      context,
+      item,
+      initialMealType: widget.initialMealType,
+    );
     if (logged && mounted) {
       Navigator.of(context).pop(); // return to NutritionScreen after logging
     }

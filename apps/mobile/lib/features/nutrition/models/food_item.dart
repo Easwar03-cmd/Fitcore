@@ -1,6 +1,26 @@
+class ServingOption {
+  const ServingOption({required this.label, required this.grams});
+
+  final String label;
+  final double grams;
+
+  factory ServingOption.fromJson(Map<String, dynamic> json) => ServingOption(
+        label: json['label'] as String,
+        grams: _toDouble(json['grams']),
+      );
+
+  static double _toDouble(dynamic val) {
+    if (val == null) return 0.0;
+    if (val is num) return val.toDouble();
+    if (val is String) return double.tryParse(val) ?? 0.0;
+    return 0.0;
+  }
+}
+
 class FoodItem {
   const FoodItem({
     required this.name,
+    this.nameHindi,
     this.brand,
     this.imageUrl,
     required this.caloriesPer100g,
@@ -8,9 +28,12 @@ class FoodItem {
     required this.carbsPer100g,
     required this.fatPer100g,
     this.fiberPer100g,
+    this.commonServings,
+    this.isIndian = false,
   });
 
   final String name;
+  final String? nameHindi;
   final String? brand;
   final String? imageUrl;
   final double caloriesPer100g;
@@ -18,6 +41,8 @@ class FoodItem {
   final double carbsPer100g;
   final double fatPer100g;
   final double? fiberPer100g;
+  final List<ServingOption>? commonServings;
+  final bool isIndian;
 
   factory FoodItem.fromOpenFoodFactsJson(Map<String, dynamic> json) {
     final n = json['nutriments'] as Map<String, dynamic>? ?? {};
@@ -48,12 +73,32 @@ class FoodItem {
     return FoodItem(
       name: (json['description'] as String? ?? '').trim(),
       brand: json['brandOwner'] as String?,
-      imageUrl: null, // USDA has no product images
+      imageUrl: null,
       caloriesPer100g: getNutrient(1008),
       proteinPer100g: getNutrient(1003),
       carbsPer100g: getNutrient(1005),
       fatPer100g: getNutrient(1004),
       fiberPer100g: getNutrient(1079) > 0 ? getNutrient(1079) : null,
+    );
+  }
+
+  factory FoodItem.fromIndianJson(Map<String, dynamic> json) {
+    final p = json['per100g'] as Map<String, dynamic>;
+    final servingsRaw = json['commonServings'] as List<dynamic>?;
+    return FoodItem(
+      name: json['name'] as String,
+      nameHindi: json['nameHindi'] as String?,
+      caloriesPer100g: _toDouble(p['calories']),
+      proteinPer100g: _toDouble(p['proteinG']),
+      carbsPer100g: _toDouble(p['carbsG']),
+      fatPer100g: _toDouble(p['fatG']),
+      fiberPer100g:
+          p.containsKey('fiberG') ? _toDouble(p['fiberG']) : null,
+      commonServings: servingsRaw
+          ?.whereType<Map<String, dynamic>>()
+          .map(ServingOption.fromJson)
+          .toList(),
+      isIndian: true,
     );
   }
 

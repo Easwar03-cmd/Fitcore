@@ -195,7 +195,7 @@ export function startWeeklySummaryWorker(): Worker | null {
             `${avgCalories > 0 ? `${avgCalories} kcal avg, ` : ''}` +
             `${streakDays} streak day${streakDays !== 1 ? 's' : ''} ${streakEmoji}`;
 
-          const ok = await sendPush(user.fcmToken, 'Your FitCore Week in Review 🏆', body, {
+          const ok = await sendPush(user.fcmToken, 'Your Zenfit Week in Review 🏆', body, {
             type: 'weekly_summary',
           });
 

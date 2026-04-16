@@ -1,4 +1,4 @@
-import 'package:fitcore/core/utils/streak_calculator.dart';
+import 'package:zenfit/core/utils/streak_calculator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

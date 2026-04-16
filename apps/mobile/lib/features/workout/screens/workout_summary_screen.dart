@@ -305,7 +305,7 @@ class _RouteMap extends StatelessWidget {
             // ── OpenStreetMap tile layer ────────────────────────────────
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.fitcore.app',
+              userAgentPackageName: 'com.zenfit.app',
             ),
 
             // ── Route polyline ──────────────────────────────────────────

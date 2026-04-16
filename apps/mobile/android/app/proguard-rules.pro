@@ -29,3 +29,44 @@
 -dontwarn com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
+
+# ── Dio (HTTP client) ─────────────────────────────────────────────────────────
+# Dio uses Dart mirrors / reflection for request/response model serialisation.
+# Keep all classes referenced via generics at runtime.
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# ── Riverpod ──────────────────────────────────────────────────────────────────
+# Riverpod generates code at compile time so there are no runtime reflective
+# lookups; the rules below guard against R8 stripping generated provider
+# registrations referenced only from generated code.
+-keep class dev.rrousselgit.riverpod.** { *; }
+-dontwarn dev.rrousselgit.riverpod.**
+
+# ── Drift (SQLite ORM) ────────────────────────────────────────────────────────
+# Drift's generated DAOs and table classes must survive shrinking.
+-keep class com.simolus.** { *; }
+-dontwarn com.simolus.**
+# SQLite JDBC driver (used by drift_flutter under the hood on Android)
+-keep class org.sqlite.** { *; }
+-dontwarn org.sqlite.**
+
+# ── Sentry Flutter ────────────────────────────────────────────────────────────
+-keep class io.sentry.** { *; }
+-dontwarn io.sentry.**
+-keep class io.sentry.android.** { *; }
+-dontwarn io.sentry.android.**
+
+# ── Firebase / FCM ────────────────────────────────────────────────────────────
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# ── Kotlin coroutines ─────────────────────────────────────────────────────────
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-dontwarn kotlinx.coroutines.**
+
+# ── Preserve Dart entrypoint ──────────────────────────────────────────────────
+-keep class **.GeneratedPluginRegistrant { *; }

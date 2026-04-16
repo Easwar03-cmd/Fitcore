@@ -32,7 +32,7 @@
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
 
     <application
-        android:label="FitCore"
+        android:label="Zenfit"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -61,7 +61,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Required on Android 14+ for FitCore to appear in Health Connect's
+        <!-- Required on Android 14+ for Zenfit to appear in Health Connect's
              "App permissions" list and for the system to route permission
              management back into the app. -->
         <activity-alias
@@ -94,7 +94,7 @@
         <!-- ── FCM default notification channel (Android 8+) ──────────────── -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="fitcore_default"/>
+            android:value="zenfit_default"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
