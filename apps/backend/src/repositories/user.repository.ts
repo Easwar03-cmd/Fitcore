@@ -26,7 +26,10 @@ const withProfile = { profile: true } satisfies Prisma.UserInclude;
 
 export const userRepository = {
   findByEmail: (email: string) =>
-    prisma.user.findUnique({ where: { email }, include: withProfile }),
+    prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      include: withProfile,
+    }),
 
   findById: (id: string) =>
     prisma.user.findUnique({ where: { id }, include: withProfile }),
