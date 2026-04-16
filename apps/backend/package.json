@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
-    "@sentry/node": "^8.0.0",
     "@fastify/cors": "^10.1.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.0.0",

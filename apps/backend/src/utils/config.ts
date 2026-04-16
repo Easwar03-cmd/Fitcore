@@ -13,7 +13,6 @@ const envSchema = z.object({
   CLOUDINARY_URL: z.string().url(),
   OPEN_FOOD_FACTS_BASE_URL: z.string().url().default('https://world.openfoodfacts.org'),
   USDA_API_KEY: z.string(),
-  SENTRY_DSN: z.string().url().optional(),
   AMPLITUDE_API_KEY: z.string().optional(),
   // Firebase Admin SDK — required for server-sent push notifications.
   // Set to the full service account JSON as a single-line string.

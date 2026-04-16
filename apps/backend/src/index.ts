@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/node';
 import Fastify, { type FastifyError } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import { config } from './utils/config';
@@ -15,19 +14,6 @@ import {
   startWeeklySummaryWorker,
 } from './jobs/weekly_summary.job';
 
-// ── Sentry (initialise before anything else so it can catch startup errors) ──
-if (config.SENTRY_DSN) {
-  try {
-    Sentry.init({
-      dsn: config.SENTRY_DSN,
-      environment: config.NODE_ENV,
-      tracesSampleRate: config.NODE_ENV === 'production' ? 0.1 : 1.0,
-    });
-  } catch {
-    // Invalid DSN — continue without Sentry rather than crashing.
-  }
-}
-
 const server = Fastify({
   // Reject JSON bodies larger than 10 kb to prevent memory-exhaustion attacks.
   bodyLimit: 10 * 1024,
@@ -40,15 +26,9 @@ async function bootstrap() {
   // ── Security plugins ────────────────────────────────────────────────────────
   await server.register(import('@fastify/cors'), { origin: true });
 
-  // HTTP security headers (X-Frame-Options, CSP, HSTS, etc.)
-  await server.register(import('@fastify/helmet'), {
-    // contentSecurityPolicy: false is the default; enable once you know your
-    // CDN / asset URLs so you can whitelist them properly.
-    global: true,
-  });
+  await server.register(import('@fastify/helmet'), { global: true });
 
   // Global rate-limit: 100 req/min per IP.
-  // Auth routes override this with a stricter 10 req/min limit (see auth.routes.ts).
   await server.register(import('@fastify/rate-limit'), {
     global: true,
     max: 100,
@@ -84,18 +64,12 @@ async function bootstrap() {
   });
 
   // ── Global error handler ────────────────────────────────────────────────────
-  // Never leak stack traces or internal error details to clients in production.
   server.setErrorHandler((error: FastifyError, request, reply) => {
     request.log.error({ err: error }, 'Unhandled error');
-
-    if (config.SENTRY_DSN) {
-      Sentry.captureException(error);
-    }
 
     const statusCode = error.statusCode ?? 500;
     const isProd = config.NODE_ENV === 'production';
 
-    // Validation errors (400) are safe to relay; server errors are not.
     if (statusCode < 500) {
       return reply.status(statusCode).send({
         success: false,
@@ -111,8 +85,6 @@ async function bootstrap() {
       error: {
         code: 'INTERNAL_ERROR',
         message: isProd ? 'An unexpected error occurred' : error.message,
-        // Stack traces only in non-production environments.
-        ...(isProd ? {} : { stack: error.stack }),
       },
     });
   });
@@ -127,7 +99,6 @@ async function bootstrap() {
   await server.register(socialRoutes, { prefix: '/api/v1/social' });
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
 
-  // Health check (excluded from rate-limiting by the high global limit)
   server.get('/health', async () => ({ status: 'ok', timestamp: Date.now() }));
 
   await server.listen({ port: config.PORT, host: '0.0.0.0' });
@@ -140,6 +111,5 @@ async function bootstrap() {
 
 bootstrap().catch((err) => {
   server.log.error(err);
-  if (config.SENTRY_DSN) Sentry.captureException(err);
   process.exit(1);
 });
