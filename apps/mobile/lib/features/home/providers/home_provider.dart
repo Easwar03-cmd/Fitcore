@@ -77,6 +77,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     return HomeDashboardState(
       tdee: profile.tdee,
       fitnessGoal: profile.fitnessGoal,
+      activityLevel: profile.activityLevel,
       steps: steps,
       waterMl: waterMl,
       streak: streak,

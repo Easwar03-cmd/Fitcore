@@ -488,6 +488,7 @@ class _Dashboard extends StatelessWidget {
             AppCard(
               child: WaterTrackerCard(
                 waterMl: home.waterMl,
+                waterTargetMl: home.waterTargetMl,
                 onAdd: onAddWater,
               ),
             )

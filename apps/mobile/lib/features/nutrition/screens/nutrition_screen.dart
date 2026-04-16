@@ -17,8 +17,8 @@ class NutritionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final logsState = ref.watch(foodLogsProvider);
-    // Watch TDEE from the home dashboard — null while profile is still loading.
-    final tdee = ref.watch(homeProvider).valueOrNull?.tdee;
+    // Goal-adjusted + workout-adaptive calorie target — null while profile loads.
+    final tdee = ref.watch(homeProvider).valueOrNull?.adaptiveTarget;
 
     return Scaffold(
       appBar: AppBar(
