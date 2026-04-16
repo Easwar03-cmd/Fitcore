@@ -82,7 +82,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const { email, name, password } = parsed.data;
+    const { email: rawEmail, name, password } = parsed.data;
+    const email = rawEmail.toLowerCase().trim();
 
     try {
       const existing = await userRepository.findByEmail(email);
@@ -130,7 +131,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const { email, password } = parsed.data;
+    const { email: rawEmail, password } = parsed.data;
+    const email = rawEmail.toLowerCase().trim();
 
     try {
       const user = await userRepository.findByEmail(email);
@@ -261,7 +263,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const { email } = parsed.data;
+    const email = parsed.data.email.toLowerCase().trim();
     const user = await userRepository.findByEmail(email);
     if (!user) {
       // Don't reveal whether the email exists

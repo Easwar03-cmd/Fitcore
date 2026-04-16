@@ -148,7 +148,7 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     final token = state.valueOrNull?.accessToken;
     if (token != null) {
       final apiBaseUrl =
-          dotenv.env['FLUTTER_API_URL'] ?? 'http://localhost:3000';
+          dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl;
       NotificationService.instance.clearFcmToken(token, apiBaseUrl).ignore();
     }
     await _storage.delete(key: _kRefreshTokenKey);
