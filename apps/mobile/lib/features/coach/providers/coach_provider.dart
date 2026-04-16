@@ -34,6 +34,14 @@ class RateLimitException implements Exception {
       'Daily message limit reached: $used / $limit messages used today.';
 }
 
+class CoachUnavailableException implements Exception {
+  const CoachUnavailableException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
 @riverpod
@@ -105,6 +113,14 @@ class CoachNotifier extends _$CoachNotifier {
         final used = errData?['messagesUsedToday'] as int? ?? current.used;
         final limit = errData?['limit'] as int? ?? current.limit;
         throw RateLimitException(used, limit);
+      }
+
+      if (e.response?.statusCode == 503) {
+        final body = e.response?.data as Map<String, dynamic>?;
+        final msg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
+        throw CoachUnavailableException(
+          msg ?? 'AI service is temporarily unavailable. Please try again later.',
+        );
       }
 
       _log.e('CoachNotifier.sendMessage DioException', error: e);

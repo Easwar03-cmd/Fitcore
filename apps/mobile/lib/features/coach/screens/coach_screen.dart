@@ -44,6 +44,12 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
           ),
         );
       }
+    } on CoachUnavailableException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

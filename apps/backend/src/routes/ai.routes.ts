@@ -107,6 +107,12 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
           error: { code: 'AI_UNAVAILABLE', message: 'AI service temporarily unavailable. Try again shortly.' },
         });
       }
+      if (err instanceof Anthropic.BadRequestError && err.message.includes('credit balance')) {
+        return reply.status(503).send({
+          success: false,
+          error: { code: 'AI_BILLING', message: 'AI service is temporarily unavailable. Please try again later.' },
+        });
+      }
       return reply.status(500).send({
         success: false,
         error: { code: 'INTERNAL_ERROR', message: 'Failed to get coach response' },
@@ -215,6 +221,12 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.status(503).send({
           success: false,
           error: { code: 'AI_UNAVAILABLE', message: 'AI service temporarily unavailable. Try again shortly.' },
+        });
+      }
+      if (err instanceof Anthropic.BadRequestError && err.message.includes('credit balance')) {
+        return reply.status(503).send({
+          success: false,
+          error: { code: 'AI_BILLING', message: 'AI service is temporarily unavailable. Please try again later.' },
         });
       }
       return reply.status(500).send({
