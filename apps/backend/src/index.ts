@@ -17,12 +17,15 @@ import {
 
 // ── Sentry (initialise before anything else so it can catch startup errors) ──
 if (config.SENTRY_DSN) {
-  Sentry.init({
-    dsn: config.SENTRY_DSN,
-    environment: config.NODE_ENV,
-    // Capture 10 % of transactions in production; full sampling elsewhere.
-    tracesSampleRate: config.NODE_ENV === 'production' ? 0.1 : 1.0,
-  });
+  try {
+    Sentry.init({
+      dsn: config.SENTRY_DSN,
+      environment: config.NODE_ENV,
+      tracesSampleRate: config.NODE_ENV === 'production' ? 0.1 : 1.0,
+    });
+  } catch {
+    // Invalid DSN — continue without Sentry rather than crashing.
+  }
 }
 
 const server = Fastify({
