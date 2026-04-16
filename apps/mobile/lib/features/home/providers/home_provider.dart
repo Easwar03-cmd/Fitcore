@@ -14,12 +14,24 @@ const _kStreakCount = 'streak_count';
 const _kStreakLastDate = 'streak_last_date'; // YYYY-MM-DD
 const _kStreakGraceAvail = 'streak_grace_avail'; // bool: true = grace not yet used
 const _kWaterBase = 'water_ml_'; // + YYYY-MM-DD suffix
+const _kBurnedBase = 'calories_burned_'; // + YYYY-MM-DD suffix
 
 class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
   @override
   Future<HomeDashboardState> build() => _loadState();
 
   // ── Public actions ─────────────────────────────────────────────────────────
+
+  /// Adds [kcal] to today's burned-calorie total and persists it.
+  /// Called by [WorkoutSessionNotifier] after a workout is successfully saved.
+  Future<void> addBurnedCalories(int kcal) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final newTotal = current.caloriesBurnedToday + kcal;
+    state = AsyncData(current.copyWith(caloriesBurnedToday: newTotal));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_burnedKey(), newTotal);
+  }
 
   Future<void> addWater(int ml) async {
     final current = state.valueOrNull;
@@ -56,6 +68,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
 
     final prefs = await SharedPreferences.getInstance();
     final waterMl = prefs.getInt(_waterKey()) ?? 0;
+    final caloriesBurnedToday = prefs.getInt(_burnedKey()) ?? 0;
     // On initial load show the persisted streak; updateStreakForToday()
     // is called by HomeScreen once it sees whether there are food logs today.
     final streak = prefs.getInt(_kStreakCount) ?? 0;
@@ -68,6 +81,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
       waterMl: waterMl,
       streak: streak,
       graceUsed: !graceAvail,
+      caloriesBurnedToday: caloriesBurnedToday,
     );
   }
 
@@ -87,7 +101,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     SharedPreferences prefs, {
     required bool hasLogs,
   }) {
-    final today = _dateStr(DateTime.now());
+    final today = _todayStr();
     final lastDate = prefs.getString(_kStreakLastDate) ?? '';
     var streak = prefs.getInt(_kStreakCount) ?? 0;
     var graceAvail = prefs.getBool(_kStreakGraceAvail) ?? true;
@@ -121,10 +135,12 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     return (streak, !graceAvail);
   }
 
-  static String _waterKey() {
+  static String _waterKey() => '$_kWaterBase${_todayStr()}';
+  static String _burnedKey() => '$_kBurnedBase${_todayStr()}';
+
+  static String _todayStr() {
     final now = DateTime.now();
-    return '$_kWaterBase'
-        '${now.year}-'
+    return '${now.year}-'
         '${now.month.toString().padLeft(2, '0')}-'
         '${now.day.toString().padLeft(2, '0')}';
   }

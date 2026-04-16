@@ -70,6 +70,38 @@ export async function checkCoachRateLimit(
   }
 }
 
+/**
+ * Read the current free-tier message count without incrementing.
+ * Returns null when Redis is unavailable (caller should fail open).
+ */
+export async function getFreeTierMessageCount(userId: string): Promise<number | null> {
+  try {
+    const redis = getRedis();
+    const val = await redis.get(`coach:limit:${userId}`);
+    return val === null ? 0 : parseInt(val, 10);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Increment the free-tier counter after a successful Claude call.
+ * Sets a 24 h TTL only when the key is brand new (count goes 0 → 1).
+ */
+export async function incrementFreeTierCount(userId: string): Promise<number> {
+  try {
+    const redis = getRedis();
+    const key = `coach:limit:${userId}`;
+    const count = await redis.incr(key);
+    if (count === 1) {
+      await redis.expire(key, 24 * 60 * 60);
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
 // ─── Context builder ──────────────────────────────────────────────────────────
 
 async function buildContext(userId: string): Promise<string> {

@@ -148,11 +148,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.chat_bubble_outline_rounded),
+            tooltip: 'AI Coach',
+            onPressed: () => context.push(AppRoutes.coach),
+          ),
+          IconButton(
             icon: const Icon(Icons.people_outline),
             tooltip: 'Social',
             onPressed: () => context.push(AppRoutes.social),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push(AppRoutes.coach),
+        icon: const Icon(Icons.chat_bubble_outline_rounded),
+        label: const Text('AI Coach'),
+        tooltip: 'Open AI Coach',
       ),
       body: Stack(
         children: [
@@ -398,15 +409,33 @@ class _Dashboard extends StatelessWidget {
                 children: [
                   CalorieRing(
                     consumed: totals.calories,
-                    target: home.tdee,
+                    target: home.adaptiveTarget,
                     size: 200,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Daily target · ${home.tdee} kcal',
+                    'Daily target · ${home.adaptiveTarget} kcal',
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.onSurfaceVariant),
                   ),
+                  if (home.caloriesBurnedToday > 0) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(20),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '+${home.caloriesBurnedToday} kcal from workout',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             )
@@ -420,7 +449,7 @@ class _Dashboard extends StatelessWidget {
             AppCard(
               child: MacroBars(
                 totals: totals,
-                tdee: home.tdee,
+                tdee: home.adaptiveTarget,
                 goal: home.goal,
               ),
             )

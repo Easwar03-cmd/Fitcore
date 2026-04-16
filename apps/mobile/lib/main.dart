@@ -32,16 +32,23 @@ Future<void> main() async {
   await NotificationService.instance.requestPermissions();
 
   final sentryDsn = dotenv.env['FLUTTER_SENTRY_DSN'] ?? '';
+  // A valid Sentry DSN starts with "https://". Stub/placeholder values would
+  // cause SentryFlutter.init() to throw an ArgumentError, which prevents
+  // appRunner from being called and silently kills the app. Skip Sentry
+  // entirely when the DSN is missing or not a real URL.
+  final sentryEnabled = sentryDsn.startsWith('https://');
 
-  await SentryFlutter.init(
-    (options) {
-      options.dsn = sentryDsn;
-      // Only trace in production; zero overhead during development.
-      options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
-      options.environment = kReleaseMode ? 'production' : 'debug';
-      // Never send PII to Sentry.
-      options.sendDefaultPii = false;
-    },
-    appRunner: () => runApp(const ProviderScope(child: ZenfitApp())),
-  );
+  if (sentryEnabled) {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = sentryDsn;
+        options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
+        options.environment = kReleaseMode ? 'production' : 'debug';
+        options.sendDefaultPii = false;
+      },
+      appRunner: () => runApp(const ProviderScope(child: ZenfitApp())),
+    );
+  } else {
+    runApp(const ProviderScope(child: ZenfitApp()));
+  }
 }

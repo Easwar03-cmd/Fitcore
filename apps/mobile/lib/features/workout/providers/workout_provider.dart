@@ -11,6 +11,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/services/gps_service.dart';
 import '../../../core/services/health_service.dart';
 import '../../../core/services/sync_queue_service.dart' show syncServiceProvider;
+import '../../home/providers/home_provider.dart';
 import '../../progress/providers/body_log_provider.dart';
 import '../models/exercise.dart';
 import '../models/workout_session_state.dart';
@@ -214,11 +215,14 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
           .read(apiClientProvider)
           .dio
           .post('/workout/logs', data: workoutPayload);
+      ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
     } on DioException catch (e) {
       if (e.response == null) {
         await ref
             .read(syncServiceProvider)
             .enqueue('/workout/logs', workoutPayload);
+        // Still credit the calories locally — the log will sync when online.
+        ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
         _log.w('Workout log queued for sync (offline)');
       } else {
         _log.e('Failed to POST workout log (server error)', error: e);

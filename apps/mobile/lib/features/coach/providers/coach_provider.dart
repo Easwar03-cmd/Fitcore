@@ -1,134 +1,118 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/api/api_client.dart';
 import '../models/chat_message.dart';
 
+part 'coach_provider.g.dart';
+
+const _uuid = Uuid();
 final _log = Logger();
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// ─── Rate-limit state ─────────────────────────────────────────────────────────
 
-class CoachState {
-  const CoachState({
-    this.messages = const [],
-    this.isLoading = false,
-    this.error,
-    this.remainingMessages,
-    this.isRateLimited = false,
-  });
+/// Tracks how many coach messages the user has sent today and the daily cap.
+/// Updated after every successful [CoachNotifier.sendMessage] call from the
+/// payload returned by the server.
+final coachRateLimitProvider = StateProvider<({int used, int limit})>(
+  (ref) => (used: 0, limit: 5),
+);
 
-  final List<ChatMessage> messages;
-  final bool isLoading;
-  final String? error;
+// ─── Exception ────────────────────────────────────────────────────────────────
 
-  /// null = unlimited (pro/coach tier). int = messages left today (free tier).
-  final int? remainingMessages;
-  final bool isRateLimited;
+class RateLimitException implements Exception {
+  const RateLimitException(this.used, this.limit);
 
-  CoachState copyWith({
-    List<ChatMessage>? messages,
-    bool? isLoading,
-    String? error,
-    Object? remainingMessages = _sentinel,
-    bool? isRateLimited,
-  }) =>
-      CoachState(
-        messages: messages ?? this.messages,
-        isLoading: isLoading ?? this.isLoading,
-        error: error,
-        remainingMessages: remainingMessages == _sentinel
-            ? this.remainingMessages
-            : remainingMessages as int?,
-        isRateLimited: isRateLimited ?? this.isRateLimited,
-      );
+  final int used;
+  final int limit;
+
+  @override
+  String toString() =>
+      'Daily message limit reached: $used / $limit messages used today.';
 }
-
-// Sentinel lets copyWith distinguish "pass null intentionally" from "omit field".
-const _sentinel = Object();
 
 // ─── Notifier ─────────────────────────────────────────────────────────────────
 
-class CoachNotifier extends Notifier<CoachState> {
+@riverpod
+class CoachNotifier extends _$CoachNotifier {
   @override
-  CoachState build() => const CoachState();
+  List<ChatMessage> build() => const [];
 
+  /// Sends [text] to the AI coach.
+  ///
+  /// 1. Appends the user message optimistically.
+  /// 2. POSTs to `/ai/chat` via [apiClientProvider].
+  /// 3. On success: appends the coach reply and updates [coachRateLimitProvider].
+  /// 4. On HTTP 429: rolls back the optimistic message and throws [RateLimitException].
+  /// 5. On any other error: rolls back the optimistic message and rethrows.
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || state.isLoading) return;
+    if (trimmed.isEmpty) return;
 
     final userMsg = ChatMessage(
+      id: _uuid.v4(),
       role: MessageRole.user,
-      content: trimmed,
-      createdAt: DateTime.now(),
+      text: trimmed,
+      timestamp: DateTime.now(),
     );
 
-    state = state.copyWith(
-      messages: [...state.messages, userMsg],
-      isLoading: true,
-      error: null,
-      isRateLimited: false,
-    );
+    // Optimistic insert.
+    state = [...state, userMsg];
 
     try {
-      final client = ref.read(apiClientProvider);
+      final res = await ref
+          .read(apiClientProvider)
+          .dio
+          .post<Map<String, dynamic>>(
+            '/ai/chat',
+            data: {'message': trimmed},
+          );
 
-      // Send full conversation history so the backend can pass it to Claude.
-      final history = state.messages.map((m) => m.toJson()).toList();
-      final res = await client.dio.post<Map<String, dynamic>>(
-        '/ai/coach',
-        data: {'messages': history},
+      final body = res.data!;
+      final data = body['data'] as Map<String, dynamic>;
+
+      final coachMsg = ChatMessage(
+        id: _uuid.v4(),
+        role: MessageRole.coach,
+        text: data['reply'] as String,
+        timestamp: DateTime.now(),
       );
 
-      final body = res.data;
-      if (body != null && body['success'] == true) {
-        final data = body['data'] as Map<String, dynamic>;
-        final assistantMsg = ChatMessage(
-          role: MessageRole.assistant,
-          content: data['message'] as String,
-          createdAt: DateTime.now(),
+      state = [...state, coachMsg];
+
+      // Sync rate-limit counters from the server payload.
+      final usedToday = data['messagesUsedToday'] as int?;
+      final dailyLimit = data['dailyLimit'] as int?;
+      if (usedToday != null) {
+        final current = ref.read(coachRateLimitProvider);
+        ref.read(coachRateLimitProvider.notifier).state = (
+          used: usedToday,
+          limit: dailyLimit ?? current.limit,
         );
-        final remaining = data['remainingMessages'] as int?;
-        state = state.copyWith(
-          messages: [...state.messages, assistantMsg],
-          isLoading: false,
-          remainingMessages: remaining,
-        );
-      } else {
-        final errorMsg =
-            (body?['error'] as Map<String, dynamic>?)?['message'] as String? ??
-                'Something went wrong';
-        state = state.copyWith(isLoading: false, error: errorMsg);
       }
     } on DioException catch (e) {
-      final code =
-          (e.response?.data as Map<String, dynamic>?)?['error']
-              ?['code'] as String?;
-      if (code == 'RATE_LIMITED_COACH') {
-        state = state.copyWith(
-          isLoading: false,
-          isRateLimited: true,
-          error:
-              'Daily message limit reached. Upgrade to Pro for unlimited coaching.',
-        );
-      } else {
-        _log.e('Coach send failed', error: e);
-        state = state.copyWith(
-          isLoading: false,
-          error: 'Failed to get response. Please try again.',
-        );
+      // Roll back optimistic message in all error paths.
+      state = state.where((m) => m.id != userMsg.id).toList();
+
+      if (e.response?.statusCode == 429) {
+        final body = e.response?.data as Map<String, dynamic>?;
+        // Backend puts rate-limit counters inside the `error` envelope, not `data`
+        final errData = body?['error'] as Map<String, dynamic>?;
+        final current = ref.read(coachRateLimitProvider);
+        final used = errData?['messagesUsedToday'] as int? ?? current.used;
+        final limit = errData?['limit'] as int? ?? current.limit;
+        throw RateLimitException(used, limit);
       }
+
+      _log.e('CoachNotifier.sendMessage DioException', error: e);
+      rethrow;
     } catch (e, st) {
-      _log.e('Coach send failed', error: e, stackTrace: st);
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to get response. Please try again.',
-      );
+      state = state.where((m) => m.id != userMsg.id).toList();
+      _log.e('CoachNotifier.sendMessage failed', error: e, stackTrace: st);
+      rethrow;
     }
   }
-
-  void clearError() => state = state.copyWith(error: null);
 }
-
-final coachProvider =
-    NotifierProvider<CoachNotifier, CoachState>(CoachNotifier.new);

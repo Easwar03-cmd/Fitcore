@@ -37,6 +37,7 @@ class HomeDashboardState {
     required this.waterMl,
     required this.streak,
     required this.graceUsed,
+    this.caloriesBurnedToday = 0,
   });
 
   final int tdee;
@@ -50,6 +51,12 @@ class HomeDashboardState {
   /// True when the user has consumed their one-per-7-day streak shield.
   final bool graceUsed;
 
+  /// Kcal burned in workouts logged today. Added to the calorie target.
+  final int caloriesBurnedToday;
+
+  /// Calorie target for today: base TDEE + calories burned in workouts.
+  int get adaptiveTarget => tdee + caloriesBurnedToday;
+
   HomeDashboardState copyWith({
     int? tdee,
     String? fitnessGoal,
@@ -57,6 +64,7 @@ class HomeDashboardState {
     int? waterMl,
     int? streak,
     bool? graceUsed,
+    int? caloriesBurnedToday,
   }) =>
       HomeDashboardState(
         tdee: tdee ?? this.tdee,
@@ -65,6 +73,7 @@ class HomeDashboardState {
         waterMl: waterMl ?? this.waterMl,
         streak: streak ?? this.streak,
         graceUsed: graceUsed ?? this.graceUsed,
+        caloriesBurnedToday: caloriesBurnedToday ?? this.caloriesBurnedToday,
       );
 
   /// Converts the raw fitnessGoal string to the typed enum used by MacroCalculator.

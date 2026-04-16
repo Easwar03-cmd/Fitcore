@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -43,7 +44,9 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     } on DioException catch (e, st) {
       state = AsyncError(_extractError(e), st);
     } catch (e, st) {
-      state = AsyncError(Exception('Login failed. Please try again.'), st);
+      // Surface the real error in debug mode so we can diagnose it.
+      final msg = kDebugMode ? 'Login error: $e' : 'Login failed. Please try again.';
+      state = AsyncError(Exception(msg), st);
     }
   }
 
@@ -156,6 +159,7 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
   }
 
   static Exception _extractError(DioException e) {
+    // Server responded with an error body — use its message.
     final data = e.response?.data;
     if (data is Map) {
       final error = data['error'];
@@ -164,7 +168,17 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
         if (msg != null) return Exception(msg);
       }
     }
-    return Exception('Request failed. Please try again.');
+    // No response body — classify by Dio exception type.
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return Exception('Connection timed out. Check your network and try again.');
+      case DioExceptionType.connectionError:
+        return Exception('Cannot reach server. Check your network connection.');
+      default:
+        return Exception('Request failed (${e.type.name}). Please try again.');
+    }
   }
 }
 

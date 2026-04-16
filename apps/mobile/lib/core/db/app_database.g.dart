@@ -37,7 +37,7 @@ class $PendingSyncItemsTable extends PendingSyncItems
       'http_method', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultValue: const Constant<String>('POST'));
+      defaultValue: const Constant('POST'));
   static const VerificationMeta _retryCountMeta =
       const VerificationMeta('retryCount');
   @override
@@ -45,7 +45,7 @@ class $PendingSyncItemsTable extends PendingSyncItems
       'retry_count', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: false,
-      defaultValue: const Constant<int>(0));
+      defaultValue: const Constant(0));
   static const VerificationMeta _retryAfterMeta =
       const VerificationMeta('retryAfter');
   @override
@@ -61,8 +61,15 @@ class $PendingSyncItemsTable extends PendingSyncItems
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, endpoint, payloadJson, httpMethod, retryCount, retryAfter, createdAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        endpoint,
+        payloadJson,
+        httpMethod,
+        retryCount,
+        retryAfter,
+        createdAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -158,11 +165,12 @@ class PendingSyncItem extends DataClass implements Insertable<PendingSyncItem> {
   final String httpMethod;
 
   /// Number of times this item has been attempted and failed.
+  /// 0 = not yet attempted, 1–4 = awaiting retry, >4 = permanently failed.
   final int retryCount;
 
-  /// Earliest DateTime at which this item may next be retried. NULL = immediately due.
+  /// Earliest DateTime at which this item may next be retried.
+  /// NULL means the item is immediately due (just enqueued or never tried).
   final DateTime? retryAfter;
-
   final DateTime createdAt;
   const PendingSyncItem(
       {required this.id,

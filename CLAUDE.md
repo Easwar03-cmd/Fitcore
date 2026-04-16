@@ -379,8 +379,8 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Push notifications (reminders, streaks) — FCM token registration, local scheduled notifications (workout/food/streak), weekly summary BullMQ job
 
 ### Phase 3 — AI Features
-- [x] AI coach chat (Claude API integration) — `claude-sonnet-4-6`; Redis rate limit (5/day free, unlimited pro/coach); live user context injected; full chat UI with suggestion chips, typing indicator, rate-limit banner
-- [ ] Adaptive daily calorie target (post-workout adjustment)
+- [x] AI coach chat (Claude API integration) — `claude-sonnet-4-6`; Redis rate limit (5/day free, unlimited pro/coach); live user context injected; full chat UI with suggestion chips, typing indicator, rate-limit banner; coach screen rebuilt: `reverse:true` list, amber rate-limit banner, bot avatar bubbles, `CoachInputBar` extracted to own file; 429 envelope bug fixed (`error` field, not `data`)
+- [x] Adaptive daily calorie target (post-workout adjustment) — `caloriesBurnedToday` persisted in SharedPreferences (daily key); `adaptiveTarget = tdee + caloriesBurnedToday` on `HomeDashboardState`; `WorkoutSessionNotifier.finishWorkout` calls `homeProvider.addBurnedCalories` on both online save and offline enqueue; calorie ring, macro bars, and target label all use `adaptiveTarget`; "+X kcal from workout" chip shown when burned > 0
 - [ ] AI meal plan generator (weekly)
 - [ ] Grocery list from meal plan
 - [ ] Food photo logging (ML Kit Vision)

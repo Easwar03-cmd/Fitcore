@@ -1,7 +1,68 @@
 # Zenfit — Build Progress
 
 ## Last session
-**Date:** 2026-04-16 (session 20)
+**Date:** 2026-04-16 (session 21)
+**What was built:**
+
+### Coach screen rebuild + bug fix
+
+**Flutter — `features/coach/screens/coach_screen.dart`** (rebuilt):
+- `reverse: true` on the message `ListView` — newest messages anchor to bottom without manual scroll logic
+- Replaced inline error banner with `ScaffoldMessenger` SnackBar for rate-limit and generic errors
+- Amber `_RateLimitBanner` stripe at top of body (free tier only, shown when `used > 0`)
+- Removed `_scrollController` and all `_scrollToBottom()` plumbing (no longer needed with `reverse: true`)
+- File trimmed to ~200 lines
+
+**Flutter — `features/coach/widgets/coach_input_bar.dart`** (new):
+- `CoachInputBar` extracted from coach screen; pure `StatelessWidget`
+- Handles enabled/disabled state, loading spinner in send button, rate-limited hint text
+
+**Flutter — `features/coach/widgets/chat_bubble.dart`** (updated):
+- Coach bubbles now render in a `Row` with a 28×28 `psychology_outlined` avatar circle on the left
+- `TypingIndicator` also gained the matching avatar so it looks consistent
+
+**Flutter — `features/coach/providers/coach_provider.dart`** (bug fix):
+- 429 response: rate-limit counters (`messagesUsedToday`, `limit`) were being read from `body['data']` — the backend actually puts them inside `body['error']`; corrected to `body?['error']`
+
+### Adaptive daily calorie target (Phase 3 — ✓ complete)
+
+**Flutter — `features/home/models/home_state.dart`**:
+- Added `caloriesBurnedToday` field (default 0)
+- Added `adaptiveTarget` computed getter: `tdee + caloriesBurnedToday`
+- `copyWith` updated
+
+**Flutter — `features/home/providers/home_provider.dart`**:
+- `_loadState` reads `calories_burned_YYYY-MM-DD` from SharedPreferences on startup
+- New `addBurnedCalories(int kcal)` method: accumulates into `caloriesBurnedToday`, persists to prefs
+- `_dateStr` replaced with `_todayStr()` + `_dateStr(DateTime)` separation; `_burnedKey()` helper added
+
+**Flutter — `features/workout/providers/workout_provider.dart`**:
+- `finishWorkout` calls `homeProvider.notifier.addBurnedCalories(caloriesBurned)` after both: successful API POST and offline sync-queue enqueue (so calories are credited even when offline)
+
+**Flutter — `features/home/screens/home_screen.dart`**:
+- `CalorieRing` target: `home.adaptiveTarget` (was `home.tdee`)
+- `MacroBars` tdee param: `home.adaptiveTarget` — macro gram targets scale up with workout
+- "Daily target · X kcal" label uses `adaptiveTarget`
+- "+X kcal from workout" amber pill chip shown under the ring when `caloriesBurnedToday > 0`
+
+**Decisions made:**
+- Adaptive target is purely client-side (SharedPreferences) — no backend round-trip needed; daily key resets naturally at midnight
+- Burned calories credited on offline enqueue, not just successful POST — better UX when the user has no signal
+- `MacroBars` receives `adaptiveTarget` (not raw TDEE) so protein/carb gram targets also reflect the extra budget from exercise
+
+**What's broken / known issues:**
+- None — `flutter analyze` 0 issues, `flutter test` 14/14 passed, release APK installed on CPH2401
+
+## Next session
+**Priority task:** AI meal plan generator (Phase 3) — `POST /api/v1/ai/meal-plan` backend (stub already exists), weekly meal plan model, and a basic meal plan screen
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts` (meal-plan stub at bottom)
+- `apps/mobile/lib/features/nutrition/` (meal plan screen lives here)
+- `apps/mobile/lib/features/coach/providers/coach_provider.dart` (pattern to follow for AI calls)
+
+---
+
+### Previous session (2026-04-16, session 20)
 **What was built:**
 
 ### AI Coach Chat (Phase 3 — first feature)
