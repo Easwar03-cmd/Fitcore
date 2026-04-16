@@ -50,6 +50,9 @@ export const userRepository = {
   saveFcmToken: (id: string, fcmToken: string | null) =>
     prisma.user.update({ where: { id }, data: { fcmToken } }),
 
+  updatePassword: (id: string, passwordHash: string) =>
+    prisma.user.update({ where: { id }, data: { passwordHash } }),
+
   /** Returns all users that have a non-null FCM token. Used for push broadcasts. */
   findAllWithFcmToken: () =>
     prisma.user.findMany({

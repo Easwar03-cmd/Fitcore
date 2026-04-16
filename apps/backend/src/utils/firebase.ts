@@ -46,7 +46,7 @@ export async function sendPush(
       data,
       android: {
         priority: 'normal',
-        notification: { channelId: 'fitcore_default' },
+        notification: { channelId: 'zenfit_default' },
       },
       apns: {
         payload: { aps: { sound: 'default' } },

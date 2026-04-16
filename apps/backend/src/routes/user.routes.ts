@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { userRepository } from '../repositories/user.repository';
 import { toUserDto } from '../services/auth.service';
 import { prisma } from '../utils/db';
-import type { UserProfileDto } from '@fitcore/shared';
+import type { UserProfileDto } from '@zenfit/shared';
 
 // ─── TDEE calculation (Mifflin-St Jeor, matches CLAUDE.md spec) ──────────────
 

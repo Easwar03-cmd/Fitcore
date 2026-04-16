@@ -1,5 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import IORedis from 'ioredis';
+import { randomBytes } from 'crypto';
 import { userRepository } from '../repositories/user.repository';
 import {
   hashPassword,
@@ -9,7 +11,22 @@ import {
   hashRefreshToken,
   toUserDto,
 } from '../services/auth.service';
-import type { AuthResponse } from '@fitcore/shared';
+import { config } from '../utils/config';
+import type { AuthResponse } from '@zenfit/shared';
+
+// ─── Redis for password-reset codes (lazy, fail-open) ────────────────────────
+let _redis: IORedis | null = null;
+function getRedis(): IORedis | null {
+  if (_redis) return _redis;
+  try {
+    _redis = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: 1, lazyConnect: true });
+    _redis.on('error', () => { _redis = null; });
+    return _redis;
+  } catch {
+    return null;
+  }
+}
+const RESET_TTL = 15 * 60; // 15 minutes
 
 // ─── Type augmentation for @fastify/jwt ───────────────────────────────────────
 
@@ -19,6 +36,17 @@ declare module '@fastify/jwt' {
     user: { userId: string };
   }
 }
+
+// ─── Rate-limit config shared across all auth endpoints ───────────────────────
+// 10 requests / minute / IP — stricter than the global 100 req/min default.
+const authRateLimit = {
+  config: {
+    rateLimit: {
+      max: 10,
+      timeWindow: '1 minute',
+    },
+  },
+} as const;
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -41,7 +69,7 @@ const refreshSchema = z.object({
 
 export const authRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/v1/auth/signup
-  fastify.post('/signup', async (request, reply) => {
+  fastify.post('/signup', authRateLimit, async (request, reply) => {
     const parsed = signupSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -89,7 +117,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // POST /api/v1/auth/login
-  fastify.post('/login', async (request, reply) => {
+  fastify.post('/login', authRateLimit, async (request, reply) => {
     const parsed = loginSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -142,7 +170,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // POST /api/v1/auth/refresh
-  fastify.post('/refresh', async (request, reply) => {
+  fastify.post('/refresh', authRateLimit, async (request, reply) => {
     const parsed = refreshSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -208,7 +236,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // POST /api/v1/auth/logout
-  fastify.post('/logout', async (request, reply) => {
+  fastify.post('/logout', authRateLimit, async (request, reply) => {
     try {
       await request.jwtVerify();
       const userId = request.user.userId;
@@ -219,5 +247,73 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       // Still return 200 — client should clear tokens regardless
       return reply.send({ success: true, data: null });
     }
+  });
+
+  // POST /api/v1/auth/forgot-password
+  // Generates a 6-digit reset code stored in Redis (15 min TTL).
+  // Returns the code directly (no email service yet — display it to the user).
+  fastify.post('/forgot-password', authRateLimit, async (request, reply) => {
+    const parsed = z.object({ email: z.string().email() }).safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Valid email is required' },
+      });
+    }
+
+    const { email } = parsed.data;
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      // Don't reveal whether the email exists
+      return reply.send({ success: true, data: { message: 'If that email exists, a reset code was generated.' } });
+    }
+
+    const code = randomBytes(3).toString('hex').toUpperCase(); // 6-char hex code
+    const redis = getRedis();
+    if (redis) {
+      await redis.set(`pwd_reset:${code}`, user.id, 'EX', RESET_TTL);
+    }
+
+    // In production, email the code. For now, return it directly.
+    return reply.send({ success: true, data: { code, expiresInMinutes: 15 } });
+  });
+
+  // POST /api/v1/auth/reset-password
+  // Validates the reset code and sets a new password.
+  fastify.post('/reset-password', authRateLimit, async (request, reply) => {
+    const parsed = z.object({
+      code: z.string().min(1),
+      newPassword: z.string().min(8).max(72),
+    }).safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'code and newPassword (min 8 chars) are required' },
+      });
+    }
+
+    const { code, newPassword } = parsed.data;
+    const redis = getRedis();
+    if (!redis) {
+      return reply.status(503).send({
+        success: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Reset service temporarily unavailable' },
+      });
+    }
+
+    const userId = await redis.get(`pwd_reset:${code}`);
+    if (!userId) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'INVALID_CODE', message: 'Reset code is invalid or has expired' },
+      });
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await userRepository.updatePassword(userId, passwordHash);
+    await redis.del(`pwd_reset:${code}`);
+
+    return reply.send({ success: true, data: { message: 'Password updated. Please log in.' } });
   });
 };

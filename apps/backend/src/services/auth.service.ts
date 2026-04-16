@@ -1,7 +1,7 @@
 import { scrypt, randomBytes, timingSafeEqual, createHash } from 'crypto';
 import { promisify } from 'util';
 import type { Prisma } from '@prisma/client';
-import type { UserDto } from '@fitcore/shared';
+import type { UserDto } from '@zenfit/shared';
 
 type UserWithProfile = Prisma.UserGetPayload<{ include: { profile: true } }>;
 

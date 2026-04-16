@@ -6,14 +6,14 @@ import 'core/services/sync_status_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'router/app_router.dart';
 
-class FitCoreApp extends ConsumerStatefulWidget {
-  const FitCoreApp({super.key});
+class ZenfitApp extends ConsumerStatefulWidget {
+  const ZenfitApp({super.key});
 
   @override
-  ConsumerState<FitCoreApp> createState() => _FitCoreAppState();
+  ConsumerState<ZenfitApp> createState() => _ZenfitAppState();
 }
 
-class _FitCoreAppState extends ConsumerState<FitCoreApp> {
+class _ZenfitAppState extends ConsumerState<ZenfitApp> {
   @override
   void initState() {
     super.initState();
@@ -30,8 +30,8 @@ class _FitCoreAppState extends ConsumerState<FitCoreApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-    return MaterialApp.router(
-      title: 'FitCore',
+return MaterialApp.router(
+      title: 'Zenfit',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: router,
