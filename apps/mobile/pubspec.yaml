@@ -80,6 +80,9 @@ dependencies:
   cached_network_image: ^3.3.1
   image_picker: ^1.1.2
 
+  # URL launcher (OAuth wearable connect flows)
+  url_launcher: ^6.3.0
+
   # UUID generation
   uuid: ^4.4.0
 

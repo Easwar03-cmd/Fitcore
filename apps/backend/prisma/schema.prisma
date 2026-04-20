@@ -24,14 +24,15 @@ model User {
   fcmToken               String?   // Firebase Cloud Messaging device token
   createdAt              DateTime  @default(now())
 
-  profile      UserProfile?
-  foodLogs     FoodLog[]
-  workoutLogs  WorkoutLog[]
-  bodyStats    BodyStat[]
-  goals        Goal[]
-  friendships  Friendship[] @relation("UserFriendships")
-  subscription Subscription?
-  moodLogs     MoodLog[]
+  profile             UserProfile?
+  foodLogs            FoodLog[]
+  workoutLogs         WorkoutLog[]
+  bodyStats           BodyStat[]
+  goals               Goal[]
+  friendships         Friendship[] @relation("UserFriendships")
+  subscription        Subscription?
+  moodLogs            MoodLog[]
+  wearableConnections WearableConnection[]
 }
 
 model UserProfile {
@@ -143,4 +144,19 @@ model MoodLog {
   loggedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model WearableConnection {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String   // fitbit | garmin | whoop | oura
+  accessToken String
+  refreshToken String?
+  expiresAt   DateTime?
+  connectedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, provider])
 }

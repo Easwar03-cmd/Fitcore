@@ -13,8 +13,10 @@ import '../../../core/services/health_service.dart';
 import '../../../core/services/sync_queue_service.dart' show syncServiceProvider;
 import '../../home/providers/home_provider.dart';
 import '../../progress/providers/body_log_provider.dart';
+import '../../progress/providers/progress_provider.dart';
 import '../models/exercise.dart';
 import '../models/workout_session_state.dart';
+import 'workout_history_provider.dart';
 
 final _log = Logger();
 
@@ -216,6 +218,9 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
           .dio
           .post('/workout/logs', data: workoutPayload);
       ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
+      // Refresh history + progress tabs so they reflect the new workout.
+      ref.invalidate(workoutHistoryProvider);
+      ref.invalidate(progressProvider);
     } on DioException catch (e) {
       if (e.response == null) {
         await ref

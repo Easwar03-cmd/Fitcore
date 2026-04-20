@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -28,6 +29,11 @@ class ProfileScreen extends ConsumerWidget {
           _AvatarHeader(initial: initial, user: user),
           const SizedBox(height: 28),
 
+          // ── Appearance group ──────────────────────────────────────────
+          const _GroupLabel('Appearance'),
+          const _ThemeToggleCard(),
+          const SizedBox(height: 20),
+
           // ── Settings group ────────────────────────────────────────────
           const _GroupLabel('Settings'),
           _SettingsCard(
@@ -40,9 +46,7 @@ class ProfileScreen extends ConsumerWidget {
               _TileData(
                 icon: Icons.watch_rounded,
                 label: 'Wearable Integrations',
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
-                ),
+                onTap: () => context.push(AppRoutes.wearableIntegrations),
               ),
               _TileData(
                 icon: Icons.workspace_premium_rounded,
@@ -133,7 +137,7 @@ class _AvatarHeader extends StatelessWidget {
         Text(
           user?.email ?? '',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
       ],
@@ -154,10 +158,78 @@ class _GroupLabel extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w600,
             ),
+      ),
+    );
+  }
+}
+
+// ── Theme toggle card ─────────────────────────────────────────────────────────
+
+class _ThemeToggleCard extends ConsumerWidget {
+  const _ThemeToggleCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pref = ref.watch(themeNotifierProvider);
+    final cs = Theme.of(context).colorScheme;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Material(
+        color: cs.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.palette_rounded, color: cs.onSurface, size: 22),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Theme',
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              SegmentedButton<ThemePreference>(
+                style: SegmentedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  selectedBackgroundColor: AppColors.primary,
+                  selectedForegroundColor: Colors.white,
+                  foregroundColor: cs.onSurfaceVariant,
+                ),
+                segments: const [
+                  ButtonSegment(
+                    value: ThemePreference.auto,
+                    icon: Icon(Icons.brightness_auto_rounded, size: 18),
+                    tooltip: 'Auto',
+                  ),
+                  ButtonSegment(
+                    value: ThemePreference.light,
+                    icon: Icon(Icons.light_mode_rounded, size: 18),
+                    tooltip: 'Light',
+                  ),
+                  ButtonSegment(
+                    value: ThemePreference.dark,
+                    icon: Icon(Icons.dark_mode_rounded, size: 18),
+                    tooltip: 'Dark',
+                  ),
+                ],
+                selected: {pref},
+                onSelectionChanged: (selection) => ref
+                    .read(themeNotifierProvider.notifier)
+                    .setPreference(selection.first),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -185,10 +257,11 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Material(
-        color: AppColors.surfaceVariant,
+        color: cs.surfaceContainerHighest,
         child: Column(
           children: [
             for (var i = 0; i < items.length; i++) ...[
@@ -197,7 +270,7 @@ class _SettingsCard extends StatelessWidget {
                 Divider(
                   height: 1,
                   indent: 56,
-                  color: AppColors.onSurfaceVariant.withAlpha(30),
+                  color: cs.outline.withAlpha(50),
                 ),
             ],
           ],
@@ -213,7 +286,8 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = data.color ?? AppColors.onSurface;
+    final cs = Theme.of(context).colorScheme;
+    final color = data.color ?? cs.onSurface;
     return InkWell(
       onTap: data.onTap,
       child: Padding(
@@ -232,9 +306,9 @@ class _SettingsTile extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.onSurfaceVariant,
+              color: cs.onSurfaceVariant,
               size: 20,
             ),
           ],

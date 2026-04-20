@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../workout/models/workout_log.dart';
 import '../providers/progress_provider.dart';
 import '../widgets/calorie_trend_chart.dart';
 import '../widgets/muscle_heatmap.dart';
@@ -161,6 +162,48 @@ class ProgressScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // ── Recent Workouts ─────────────────────────────────────────────
+              AppCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: _SectionHeader(
+                            title: 'Recent Workouts',
+                            subtitle: 'Last 5 sessions',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              context.push(AppRoutes.workoutHistory),
+                          child: const Text('View All'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (progress.recentWorkouts.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: Text(
+                            'No workouts yet — start your first session!',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant),
+                          ),
+                        ),
+                      )
+                    else
+                      ...progress.recentWorkouts
+                          .map((w) => _RecentWorkoutTile(log: w)),
+                  ],
+                ),
+              ),
 
               const SizedBox(height: 32),
             ],
@@ -170,6 +213,74 @@ class ProgressScreen extends ConsumerWidget {
     );
   }
 }
+
+// ── Recent workout tile ───────────────────────────────────────────────────────
+
+class _RecentWorkoutTile extends StatelessWidget {
+  const _RecentWorkoutTile({required this.log});
+
+  final WorkoutLog log;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    final dt = log.startedAt;
+    final dateStr = '${dt.day} ${months[dt.month - 1]}';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(Icons.fitness_center_rounded,
+                size: 20, color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(log.name,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                Text(
+                  [
+                    dateStr,
+                    if (log.durationMin != null) '${log.durationMin}m',
+                    '${log.sets.length} sets',
+                  ].join('  ·  '),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          if (log.caloriesBurned != null) ...[
+            Icon(Icons.local_fire_department_outlined,
+                size: 14, color: AppColors.warning),
+            const SizedBox(width: 2),
+            Text(
+              '${log.caloriesBurned}',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: AppColors.warning),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, this.subtitle});
@@ -192,7 +303,7 @@ class _SectionHeader extends StatelessWidget {
           Text(
             subtitle!,
             style: theme.textTheme.bodySmall
-                ?.copyWith(color: AppColors.onSurfaceVariant),
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
       ],
     );

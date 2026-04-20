@@ -121,6 +121,7 @@ class ProgressNotifier extends AsyncNotifier<ProgressData> {
       thisWeek: thisWeek,
       lastWeek: lastWeek,
       calorieTarget: tdee,
+      recentWorkouts: workoutLogs.take(5).toList(),
     );
   }
 

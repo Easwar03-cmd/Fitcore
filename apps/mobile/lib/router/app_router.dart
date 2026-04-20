@@ -20,6 +20,7 @@ import '../features/progress/screens/body_log_screen.dart';
 import '../features/progress/screens/progress_screen.dart';
 import '../features/settings/screens/notification_preferences_screen.dart';
 import '../features/settings/screens/profile_screen.dart';
+import '../features/settings/screens/wearable_integrations_screen.dart';
 import '../features/social/screens/challenges_screen.dart';
 import '../features/social/screens/friend_search_screen.dart';
 import '../features/social/screens/leaderboard_screen.dart';
@@ -205,6 +206,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'notifications',
             name: 'notification-prefs',
             builder: (context, state) => const NotificationPreferencesScreen(),
+          ),
+          GoRoute(
+            path: 'wearables',
+            name: 'wearable-integrations',
+            builder: (context, state) => const WearableIntegrationsScreen(),
           ),
         ],
       ),

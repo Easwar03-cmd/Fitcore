@@ -9,6 +9,7 @@ import { bodyRoutes } from './routes/body.routes';
 import { aiRoutes } from './routes/ai.routes';
 import { socialRoutes } from './routes/social.routes';
 import { wellnessRoutes } from './routes/wellness.routes';
+import { integrationsRoutes } from './routes/integrations.routes';
 import {
   scheduleWeeklySummaryJob,
   startWeeklySummaryWorker,
@@ -99,6 +100,7 @@ async function bootstrap() {
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
   await server.register(socialRoutes, { prefix: '/api/v1/social' });
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
+  await server.register(integrationsRoutes, { prefix: '/api/v1/integrations' });
 
   server.get('/health', async () => ({ status: 'ok', timestamp: Date.now() }));
 

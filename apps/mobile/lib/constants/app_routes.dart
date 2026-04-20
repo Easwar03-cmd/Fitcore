@@ -42,4 +42,5 @@ abstract final class AppRoutes {
   static const wellness = '/wellness';
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
+  static const wearableIntegrations = '/profile/wearables';
 }

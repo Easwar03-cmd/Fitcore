@@ -1,3 +1,4 @@
+import '../../workout/models/workout_log.dart';
 import 'body_stat.dart';
 
 class DayCalories {
@@ -47,6 +48,7 @@ class ProgressData {
     required this.thisWeek,
     required this.lastWeek,
     required this.calorieTarget,
+    required this.recentWorkouts,
   });
 
   /// Body weight entries sorted oldest → newest (up to last 30).
@@ -66,4 +68,7 @@ class ProgressData {
 
   /// User's daily calorie target from their TDEE.
   final int calorieTarget;
+
+  /// Last 5 workout logs for the "Recent Workouts" card in the progress tab.
+  final List<WorkoutLog> recentWorkouts;
 }
