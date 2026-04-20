@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -20,7 +20,7 @@ class ChatBubble extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: _isUser ? AppColors.primary : AppColors.surfaceVariant,
+          color: _isUser ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
@@ -32,13 +32,15 @@ class ChatBubble extends StatelessWidget {
                 : const Radius.circular(18),
           ),
         ),
-        child: Text(
-          message.text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _isUser ? Colors.white : AppColors.onSurface,
-                height: 1.4,
-              ),
-        ),
+        child: _isUser
+            ? Text(
+                message.text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                      height: 1.4,
+                    ),
+              )
+            : _CoachMessageBody(text: message.text),
       ),
     );
 
@@ -79,6 +81,41 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
+// ── Multi-paragraph coach message renderer ────────────────────────────────────
+
+class _CoachMessageBody extends StatelessWidget {
+  const _CoachMessageBody({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
+    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: color,
+          height: 1.5,
+        );
+
+    // Split on double newlines to get paragraphs; single newlines preserved.
+    final paragraphs = text.split('\n\n').where((p) => p.trim().isNotEmpty).toList();
+
+    if (paragraphs.length <= 1) {
+      // Single paragraph — plain text with newlines preserved.
+      return Text(text, style: style);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < paragraphs.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Text(paragraphs[i], style: style),
+        ],
+      ],
+    );
+  }
+}
+
 // ── Typing indicator shown while the assistant is responding ──────────────────
 
 class TypingIndicator extends StatelessWidget {
@@ -107,8 +144,8 @@ class TypingIndicator extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceVariant,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
@@ -123,8 +160,8 @@ class TypingIndicator extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.onSurfaceVariant,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   shape: BoxShape.circle,
                 ),
               )

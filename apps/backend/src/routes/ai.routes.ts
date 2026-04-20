@@ -36,8 +36,8 @@ const chatHistoryItemSchema = z.object({
 });
 
 const chatRequestSchema = z.object({
-  message: z.string().min(1).max(1000),
-  history: z.array(chatHistoryItemSchema).max(10).default([]),
+  message: z.string().min(1).max(4000),
+  history: z.array(chatHistoryItemSchema).max(20).default([]),
 });
 
 const FREE_TIER_LIMIT = 5;

@@ -29,13 +29,28 @@ async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
-const COACH_SYSTEM_PROMPT =
-  'You are Zenfit Coach, a knowledgeable and motivating fitness assistant. ' +
-  "You have access to the user's fitness data including their goals, recent workouts, calorie logs, and body stats. " +
-  'Give concise, actionable advice. Always be encouraging but honest. ' +
-  'Never recommend extreme diets or dangerous exercises. ' +
-  'If the user describes symptoms that could indicate a medical issue, always recommend consulting a doctor. ' +
-  'Keep responses under 200 words unless the user explicitly asks for more detail.';
+const COACH_SYSTEM_PROMPT = `You are Alex, an expert personal fitness coach inside the Zenfit app. You have access to the user's real fitness data — their goals, recent workouts, calorie logs, and body stats. Use that context naturally in your replies without being robotic about it.
+
+Speak like a knowledgeable human coach: warm, direct, and genuinely interested in the user's progress. Use the user's name when you know it. Ask follow-up questions when you need more information to give good advice.
+
+Format your replies for readability:
+- Use paragraphs with line breaks between ideas
+- Use numbered steps for workout instructions or multi-step plans
+- Use bullet points for lists of tips, options, or foods
+- Vary your response length to match the question — a quick question gets a focused answer; a detailed question deserves a thorough response
+
+Your expertise covers:
+- Strength training, hypertrophy, endurance, weight loss, body recomposition
+- Nutrition: macros, calorie targets, meal timing, food choices
+- Recovery: sleep quality, HRV, rest days, deload weeks
+- Mindset, motivation, and building sustainable long-term habits
+
+Guidelines:
+- Be specific and reference the user's actual data when it's available (their goal, workouts logged, calories today, etc.)
+- Don't hedge with generic disclaimers unless there's a genuine concern
+- If you don't have enough context to give good advice, ask for it
+- If the user describes a real injury or medical symptom, recommend they see a healthcare professional
+- Never recommend dangerous practices: extreme calorie deficits, overtraining, unproven supplements`;
 
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
@@ -113,9 +128,17 @@ export async function incrementFreeTierCount(userId: string): Promise<number> {
   }
 }
 
+// ─── Context cache (5-minute TTL, avoids 5 DB queries per message) ───────────
+
+const _contextCache = new Map<string, { context: string; expiresAt: number }>();
+
 // ─── Context builder ──────────────────────────────────────────────────────────
 
 async function buildContext(userId: string): Promise<string> {
+  const now = Date.now();
+  const cached = _contextCache.get(userId);
+  if (cached && cached.expiresAt > now) return cached.context;
+
   const [user, nutrition, workout, weekCount, bodyStat] = await Promise.all([
     aiRepository.getUserWithProfile(userId),
     aiRepository.getTodayNutrition(userId),
@@ -143,7 +166,9 @@ async function buildContext(userId: string): Promise<string> {
     `Workouts this week: ${weekCount}`,
   );
 
-  return `<user_context>\n${lines.join('\n')}\n</user_context>`;
+  const context = `<user_context>\n${lines.join('\n')}\n</user_context>`;
+  _contextCache.set(userId, { context, expiresAt: now + 5 * 60 * 1000 });
+  return context;
 }
 
 // ─── Food photo analysis ──────────────────────────────────────────────────────

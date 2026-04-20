@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -98,7 +98,10 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
             _RateLimitBanner(used: rateLimit.used, limit: rateLimit.limit),
           Expanded(
             child: messages.isEmpty
-                ? const _EmptyState()
+                ? _EmptyState(onSuggestionTap: (text) {
+                    _controller.text = text;
+                    _send();
+                  })
                 : ListView.builder(
                     reverse: true,
                     padding: const EdgeInsets.all(12),
@@ -157,7 +160,8 @@ class _RateLimitBanner extends StatelessWidget {
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({required this.onSuggestionTap});
+  final void Function(String text) onSuggestionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -169,8 +173,8 @@ class _EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: AppColors.surfaceVariant,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -185,7 +189,7 @@ class _EmptyState extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .headlineMedium
-                  ?.copyWith(color: AppColors.onBackground),
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 12),
             Text(
@@ -194,10 +198,10 @@ class _EmptyState extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: AppColors.onSurfaceVariant),
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
-            ..._suggestions.map((s) => _SuggestionChip(text: s)),
+            ..._suggestions.map((s) => _SuggestionChip(text: s, onTap: () => onSuggestionTap(s))),
           ],
         ),
       ),
@@ -211,22 +215,22 @@ const _suggestions = [
   'Am I overtraining this week?',
 ];
 
-class _SuggestionChip extends ConsumerWidget {
-  const _SuggestionChip({required this.text});
+class _SuggestionChip extends StatelessWidget {
+  const _SuggestionChip({required this.text, required this.onTap});
   final String text;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
-        onTap: () =>
-            ref.read(coachNotifierProvider.notifier).sendMessage(text),
+        onTap: onTap,
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.primary.withAlpha(80)),
           ),
@@ -235,7 +239,7 @@ class _SuggestionChip extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: AppColors.onSurface),
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
       ),

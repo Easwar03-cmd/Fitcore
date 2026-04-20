@@ -18,6 +18,13 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
   Future<void> logMood(int score) async {
     final current = state.valueOrNull;
     if (current == null) return;
+
+    // Optimistically update UI immediately so the emoji tap feels instant.
+    state = AsyncData(current.copyWithMood(
+      todayMood: score,
+      moodHistory: current.moodHistory,
+    ));
+
     final payload = <String, dynamic>{'score': score};
     try {
       final res = await ref
@@ -26,23 +33,21 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
           .post('/wellness/mood', data: payload);
       final entry = MoodLogEntry.fromJson(
           res.data['data'] as Map<String, dynamic>);
+      // Replace optimistic state with server-confirmed entry (has id + timestamp).
       state = AsyncData(current.copyWithMood(
         todayMood: score,
         moodHistory: [...current.moodHistory, entry],
       ));
     } on DioException catch (e, st) {
       if (e.response == null) {
+        // Offline: queue for sync, keep optimistic state.
         await ref
             .read(syncServiceProvider)
             .enqueue('/wellness/mood', payload);
         _log.w('Mood log queued for sync (offline)', error: e);
-        // Optimistically update local state so the UI reflects the tap.
-        state = AsyncData(current.copyWithMood(
-          todayMood: score,
-          moodHistory: current.moodHistory,
-        ));
         return;
       }
+      // Server error: keep optimistic state visible, just log the error.
       _log.e('Failed to log mood', error: e, stackTrace: st);
     }
   }

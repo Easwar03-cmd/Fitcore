@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -47,7 +47,7 @@ class MoodLoggerCard extends StatelessWidget {
             Expanded(
               child: Text('Mood',
                   style: AppTextStyles.titleMedium
-                      .copyWith(color: AppColors.onBackground)),
+                      .copyWith(color: Theme.of(context).colorScheme.onSurface)),
             ),
             if (alreadyLogged)
               Container(
@@ -68,7 +68,7 @@ class MoodLoggerCard extends StatelessWidget {
         Text(
           alreadyLogged ? 'Today\'s mood' : 'How are you feeling today?',
           style: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.onSurfaceVariant),
+              .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 10),
         Row(
@@ -90,13 +90,11 @@ class MoodLoggerCard extends StatelessWidget {
                       ? Border.all(color: _kMoodColors[i], width: 2)
                       : null,
                 ),
-                child: Text(
-                  _kEmojis[i],
-                  style: TextStyle(
-                    fontSize: 28,
-                    color: alreadyLogged && !isSelected
-                        ? Colors.white.withAlpha(100)
-                        : null,
+                child: Opacity(
+                  opacity: alreadyLogged && !isSelected ? 0.3 : 1.0,
+                  child: Text(
+                    _kEmojis[i],
+                    style: const TextStyle(fontSize: 28),
                   ),
                 ),
               ),
@@ -107,7 +105,7 @@ class MoodLoggerCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text('14-day trend',
               style: AppTextStyles.labelSmall
-                  .copyWith(color: AppColors.onSurfaceVariant)),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           const SizedBox(height: 8),
           SizedBox(height: 84, child: _MoodTrendChart(history: moodHistory)),
         ],
@@ -201,7 +199,7 @@ class _MoodTrendChart extends StatelessWidget {
                   child: Text(
                     '${dt.day}/${dt.month}',
                     style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.onSurfaceVariant),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 );
               },
