@@ -386,8 +386,8 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Food photo logging (Gemini Vision) — multimodal analysis; detects all items in mixed dishes; proportional macro scaling on serving edit; camera FAB on NutritionScreen; available all tiers
 - [x] Workout recommendation engine — Gemini-powered; analyzes 7-day training history + goal + recovery; GET /ai/workout-recommendation (all tiers); RecommendationCard on WorkoutScreen with refresh
 - [x] Home workout page — 40 bodyweight/calisthenics exercises in kHomeExerciseLibrary; HomeWorkoutListScreen at /workout/home; category + difficulty filter chips; SetInputMode (repsOnly / durationOnly / repsAndWeight) on SetLogger; no weight input for bodyweight exercises
-- [ ] Recovery score (HRV + sleep + training load)
-- [ ] Deload week detection
+- [x] Recovery score (HRV + sleep + training load) — HRV (SDNN) fetched from HealthKit/Google Fit; formula: sleepScore×0.4 + hrComponent×0.3 + trainingLoad×0.3; HRV preferred over RHR when available (10–100ms → 0–100); falls back to resting HR; Wellness screen card renamed "Recovery Score"; 4-pill breakdown: Sleep · HRV · HR · Load
+- [x] Deload week detection — pure algorithmic (no Gemini); 4-week set count analysis via getFourWeekWorkoutSummary; flags ≥3 consecutive weeks ≥40 sets or 4-week avg >60 sets; GET /ai/deload-check; DeloadBannerCard on WorkoutScreen (amber warning / green OK)
 
 ### Phase 4 — Social & Monetization
 - [ ] User search + friend system

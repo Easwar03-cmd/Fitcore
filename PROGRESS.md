@@ -1,6 +1,68 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-20 (session 26)
+**What was built:**
+
+### AI Coach Fix + Recovery Score + Deload Week Detection (Phase 3)
+
+**Root cause investigation — AI coach failures:**
+Three bugs found and fixed:
+1. `withGeminiRetry` backoff was 1s/2s — nowhere near Gemini's 60-second rate limit window. After 3 quick retries all hitting 429, it still failed with 503. Changed to 3s/6s/12s backoff (4 total attempts, up to 21s extra wait).
+2. `sendCoachMessage` created the Gemini `model` + `chat` once outside the retry lambda. A failed `sendMessage` can corrupt the chat's internal pending history. Moved model+chat creation inside each retry attempt so every attempt starts fresh.
+3. `coach_provider.dart` sent `{message}` only — no conversation history. Multi-turn conversation was completely broken. Now captures pre-send history and includes last 10 messages with each request.
+4. Dio `receiveTimeout` increased 30s → 90s to cover worst-case retry wait plus Gemini's own response time.
+5. Deployment had been broken due to `getFourWeekWorkoutSummary` missing from the committed `ai.repository.ts` — that was the root cause of ALL AI features failing on Railway.
+
+**Backend — `apps/backend/src/services/ai.service.ts`:**
+- `withGeminiRetry`: delays changed to `[3000, 6000, 12000]` ms; 4 total attempts; last error is always re-thrown correctly
+- `sendCoachMessage`: `model` + `chat` creation moved inside retry lambda; `history` renamed to `geminiHistory` for clarity
+
+**Backend — `apps/backend/src/repositories/ai.repository.ts`:**
+- `getFourWeekWorkoutSummary(userId)` was added in previous session but never committed; committed now (was the root TypeScript build failure on Railway)
+
+**Flutter — `apps/mobile/lib/core/api/api_client.dart`:**
+- `receiveTimeout` increased from 30s to 90s
+
+**Flutter — `apps/mobile/lib/features/coach/providers/coach_provider.dart`:**
+- History snapshot captured before optimistic insert; sent as `history: [...]` (capped at 10 items) with every `/ai/chat` POST
+- Multi-turn conversation now works correctly
+
+**Recovery Score (Wellness screen):**
+- `health_service.dart`: Added `_kHrvTypes`, best-effort HRV permission request, `getTodayHRV()` returning `double?` (null when no wearable)
+- `wellness_state.dart`: Added `final double? hrv` field; `copyWithMood` preserves it
+- `wellness_provider.dart`: `getTodayHRV()` fetched concurrently with other health data; `_computeReadiness` signature extended with `double? hrv`; HRV 10–100ms → 0–100 score takes precedence over RHR fallback
+- `wellness_screen.dart`: Card title renamed "Recovery Score"; breakdown switched to `Wrap` with 4 pills (Sleep · HRV · HR · Load)
+
+**Deload Week Detection (Workout screen):**
+- `ai.repository.ts`: `getFourWeekWorkoutSummary` — 28-day workout logs with set counts
+- `ai.service.ts`: `getDeloadCheck(userId)` — pure algorithmic (no Gemini); buckets logs into 4 weekly slots; flags if ≥3 consecutive weeks ≥40 sets OR 4-week avg >60 sets
+- `ai.routes.ts`: `GET /api/v1/ai/deload-check` (all tiers, JWT auth)
+- `deload_check.dart`: Dart model with `fromJson`
+- `deload_check_provider.dart`: `AsyncNotifierProvider<DeloadCheckNotifier, DeloadCheck?>` — fetches on build, `refresh()`
+- `deload_banner_card.dart`: amber warning card (deload recommended) or green OK card shown at top of WorkoutScreen
+
+**Decisions made:**
+- Deload detection is purely algorithmic (no Gemini) — deterministic, instant, no rate-limit risk
+- HRV degrades gracefully: when unavailable (most Android devices without wearable), falls back to resting HR in the formula; shows "—" in the HRV pill
+- Retry backoff of 3s/6s/12s chosen as a practical balance — longer than typical Gemini burst windows, short enough for acceptable UX (~21s worst case)
+- History capped at last 10 messages before sending to server (matches server Zod schema `max(10)`)
+- `receiveTimeout: 90s` is intentionally high only because AI routes need it; regular endpoints finish in <2s so no real UX impact
+
+**What's broken / known issues:**
+- If Gemini free-tier quota (1500 req/day) is fully exhausted, the app returns "AI service temporarily unavailable" regardless of retries — no fix possible without upgrading the API key
+- Workout recommendation still auto-loads Gemini on tab open; if the coach is used at the same time, they compete for the 15 RPM slot (both will succeed eventually via retries, but one will be slow)
+
+## Next session
+**Priority task:** Grocery list from meal plan (Phase 3) — extract all ingredients from cached `WeeklyMealPlan`, deduplicate and group by category, render checklist at `/nutrition/meal-plan/grocery`
+**Files to look at first:**
+- `apps/mobile/lib/features/nutrition/models/meal_plan.dart`
+- `apps/mobile/lib/features/nutrition/screens/meal_plan_screen.dart`
+- `apps/mobile/lib/features/nutrition/providers/meal_plan_provider.dart`
+
+---
+
+## Last session (archived)
 **Date:** 2026-04-20 (session 25)
 **What was built:**
 
