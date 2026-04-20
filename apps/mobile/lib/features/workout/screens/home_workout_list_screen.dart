@@ -9,7 +9,12 @@ import '../models/home_exercise.dart';
 import '../providers/workout_provider.dart';
 
 class HomeWorkoutListScreen extends ConsumerStatefulWidget {
-  const HomeWorkoutListScreen({super.key});
+  const HomeWorkoutListScreen({super.key, this.pickMode = false});
+
+  /// When true, tapping an exercise pops back with the [Exercise] instead of
+  /// starting a new workout session (used by the "Switch" button in
+  /// ActiveWorkoutScreen).
+  final bool pickMode;
 
   @override
   ConsumerState<HomeWorkoutListScreen> createState() =>
@@ -39,10 +44,15 @@ class _HomeWorkoutListScreenState
   }
 
   void _start(HomeExercise exercise) {
-    ref
-        .read(workoutSessionProvider.notifier)
-        .startWorkout(exercise.toExercise());
-    context.push(AppRoutes.activeWorkout);
+    if (widget.pickMode) {
+      // Return the exercise to the caller (Switch button in ActiveWorkoutScreen).
+      context.pop(exercise.toExercise());
+    } else {
+      ref
+          .read(workoutSessionProvider.notifier)
+          .startWorkout(exercise.toExercise());
+      context.push(AppRoutes.activeWorkout);
+    }
   }
 
   @override
@@ -52,7 +62,7 @@ class _HomeWorkoutListScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home Workouts'),
+        title: Text(widget.pickMode ? 'Switch Exercise' : 'Home Workouts'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(

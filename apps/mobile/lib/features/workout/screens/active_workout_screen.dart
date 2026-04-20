@@ -56,8 +56,21 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Future<void> _switchExercise() async {
-    final exercise =
-        await context.push<Exercise>(AppRoutes.exercisePicker);
+    final isHome =
+        ref.read(workoutSessionProvider).currentExercise?.isBodyweight ?? false;
+
+    final Exercise? exercise;
+    if (isHome) {
+      // Pick mode: HomeWorkoutListScreen returns an Exercise on tap instead of
+      // starting a new session (signalled by passing extra: true).
+      exercise = await context.push<Exercise>(
+        AppRoutes.homeWorkouts,
+        extra: true, // pickMode = true
+      );
+    } else {
+      exercise = await context.push<Exercise>(AppRoutes.exercisePicker);
+    }
+
     if (exercise != null && context.mounted) {
       ref.read(workoutSessionProvider.notifier).setExercise(exercise);
     }

@@ -142,7 +142,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'home',
                 name: 'home-workouts',
-                builder: (context, state) => const HomeWorkoutListScreen(),
+                builder: (context, state) => HomeWorkoutListScreen(
+                  pickMode: state.extra == true,
+                ),
               ),
             ],
           ),
