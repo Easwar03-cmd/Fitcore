@@ -1,7 +1,66 @@
 # Zenfit — Build Progress
 
 ## Last session
-**Date:** 2026-04-16 (session 21)
+**Date:** 2026-04-20 (session 22)
+**What was built:**
+
+### Adaptive calorie + water targets (bug fixes)
+
+**Flutter — `features/home/models/home_state.dart`**:
+- `adaptiveTarget` now applies goal adjustment via `CalorieCalculator.dailyTarget()` before adding burned kcal — previously raw TDEE was used, ignoring −500/+300 adjustments
+- Added `waterTargetMl` getter computed from `activityLevel` (sedentary 2000 → very_active 3000 ml)
+- Added `activityLevel` field (from backend profile); added `weightKg` to `UserProfileDto` for future weight-based water calc
+
+**Flutter — `features/home/providers/home_provider.dart`**:
+- Passes `activityLevel` from profile into `HomeDashboardState`
+
+**Flutter — `features/home/widgets/water_tracker_card.dart`**:
+- Removed hardcoded `_goalMl = 2000`; now accepts `waterTargetMl` as a required param
+
+**Flutter — `features/home/screens/home_screen.dart`**:
+- Passes `home.waterTargetMl` to `WaterTrackerCard`
+
+**Flutter — `features/nutrition/screens/nutrition_screen.dart`**:
+- "Today's calories" summary now uses `adaptiveTarget` (goal-adjusted + burned) instead of raw TDEE
+
+### AI coach debug + error handling
+
+- Diagnosed `401` failure: wrong key type (`sk-admin-` is a Console admin key, not a Messages API key)
+- Diagnosed `400` failure after key fix: Anthropic account had $0 credits
+- Backend: added `Anthropic.BadRequestError` catch for billing errors → returns `503 AI_BILLING` instead of swallowing as 500
+- Flutter: added `CoachUnavailableException` for 503 responses; surfaces backend message in SnackBar
+
+### Anthropic → Google Gemini migration
+
+**Backend — `apps/backend/src/services/ai.service.ts`**:
+- Replaced `@anthropic-ai/sdk` with `@google/generative-ai@0.24.1`
+- `sendCoachMessage` rewritten: `GoogleGenerativeAI` client, `gemini-2.0-flash` model, `systemInstruction` for system prompt, `startChat({ history })` + `sendMessage` for multi-turn; role mapping `assistant → model`
+
+**Backend — `apps/backend/src/routes/ai.routes.ts`**:
+- Removed Anthropic import; error handling uses `GoogleGenerativeAIFetchError` (status 429 → 503)
+- `/chat` route simplified: removed duplicate inline AI call, now delegates to `sendCoachMessage` (which already handles context injection via `buildContext`)
+- Extracted `handleAiError()` helper used by both `/coach` and `/chat`
+
+**Backend — `apps/backend/src/utils/config.ts`**:
+- `ANTHROPIC_API_KEY` → `GEMINI_API_KEY`
+
+**Decisions made:**
+- `gemini-2.0-flash` chosen over `gemini-1.5-pro`: faster, cheaper, generous free tier (1,500 req/day) vs Anthropic's pay-per-token with no free tier
+- `/chat` route now fully delegates to `sendCoachMessage` — removes duplicated system prompt and context injection that existed in both the route and the service
+
+**What's broken / known issues:**
+- `GEMINI_API_KEY` must be set in Railway dashboard before the deployed coach works — placeholder value is in local `.env`; key available at aistudio.google.com/apikey
+
+## Next session
+**Priority task:** AI meal plan generator (Phase 3) — `POST /api/v1/ai/meal-plan` stub already exists; build the full flow: weekly plan generation with Gemini, meal plan model, and a plan screen inside `features/nutrition/`
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts` (meal-plan stub at bottom)
+- `apps/backend/src/services/ai.service.ts` (pattern to follow for Gemini call)
+- `apps/mobile/lib/features/nutrition/` (meal plan screen lives here)
+
+---
+
+### Previous session (2026-04-16, session 21)
 **What was built:**
 
 ### Coach screen rebuild + bug fix
