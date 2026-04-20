@@ -81,7 +81,7 @@ class ChatBubble extends StatelessWidget {
   }
 }
 
-// ── Multi-paragraph coach message renderer ────────────────────────────────────
+// ── Coach message body ────────────────────────────────────────────────────────
 
 class _CoachMessageBody extends StatelessWidget {
   const _CoachMessageBody({required this.text});
@@ -89,29 +89,12 @@ class _CoachMessageBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurface;
-    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: color,
-          height: 1.5,
-        );
-
-    // Split on double newlines to get paragraphs; single newlines preserved.
-    final paragraphs = text.split('\n\n').where((p) => p.trim().isNotEmpty).toList();
-
-    if (paragraphs.length <= 1) {
-      // Single paragraph — plain text with newlines preserved.
-      return Text(text, style: style);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < paragraphs.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
-          Text(paragraphs[i], style: style),
-        ],
-      ],
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+            height: 1.5,
+          ),
     );
   }
 }

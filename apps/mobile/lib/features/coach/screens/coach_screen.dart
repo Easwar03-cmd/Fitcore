@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../models/chat_message.dart';
 import '../providers/coach_provider.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/coach_input_bar.dart';
@@ -87,9 +88,40 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     }
   }
 
+  /// Expands coach messages that contain double-newline separators into
+  /// individual display entries so each paragraph appears as its own bubble.
+  /// State (and therefore history sent to the backend) stays unchanged —
+  /// only the display list is affected.
+  List<ChatMessage> _expandForDisplay(List<ChatMessage> messages) {
+    final result = <ChatMessage>[];
+    for (final msg in messages) {
+      if (msg.role == MessageRole.coach) {
+        final parts = msg.text
+            .split('\n\n')
+            .map((p) => p.trim())
+            .where((p) => p.isNotEmpty)
+            .toList();
+        if (parts.length > 1) {
+          for (var i = 0; i < parts.length; i++) {
+            result.add(ChatMessage(
+              id: '${msg.id}_$i',
+              role: MessageRole.coach,
+              text: parts[i],
+              timestamp: msg.timestamp,
+            ));
+          }
+          continue;
+        }
+      }
+      result.add(msg);
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(coachNotifierProvider);
+    final display = _expandForDisplay(messages);
     final rateLimit = ref.watch(coachRateLimitProvider);
     final isRateLimited =
         rateLimit.limit > 0 && rateLimit.used >= rateLimit.limit;
@@ -116,7 +148,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
           ],
         ),
         actions: [
-          if (ref.watch(coachNotifierProvider).isNotEmpty)
+          if (messages.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded),
               tooltip: 'Clear chat',
@@ -137,7 +169,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
                 : ListView.builder(
                     reverse: true,
                     padding: const EdgeInsets.all(12),
-                    itemCount: messages.length + (_isLoading ? 1 : 0),
+                    itemCount: display.length + (_isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (_isLoading && index == 0) {
                         return const Padding(
@@ -145,10 +177,10 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
                           child: TypingIndicator(),
                         );
                       }
-                      final msgIndex = messages.length -
+                      final msgIndex = display.length -
                           1 -
                           (index - (_isLoading ? 1 : 0));
-                      return ChatBubble(message: messages[msgIndex]);
+                      return ChatBubble(message: display[msgIndex]);
                     },
                   ),
           ),
