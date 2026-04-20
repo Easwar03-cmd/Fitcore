@@ -161,8 +161,8 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // POST /api/v1/ai/analyze-food-photo
-  fastify.post('/analyze-food-photo', async (request, reply) => {
+  // POST /api/v1/ai/analyze-food-photo  (20 MB limit — base64 image)
+  fastify.post('/analyze-food-photo', { bodyLimit: 20 * 1024 * 1024 }, async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {

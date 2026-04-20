@@ -91,8 +91,6 @@ class _HomeWorkoutListScreenState
                 setState(() => _selectedDifficulty = d == _selectedDifficulty ? null : d),
           ),
 
-          const Divider(height: 1),
-
           // ── Exercise list ────────────────────────────────────────────────
           Expanded(
             child: exercises.isEmpty
@@ -132,6 +130,7 @@ class _CategoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       height: 44,
       child: ListView(
@@ -143,17 +142,24 @@ class _CategoryBar extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               label: Text(cat.label),
-              avatar: Icon(cat.icon, size: 16),
+              avatar: Icon(cat.icon,
+                  size: 16,
+                  color: isSelected
+                      ? cat.color
+                      : theme.colorScheme.onSurfaceVariant),
               selected: isSelected,
               onSelected: (_) => onSelect(cat),
-              selectedColor: cat.color.withValues(alpha: 0.2),
-              checkmarkColor: cat.color,
+              side: BorderSide.none,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              selectedColor: cat.color.withValues(alpha: 0.18),
+              showCheckmark: false,
               labelStyle: TextStyle(
                 color: isSelected
                     ? cat.color
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                    : theme.colorScheme.onSurfaceVariant,
                 fontWeight:
                     isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 13,
               ),
             ),
           );
@@ -173,6 +179,7 @@ class _DifficultyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
       height: 40,
       child: ListView(
@@ -186,11 +193,14 @@ class _DifficultyBar extends StatelessWidget {
               label: Text(diff.label),
               selected: isSelected,
               onSelected: (_) => onSelect(diff),
-              selectedColor: diff.color.withValues(alpha: 0.2),
+              side: BorderSide.none,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              selectedColor: diff.color.withValues(alpha: 0.18),
+              showCheckmark: false,
               labelStyle: TextStyle(
                 color: isSelected
                     ? diff.color
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                    : theme.colorScheme.onSurfaceVariant,
                 fontSize: 12,
                 fontWeight:
                     isSelected ? FontWeight.w600 : FontWeight.normal,

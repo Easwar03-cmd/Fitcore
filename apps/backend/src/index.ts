@@ -15,8 +15,9 @@ import {
 } from './jobs/weekly_summary.job';
 
 const server = Fastify({
-  // Reject JSON bodies larger than 10 kb to prevent memory-exhaustion attacks.
-  bodyLimit: 10 * 1024,
+  // 1 MB global limit covers all regular API payloads (workout logs, nutrition, etc.).
+  // The food-photo route overrides this to 20 MB per-route.
+  bodyLimit: 1 * 1024 * 1024,
   logger: {
     level: config.NODE_ENV === 'production' ? 'warn' : 'info',
   },
