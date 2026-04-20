@@ -1,6 +1,181 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-20 (session 25)
+**What was built:**
+
+### Workout Recommendation Engine + Home Workout Page (Phase 3)
+
+**Backend — `apps/backend/src/repositories/ai.repository.ts`**:
+- Added `getWeeklyWorkoutSummary(userId)` — fetches last 7 days of workout logs with exercise names and set counts
+
+**Backend — `apps/backend/src/services/ai.service.ts`**:
+- Added `getWorkoutRecommendation(userId)` — builds training history summary, sends to `gemini-2.0-flash` with JSON responseSchema; returns `WorkoutRecommendation` (workoutName, reasoning, targetMuscleGroups, suggestedExercises [{name, sets, reps, restSec}], estimatedDurationMin, intensity)
+- Considers: days since last trained, muscle group balance, user goal, whether already trained today
+
+**Backend — `apps/backend/src/routes/ai.routes.ts`**:
+- Added `GET /api/v1/ai/workout-recommendation` — JWT auth → `getWorkoutRecommendation` → returns recommendation; available to all tiers
+
+**Flutter — `features/workout/models/exercise.dart`**:
+- Added `isBodyweight: bool` and `timedOnly: bool` optional fields to `Exercise` (both default false); controls how the set logger renders
+
+**Flutter — `features/workout/models/home_exercise.dart`** (new):
+- `HomeWorkoutCategory` enum (push/pull/legs/core/fullBody/skill) with icon, label, color
+- `HomeDifficulty` enum (beginner/intermediate/advanced) with color coding
+- `HomeExercise` class with category, difficulty, description, cues, timedOnly; `toExercise()` converts to `Exercise(isBodyweight: true)`
+- `kHomeExerciseLibrary` — 40 exercises: 8 push, 6 pull, 9 legs, 10 core, 3 full body, 4 skill movements
+
+**Flutter — `features/workout/models/workout_recommendation.dart`** (new):
+- `SuggestedExercise` and `WorkoutRecommendation` models with `fromJson` factories
+
+**Flutter — `features/workout/widgets/set_logger.dart`**:
+- Added `SetInputMode` enum (repsAndWeight / repsOnly / durationOnly)
+- `repsOnly` — bodyweight exercises: single reps field, no weight; validates reps > 0
+- `durationOnly` — timed exercises (plank, wall sit…): single "Duration (sec)" field
+- Updated `onLog` callback signature to `(int? reps, double? weightKg, int? durationSec)`
+
+**Flutter — `features/workout/screens/active_workout_screen.dart`**:
+- Added `_inputModeFor(exercise)` helper — maps `timedOnly`/`isBodyweight` → `SetInputMode`
+- Updated `_WorkoutBody.onLogSet` to 3-param signature; passes `inputMode` and `lastDurationSec` to `SetLogger`
+
+**Flutter — `features/workout/providers/workout_recommendation_provider.dart`** (new):
+- `WorkoutRecommendationNotifier extends AsyncNotifier<WorkoutRecommendation?>` — auto-fetches on load, `refresh()` method for manual reload; errors are caught and return null (no crash)
+
+**Flutter — `features/workout/widgets/recommendation_card.dart`** (new):
+- Displays AI recommendation: workout name, intensity badge (color-coded light/moderate/hard), ~duration, target muscles, reasoning (2-line ellipsis), exercise list with sets × reps, refresh button
+
+**Flutter — `features/workout/screens/home_workout_list_screen.dart`** (new):
+- Search bar in AppBar bottom
+- Category filter chips (Push/Pull/Legs/Core/Full Body/Skill) — single select, tap to deselect
+- Difficulty ChoiceChips (Beginner/Intermediate/Advanced)
+- Animated exercise cards with color icon, name, description, difficulty badge, muscle chip, timer icon for timed exercises; tap → `startWorkout(exercise.toExercise())` → pushes to activeWorkout
+
+**Flutter — `features/workout/screens/workout_screen.dart`**:
+- Redesigned: Resume card (shown when session active) → AI recommendation card (with loading shimmer) → "Start a workout" header → Gym Workout card → Home Workout card
+- Gym card: existing exercise picker flow; Home card: navigates to `/workout/home`
+
+**Flutter — routing**:
+- `app_routes.dart`: added `homeWorkouts = '/workout/home'`
+- `app_router.dart`: added `home-workouts` sub-route under `/workout`
+
+**Decisions made:**
+- `isBodyweight` / `timedOnly` on `Exercise` (not a separate type) — avoids type duplication; `HomeExercise.toExercise()` converts at start-workout time
+- Recommendation available to all tiers (no paywall) — value-add for retention, cheap to generate
+- Recommendation errors fail silently (null) so WorkoutScreen always loads
+- `flutter analyze`: 0 issues
+
+**What's broken / known issues:**
+- None
+
+## Next session
+**Priority task:** Grocery list from meal plan (Phase 3) — extract all ingredients from cached `WeeklyMealPlan`, deduplicate and group by category, render checklist at `/nutrition/meal-plan/grocery`
+**Files to look at first:**
+- `apps/mobile/lib/features/nutrition/models/meal_plan.dart`
+- `apps/mobile/lib/features/nutrition/screens/meal_plan_screen.dart`
+
+---
+
+## Last session (archived)
+**Date:** 2026-04-20 (session 24)
+**What was built:**
+
+### Food Photo Logging (Phase 3)
+
+**Backend — `apps/backend/src/services/ai.service.ts`**:
+- Added `analyzeFoodPhoto(base64Image, mimeType)` — Gemini Vision multimodal call with `FOOD_PHOTO_SYSTEM_PROMPT` (nutritionist persona), detailed food detection prompt, and strict JSON `responseSchema`; identifies every food item including mixed dishes (biryani, curry, thali), estimates portion grams, returns calories/protein/carbs/fat/fiber per item with confidence (high/medium/low)
+
+**Backend — `apps/backend/src/routes/ai.routes.ts`**:
+- Added `POST /api/v1/ai/analyze-food-photo` — JWT auth → Zod validation (base64 + mimeType enum) → `analyzeFoodPhoto` → returns `FoodPhotoAnalysis`; no subscription gate (available to all tiers)
+
+**Flutter — `features/nutrition/models/food_analysis.dart`** (new):
+- `DetectedFoodItem` — mutable model; `updateServing(newG)` recalculates all macros proportionally from base values; `isSelected` toggle; `confidence` badge
+- `FoodPhotoAnalysis` — wraps detected list + totalCalories + AI notes
+
+**Flutter — `features/nutrition/providers/food_photo_provider.dart`** (new):
+- `FoodPhotoState` — image path, detected foods, isAnalyzing, isLogging, mealType, loggedCount
+- `FoodPhotoNotifier` — `pickAndAnalyze(source)`: picks image (75% quality, max 1280px), base64-encodes, calls API (60s timeout); `toggleItem`, `updateServing`, `removeItem`, `setMealType`; `logSelected()` POSTs all selected items to `/nutrition/food-logs` in parallel; `_guessMealType()` auto-selects by time of day
+
+**Flutter — `features/nutrition/widgets/detected_food_card.dart`** (new):
+- Checkbox toggle, food name, confidence badge (green/amber/red), macro chips, serving adjuster (−10/+10 stepper + editable text field with max 2000g guard, proportional macro recalc), remove button; flutter_animate entry slide/fade
+
+**Flutter — `features/nutrition/screens/food_photo_screen.dart`** (new):
+- Picker view: camera + gallery buttons, AI capability hints
+- Analyzing view: image preview with gradient overlay + spinner + status text
+- Results view: thumbnail header with item count + total kcal, AI notes, meal type selector (4 tabs, auto-selected by time), `DetectedFoodCard` list
+- Bottom bar: "Log N items · X kcal" FilledButton → logs and pops back; logging spinner bar while saving
+
+**Flutter — routing + entry point**:
+- `app_routes.dart`: added `foodPhoto = '/nutrition/food-photo'`
+- `app_router.dart`: added `food-photo` sub-route under `/nutrition`
+- `nutrition_screen.dart`: added camera FAB (primary colour, heroTag `food_photo_fab`) → pushes to `/nutrition/food-photo`
+- `AndroidManifest.xml`: added `READ_MEDIA_IMAGES` permission (Android 13+ gallery)
+
+**Decisions made:**
+- Gemini Vision (not ML Kit alone) — handles mixed dishes, composite meals, Indian food; returns nutrition estimates directly without a separate DB lookup step
+- No subscription gate on photo logging — available to all tiers (matches CLAUDE.md feature table)
+- Proportional macro scaling on serving edit — client-side, instant, no extra API call
+- 60s receive timeout on analysis call — Gemini Vision with large images can take 15–30s
+
+**What's broken / known issues:**
+- None — `flutter analyze` 0 issues; release APK 144.7 MB installed on CPH2401
+
+## Next session
+**Priority task:** Workout recommendation engine (Phase 3) — suggest next workout based on muscle group volume (weekly sets tracked), recovery status, and user goal
+**Files to look at first:**
+- `apps/backend/src/routes/ai.routes.ts`
+- `apps/mobile/lib/features/workout/`
+
+---
+
+## Last session (archived)
+**Date:** 2026-04-20 (session 23)
+**What was built:**
+
+### AI Meal Plan Generator (Phase 3)
+
+**Backend — `apps/backend/src/services/ai.service.ts`**:
+- Added `generateMealPlan(userId)`: fetches user profile + latest body stat, computes daily calorie target and macro grams (using same Mifflin-St Jeor + goal-adjustment formula as CLAUDE.md), sends structured prompt to Gemini `gemini-2.0-flash` with `responseMimeType: 'application/json'` + `responseSchema` (SchemaType enums) for deterministic JSON output
+- Returns `WeeklyMealPlan` (7 `DayMealPlan` objects, each with 3–4 `PlannedMeal` items)
+
+**Backend — `apps/backend/src/routes/ai.routes.ts`**:
+- Replaced 501 stub with full `POST /api/v1/ai/meal-plan` implementation: JWT auth → subscription check → Pro/Coach gate (free tier → 403 `UPGRADE_REQUIRED`) → `generateMealPlan` call
+
+**Flutter — `features/nutrition/models/meal_plan.dart`** (new):
+- `PlannedMeal`, `DayMealPlan`, `WeeklyMealPlan` with `fromJson`/`toJson` factories; fully typed, no `dynamic`
+
+**Flutter — `features/nutrition/providers/meal_plan_provider.dart`** (new):
+- `MealPlanNotifier extends AsyncNotifier<WeeklyMealPlan?>` — rehydrates from SharedPreferences on startup; `generate()` calls backend, caches result as JSON; handles 403 via separate `mealPlanUpgradeRequiredProvider` (StateProvider<bool>) — free tier shows paywall without error state
+
+**Flutter — `features/nutrition/widgets/planned_meal_card.dart`** (new):
+- Expandable card per meal: meal-type chip (colour-coded), name, macro chips (kcal/P/C/F), prep time, collapsible ingredients list; flutter_animate entry slide/fade; uses `withValues(alpha:)` not deprecated `withOpacity`
+
+**Flutter — `features/nutrition/screens/meal_plan_screen.dart`** (new):
+- Empty state → Generate button; loading state with spinner + message; 7-day `TabBar`/`TabBarView` layout; per-day summary card (day totals); `PlannedMealCard` list; Regenerate icon in AppBar; Pro paywall view for free-tier users
+
+**Flutter — routing + entry point**:
+- `app_routes.dart`: added `mealPlan = '/nutrition/meal-plan'`
+- `app_router.dart`: added `meal-plan` sub-route under `/nutrition`
+- `nutrition_screen.dart`: added `restaurant_menu_outlined` AppBar icon → pushes to `/nutrition/meal-plan`
+
+**Decisions made:**
+- JSON schema-constrained Gemini call (not string parsing) — eliminates hallucinated structure
+- No DB storage — plan cached in SharedPreferences device-side; one plan at a time; regenerate overwrites
+- Paywall handled client-side via separate `mealPlanUpgradeRequiredProvider` — avoids error state for a normal business condition
+- `flutter analyze`: 0 issues; release APK built (144 MB) and installed on CPH2401
+
+**What's broken / known issues:**
+- None
+
+## Next session
+**Priority task:** Grocery list from meal plan (Phase 3) — extract all ingredients from the cached `WeeklyMealPlan`, deduplicate and group by category, render in a checklist screen at `/nutrition/meal-plan/grocery`
+**Files to look at first:**
+- `apps/mobile/lib/features/nutrition/models/meal_plan.dart`
+- `apps/mobile/lib/features/nutrition/screens/meal_plan_screen.dart`
+- `apps/mobile/lib/features/nutrition/providers/meal_plan_provider.dart`
+
+---
+
+## Last session (archived)
 **Date:** 2026-04-20 (session 22)
 **What was built:**
 

@@ -18,12 +18,15 @@ abstract final class AppRoutes {
   // Nutrition sub-routes
   static const foodSearch = '/nutrition/search';
   static const barcode = '/nutrition/barcode';
+  static const mealPlan = '/nutrition/meal-plan';
+  static const foodPhoto = '/nutrition/food-photo';
 
   // Workout sub-routes
   static const exercisePicker = '/workout/exercises';
   static const activeWorkout = '/workout/active';
   static const workoutSummary = '/workout/summary';
   static const workoutHistory = '/workout/history';
+  static const homeWorkouts = '/workout/home';
 
   // Progress sub-routes
   static const bodyLog = '/progress/body';

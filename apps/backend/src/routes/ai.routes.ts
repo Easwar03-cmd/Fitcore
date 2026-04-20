@@ -6,11 +6,19 @@ import {
   sendCoachMessage,
   getFreeTierMessageCount,
   incrementFreeTierCount,
+  generateMealPlan,
+  analyzeFoodPhoto,
+  getWorkoutRecommendation,
   type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
+
+const foodPhotoRequestSchema = z.object({
+  imageBase64: z.string().min(100),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
+});
 
 const chatMessageSchema = z.object({
   role: z.enum(['user', 'assistant']),
@@ -153,8 +161,93 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // POST /api/v1/ai/meal-plan
-  fastify.post('/meal-plan', async (_request, reply) => {
-    return reply.status(501).send({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' } });
+  // POST /api/v1/ai/analyze-food-photo
+  fastify.post('/analyze-food-photo', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const parsed = foodPhotoRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten() },
+      });
+    }
+
+    const { imageBase64, mimeType } = parsed.data;
+
+    try {
+      const analysis = await analyzeFoodPhoto(imageBase64, mimeType);
+      return reply.send({ success: true, data: analysis });
+    } catch (err) {
+      const { status, code, message } = handleAiError(err, request);
+      return reply.status(status).send({ success: false, error: { code, message } });
+    }
+  });
+
+  // GET /api/v1/ai/workout-recommendation
+  fastify.get('/workout-recommendation', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const userId = request.user.userId;
+
+    try {
+      const recommendation = await getWorkoutRecommendation(userId);
+      return reply.send({ success: true, data: recommendation });
+    } catch (err) {
+      const { status, code, message } = handleAiError(err, request);
+      return reply.status(status).send({ success: false, error: { code, message } });
+    }
+  });
+
+  // POST /api/v1/ai/meal-plan  (Pro / Coach tier only)
+  fastify.post('/meal-plan', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const userId = request.user.userId;
+
+    const subscription = await prisma.subscription.findUnique({
+      where: { userId },
+      select: { tier: true },
+    });
+    const tier = subscription?.tier ?? 'free';
+
+    if (tier === 'free') {
+      return reply.status(403).send({
+        success: false,
+        error: {
+          code: 'UPGRADE_REQUIRED',
+          message: 'AI meal plans are available on Pro and Coach plans. Upgrade to unlock.',
+        },
+      });
+    }
+
+    try {
+      const plan = await generateMealPlan(userId);
+      return reply.send({ success: true, data: plan });
+    } catch (err) {
+      const { status, code, message } = handleAiError(err, request);
+      return reply.status(status).send({ success: false, error: { code, message } });
+    }
   });
 };

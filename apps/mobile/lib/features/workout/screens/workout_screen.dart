@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_routes.dart';
 import '../models/exercise.dart';
 import '../providers/workout_provider.dart';
+import '../providers/workout_recommendation_provider.dart';
+import '../widgets/recommendation_card.dart';
 
 class WorkoutScreen extends ConsumerWidget {
   const WorkoutScreen({super.key});
@@ -12,6 +14,7 @@ class WorkoutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(workoutSessionProvider);
+    final recommendationAsync = ref.watch(workoutRecommendationProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -23,78 +26,159 @@ class WorkoutScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.fitness_center_rounded,
-                  size: 72,
-                  color: Theme.of(context).colorScheme.outlineVariant),
-              const SizedBox(height: 20),
-              Text(
-                'Ready to train?',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Pick an exercise and start logging sets.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color:
-                        Theme.of(context).colorScheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 36),
-              if (session.isActive) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () =>
-                        context.push(AppRoutes.activeWorkout),
-                    icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Resume Workout'),
-                    style: ElevatedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: () => _startNew(context, ref),
-                    child: const Text('Start New Workout'),
-                  ),
-                ),
-              ] else
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _startNew(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Start Workout'),
-                    style: ElevatedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14)),
-                  ),
-                ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Resume active session ─────────────────────────────────────
+            if (session.isActive) ...[
+              _ResumeCard(onResume: () => context.push(AppRoutes.activeWorkout)),
+              const SizedBox(height: 16),
             ],
-          ),
+
+            // ── AI recommendation ─────────────────────────────────────────
+            recommendationAsync.when(
+              data: (rec) => rec != null
+                  ? Column(
+                      children: [
+                        RecommendationCard(
+                          recommendation: rec,
+                          onRefresh: () => ref
+                              .read(workoutRecommendationProvider.notifier)
+                              .refresh(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+              loading: () => const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: LinearProgressIndicator(),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+
+            // ── Section header ────────────────────────────────────────────
+            Text(
+              'Start a workout',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Gym workout card ──────────────────────────────────────────
+            _WorkoutTypeCard(
+              icon: Icons.fitness_center_rounded,
+              title: 'Gym Workout',
+              subtitle: 'Log sets with weights — barbell, dumbbells, machines.',
+              color: Theme.of(context).colorScheme.primary,
+              onTap: () => _startGym(context, ref),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Home / calisthenics card ──────────────────────────────────
+            _WorkoutTypeCard(
+              icon: Icons.sports_gymnastics_rounded,
+              title: 'Home Workout',
+              subtitle: 'Bodyweight & calisthenics — no equipment needed.',
+              color: const Color(0xFF805AD5),
+              onTap: () => context.push(AppRoutes.homeWorkouts),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _startNew(BuildContext context, WidgetRef ref) async {
-    final exercise =
-        await context.push<Exercise>(AppRoutes.exercisePicker);
+  Future<void> _startGym(BuildContext context, WidgetRef ref) async {
+    final exercise = await context.push<Exercise>(AppRoutes.exercisePicker);
     if (exercise != null && context.mounted) {
       ref.read(workoutSessionProvider.notifier).startWorkout(exercise);
       context.push(AppRoutes.activeWorkout);
     }
+  }
+}
+
+// ── Resume card ───────────────────────────────────────────────────────────────
+
+class _ResumeCard extends StatelessWidget {
+  const _ResumeCard({required this.onResume});
+  final VoidCallback onResume;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.primaryContainer,
+      child: ListTile(
+        leading: const Icon(Icons.play_arrow_rounded),
+        title: const Text('Workout in progress',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: const Text('Tap to resume'),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: onResume,
+      ),
+    );
+  }
+}
+
+// ── Workout type card ─────────────────────────────────────────────────────────
+
+class _WorkoutTypeCard extends StatelessWidget {
+  const _WorkoutTypeCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: color.withValues(alpha: 0.15),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  size: 16, color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

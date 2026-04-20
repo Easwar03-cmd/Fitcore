@@ -39,11 +39,20 @@ class Exercise {
     required this.id,
     required this.name,
     required this.muscleGroup,
+    this.isBodyweight = false,
+    this.timedOnly = false,
   });
 
   final String id;
   final String name;
   final MuscleGroup muscleGroup;
+
+  /// True for bodyweight / calisthenics exercises — hides the weight input.
+  final bool isBodyweight;
+
+  /// True for exercises measured in duration (plank, wall sit) — shows a
+  /// seconds field instead of a reps field.
+  final bool timedOnly;
 }
 
 // 50 hardcoded exercises (6 chest, 7 back, 5 shoulders, 7 arms, 10 legs, 7 core, 8 cardio)

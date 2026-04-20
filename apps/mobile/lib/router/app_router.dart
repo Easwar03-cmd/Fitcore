@@ -10,6 +10,8 @@ import '../features/coach/screens/coach_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/nutrition/screens/barcode_screen.dart';
 import '../features/nutrition/screens/food_search_screen.dart';
+import '../features/nutrition/screens/food_photo_screen.dart';
+import '../features/nutrition/screens/meal_plan_screen.dart';
 import '../features/nutrition/screens/nutrition_screen.dart';
 import '../features/onboarding/screens/activity_level_screen.dart';
 import '../features/onboarding/screens/body_stats_screen.dart';
@@ -25,6 +27,7 @@ import '../features/social/screens/social_screen.dart';
 import '../features/wellness/screens/wellness_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
+import '../features/workout/screens/home_workout_list_screen.dart';
 import '../features/workout/screens/workout_history_screen.dart';
 import '../features/workout/screens/workout_screen.dart';
 import '../features/workout/screens/workout_summary_screen.dart';
@@ -99,6 +102,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: 'barcode',
                 builder: (context, state) => const BarcodeScreen(),
               ),
+              GoRoute(
+                path: 'meal-plan',
+                name: 'meal-plan',
+                builder: (context, state) => const MealPlanScreen(),
+              ),
+              GoRoute(
+                path: 'food-photo',
+                name: 'food-photo',
+                builder: (context, state) => const FoodPhotoScreen(),
+              ),
             ],
           ),
           GoRoute(
@@ -125,6 +138,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: 'history',
                 name: 'workout-history',
                 builder: (context, state) => const WorkoutHistoryScreen(),
+              ),
+              GoRoute(
+                path: 'home',
+                name: 'home-workouts',
+                builder: (context, state) => const HomeWorkoutListScreen(),
               ),
             ],
           ),

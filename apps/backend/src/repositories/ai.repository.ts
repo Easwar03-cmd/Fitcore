@@ -59,4 +59,22 @@ export const aiRepository = {
         subscription: { select: { tier: true } },
       },
     }),
+
+  getWeeklyWorkoutSummary: async (userId: string) => {
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    start.setHours(0, 0, 0, 0);
+    return prisma.workoutLog.findMany({
+      where: { userId, startedAt: { gte: start } },
+      orderBy: { startedAt: 'desc' },
+      select: {
+        startedAt: true,
+        name: true,
+        durationMin: true,
+        sets: {
+          select: { exerciseName: true, setNumber: true },
+        },
+      },
+    });
+  },
 };

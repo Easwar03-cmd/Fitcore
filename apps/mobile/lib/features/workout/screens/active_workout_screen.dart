@@ -11,6 +11,12 @@ import '../providers/workout_provider.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/set_logger.dart';
 
+SetInputMode _inputModeFor(Exercise exercise) {
+  if (exercise.timedOnly) return SetInputMode.durationOnly;
+  if (exercise.isBodyweight) return SetInputMode.repsOnly;
+  return SetInputMode.repsAndWeight;
+}
+
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   const ActiveWorkoutScreen({super.key});
 
@@ -137,10 +143,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               onToggleOutdoor: () => ref
                   .read(workoutSessionProvider.notifier)
                   .toggleOutdoorMode(),
-              onLogSet: (reps, weight) =>
+              onLogSet: (reps, weight, duration) =>
                   ref.read(workoutSessionProvider.notifier).logSet(
                         reps: reps,
                         weightKg: weight,
+                        durationSec: duration,
                       ),
               onSkipRest: () =>
                   ref.read(workoutSessionProvider.notifier).skipRest(),
@@ -163,7 +170,7 @@ class _WorkoutBody extends StatelessWidget {
   final WorkoutSessionState session;
   final VoidCallback onSwitchExercise;
   final VoidCallback onToggleOutdoor;
-  final void Function(int? reps, double? weightKg) onLogSet;
+  final void Function(int? reps, double? weightKg, int? durationSec) onLogSet;
   final VoidCallback onSkipRest;
 
   @override
@@ -255,9 +262,11 @@ class _WorkoutBody extends StatelessWidget {
           else
             SetLogger(
               setNumber: session.nextSetNumber,
+              inputMode: _inputModeFor(exercise),
               onLog: onLogSet,
               lastReps: sets.isNotEmpty ? sets.last.reps : null,
               lastWeightKg: sets.isNotEmpty ? sets.last.weightKg : null,
+              lastDurationSec: sets.isNotEmpty ? sets.last.durationSec : null,
             ),
         ],
       ),

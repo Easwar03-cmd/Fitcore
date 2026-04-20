@@ -381,10 +381,11 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 ### Phase 3 — AI Features
 - [x] AI coach chat (Gemini API integration) — `gemini-2.0-flash`; Redis rate limit (5/day free, unlimited pro/coach); live user context injected; full chat UI with suggestion chips, typing indicator, rate-limit banner; coach screen rebuilt: `reverse:true` list, amber rate-limit banner, bot avatar bubbles, `CoachInputBar` extracted to own file; 429 envelope bug fixed (`error` field, not `data`)
 - [x] Adaptive daily calorie target (post-workout adjustment) — `caloriesBurnedToday` persisted in SharedPreferences (daily key); `adaptiveTarget = tdee + caloriesBurnedToday` on `HomeDashboardState`; `WorkoutSessionNotifier.finishWorkout` calls `homeProvider.addBurnedCalories` on both online save and offline enqueue; calorie ring, macro bars, and target label all use `adaptiveTarget`; "+X kcal from workout" chip shown when burned > 0
-- [ ] AI meal plan generator (weekly)
+- [x] AI meal plan generator (weekly) — Gemini JSON schema; 7-day plan; Pro/Coach gate; cached in SharedPreferences; expandable PlannedMealCard; paywall view for free tier
 - [ ] Grocery list from meal plan
-- [ ] Food photo logging (ML Kit Vision)
-- [ ] Workout recommendation engine
+- [x] Food photo logging (Gemini Vision) — multimodal analysis; detects all items in mixed dishes; proportional macro scaling on serving edit; camera FAB on NutritionScreen; available all tiers
+- [x] Workout recommendation engine — Gemini-powered; analyzes 7-day training history + goal + recovery; GET /ai/workout-recommendation (all tiers); RecommendationCard on WorkoutScreen with refresh
+- [x] Home workout page — 40 bodyweight/calisthenics exercises in kHomeExerciseLibrary; HomeWorkoutListScreen at /workout/home; category + difficulty filter chips; SetInputMode (repsOnly / durationOnly / repsAndWeight) on SetLogger; no weight input for bodyweight exercises
 - [ ] Recovery score (HRV + sleep + training load)
 - [ ] Deload week detection
 
