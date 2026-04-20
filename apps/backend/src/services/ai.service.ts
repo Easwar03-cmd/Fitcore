@@ -4,23 +4,27 @@ import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
 
 // ─── Retry helper ─────────────────────────────────────────────────────────────
-// Gemini free-tier: 15 RPM. Retries 3× with 1s / 2s / 4s backoff on 429.
+// Gemini free-tier: 15 RPM (rate limit window resets every 60 s).
+// Retries 4× with 3 s / 6 s / 12 s backoff — long enough to outlast a busy window.
 
-async function withGeminiRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+const GEMINI_RETRY_DELAYS_MS = [3000, 6000, 12000];
+
+async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= GEMINI_RETRY_DELAYS_MS.length; attempt++) {
     try {
       return await fn();
     } catch (err) {
+      lastErr = err;
       const is429 = err instanceof GoogleGenerativeAIFetchError && err.status === 429;
-      if (is429 && attempt < maxAttempts) {
-        await new Promise<void>((res) => setTimeout(res, 1000 * 2 ** (attempt - 1)));
+      if (is429 && attempt < GEMINI_RETRY_DELAYS_MS.length) {
+        await new Promise<void>((res) => setTimeout(res, GEMINI_RETRY_DELAYS_MS[attempt]));
         continue;
       }
       throw err;
     }
   }
-  // unreachable — TypeScript requires explicit return/throw after loop
-  throw new Error('withGeminiRetry: all attempts exhausted');
+  throw lastErr;
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
@@ -540,22 +544,26 @@ export async function sendCoachMessage(
     ? `${COACH_SYSTEM_PROMPT}\n\n${context}`
     : COACH_SYSTEM_PROMPT;
 
-  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: systemPrompt,
-  });
-
   // Gemini uses 'model' instead of 'assistant' for the AI role.
   // History = everything except the last message (which we send now).
-  const history = messages.slice(0, -1).map((m) => ({
+  const geminiHistory = messages.slice(0, -1).map((m) => ({
     role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
     parts: [{ text: m.content }],
   }));
 
   const lastMessage = messages[messages.length - 1];
+  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
 
-  const chat = model.startChat({ history });
-  const result = await withGeminiRetry(() => chat.sendMessage(lastMessage.content));
+  // Create a fresh model + chat inside the retry lambda so that a failed
+  // attempt (which may corrupt the chat's internal history) never carries
+  // over to the next attempt.
+  const result = await withGeminiRetry(() => {
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_MODEL,
+      systemInstruction: systemPrompt,
+    });
+    const chat = model.startChat({ history: geminiHistory });
+    return chat.sendMessage(lastMessage.content);
+  });
   return result.response.text();
 }

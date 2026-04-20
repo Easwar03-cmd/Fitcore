@@ -67,6 +67,19 @@ class CoachNotifier extends _$CoachNotifier {
       timestamp: DateTime.now(),
     );
 
+    // Capture history BEFORE the optimistic insert so we don't send the
+    // in-flight user message as part of the history.
+    final historySnapshot = state
+        .map((m) => {
+              'role': m.role == MessageRole.user ? 'user' : 'assistant',
+              'content': m.text,
+            })
+        .toList();
+    // Server accepts at most 10 history items.
+    final history = historySnapshot.length > 10
+        ? historySnapshot.sublist(historySnapshot.length - 10)
+        : historySnapshot;
+
     // Optimistic insert.
     state = [...state, userMsg];
 
@@ -76,7 +89,7 @@ class CoachNotifier extends _$CoachNotifier {
           .dio
           .post<Map<String, dynamic>>(
             '/ai/chat',
-            data: {'message': trimmed},
+            data: {'message': trimmed, 'history': history},
           );
 
       final body = res.data!;

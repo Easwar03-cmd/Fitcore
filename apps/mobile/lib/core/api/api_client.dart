@@ -24,7 +24,9 @@ class ApiClient {
       BaseOptions(
         baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 30),
+        // 90 s: AI endpoints retry up to 3× with 3 s / 6 s / 12 s backoff.
+        // Regular endpoints finish well within this window.
+        receiveTimeout: const Duration(seconds: 90),
         headers: {'Content-Type': 'application/json'},
       ),
     );
