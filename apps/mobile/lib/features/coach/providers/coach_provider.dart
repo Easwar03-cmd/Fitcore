@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/chat_message.dart';
 
 part 'coach_provider.g.dart';
@@ -14,30 +18,23 @@ final _log = Logger();
 
 // ─── Rate-limit state ─────────────────────────────────────────────────────────
 
-/// Tracks how many coach messages the user has sent today and the daily cap.
-/// Updated after every successful [CoachNotifier.sendMessage] call from the
-/// payload returned by the server.
 final coachRateLimitProvider = StateProvider<({int used, int limit})>(
   (ref) => (used: 0, limit: 5),
 );
 
-// ─── Exception ────────────────────────────────────────────────────────────────
+// ─── Exceptions ───────────────────────────────────────────────────────────────
 
 class RateLimitException implements Exception {
   const RateLimitException(this.used, this.limit);
-
   final int used;
   final int limit;
-
   @override
-  String toString() =>
-      'Daily message limit reached: $used / $limit messages used today.';
+  String toString() => 'Daily message limit reached: $used / $limit messages used today.';
 }
 
 class CoachUnavailableException implements Exception {
   const CoachUnavailableException(this.message);
   final String message;
-
   @override
   String toString() => message;
 }
@@ -46,16 +43,64 @@ class CoachUnavailableException implements Exception {
 
 @riverpod
 class CoachNotifier extends _$CoachNotifier {
-  @override
-  List<ChatMessage> build() => const [];
+  // SharedPreferences key scoped to the current user so history is per-account.
+  String _historyKey(String userId) => 'coach_history_$userId';
 
-  /// Sends [text] to the AI coach.
-  ///
-  /// 1. Appends the user message optimistically.
-  /// 2. POSTs to `/ai/chat` via [apiClientProvider].
-  /// 3. On success: appends the coach reply and updates [coachRateLimitProvider].
-  /// 4. On HTTP 429: rolls back the optimistic message and throws [RateLimitException].
-  /// 5. On any other error: rolls back the optimistic message and rethrows.
+  @override
+  List<ChatMessage> build() {
+    // Kick off async load; state starts empty and updates when prefs are read.
+    _loadHistory();
+    return const [];
+  }
+
+  // ── Persistence ─────────────────────────────────────────────────────────────
+
+  Future<void> _loadHistory() async {
+    final userId = ref.read(authProvider).valueOrNull?.user.id;
+    if (userId == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_historyKey(userId));
+      if (raw == null) return;
+      final list = (jsonDecode(raw) as List)
+          .map((e) => ChatMessage.fromStorageJson(e as Map<String, dynamic>))
+          .toList();
+      state = list;
+    } catch (e) {
+      _log.w('Failed to load coach history from prefs', error: e);
+    }
+  }
+
+  Future<void> _saveHistory(List<ChatMessage> messages) async {
+    final userId = ref.read(authProvider).valueOrNull?.user.id;
+    if (userId == null) return;
+    try {
+      // Keep the last 100 messages to avoid unbounded growth.
+      final toSave = messages.length > 100
+          ? messages.sublist(messages.length - 100)
+          : messages;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _historyKey(userId),
+        jsonEncode(toSave.map((m) => m.toStorageJson()).toList()),
+      );
+    } catch (e) {
+      _log.w('Failed to save coach history to prefs', error: e);
+    }
+  }
+
+  /// Clears the conversation for the current user (both in memory and on disk).
+  Future<void> clearHistory() async {
+    final userId = ref.read(authProvider).valueOrNull?.user.id;
+    if (userId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_historyKey(userId));
+    }
+    state = const [];
+  }
+
+  // ── Message send ─────────────────────────────────────────────────────────────
+
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
@@ -75,9 +120,9 @@ class CoachNotifier extends _$CoachNotifier {
               'content': m.text,
             })
         .toList();
-    // Server accepts at most 10 history items.
-    final history = historySnapshot.length > 10
-        ? historySnapshot.sublist(historySnapshot.length - 10)
+    // Server accepts at most 20 history items.
+    final history = historySnapshot.length > 20
+        ? historySnapshot.sublist(historySnapshot.length - 20)
         : historySnapshot;
 
     // Optimistic insert.
@@ -102,7 +147,11 @@ class CoachNotifier extends _$CoachNotifier {
         timestamp: DateTime.now(),
       );
 
-      state = [...state, coachMsg];
+      final updated = [...state, coachMsg];
+      state = updated;
+
+      // Persist after every successful exchange.
+      await _saveHistory(updated);
 
       // Sync rate-limit counters from the server payload.
       final usedToday = data['messagesUsedToday'] as int?;
@@ -120,7 +169,6 @@ class CoachNotifier extends _$CoachNotifier {
 
       if (e.response?.statusCode == 429) {
         final body = e.response?.data as Map<String, dynamic>?;
-        // Backend puts rate-limit counters inside the `error` envelope, not `data`
         final errData = body?['error'] as Map<String, dynamic>?;
         final current = ref.read(coachRateLimitProvider);
         final used = errData?['messagesUsedToday'] as int? ?? current.used;
@@ -134,6 +182,13 @@ class CoachNotifier extends _$CoachNotifier {
         throw CoachUnavailableException(
           msg ?? 'AI service is temporarily unavailable. Please try again later.',
         );
+      }
+
+      // Surface the actual server error message if available.
+      final body = e.response?.data as Map<String, dynamic>?;
+      final serverMsg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
+      if (serverMsg != null) {
+        throw CoachUnavailableException(serverMsg);
       }
 
       _log.e('CoachNotifier.sendMessage DioException', error: e);

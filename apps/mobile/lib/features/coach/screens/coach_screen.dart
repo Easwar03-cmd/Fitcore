@@ -25,6 +25,29 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     super.dispose();
   }
 
+  Future<void> _confirmClear() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear chat?'),
+        content: const Text('Your conversation history will be deleted.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      ref.read(coachNotifierProvider.notifier).clearHistory();
+    }
+  }
+
   Future<void> _send() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isLoading) return;
@@ -50,12 +73,13 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
           SnackBar(content: Text(e.message)),
         );
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
+        final msg = e is CoachUnavailableException
+            ? e.message
+            : 'Failed to get response. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to get response. Please try again.'),
-          ),
+          SnackBar(content: Text(msg)),
         );
       }
     } finally {
@@ -91,6 +115,14 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
             const Text('Zenfit Coach'),
           ],
         ),
+        actions: [
+          if (ref.watch(coachNotifierProvider).isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: 'Clear chat',
+              onPressed: () => _confirmClear(),
+            ),
+        ],
       ),
       body: Column(
         children: [

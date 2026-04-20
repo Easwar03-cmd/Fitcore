@@ -50,6 +50,12 @@ function handleAiError(err: unknown, request: { log: { error: (e: unknown) => vo
     if (err.status === 429) {
       return { status: 503, code: 'AI_UNAVAILABLE', message: 'AI service temporarily unavailable. Try again shortly.' };
     }
+    // Surface other Gemini API errors (400, 403, 500) with their message.
+    const msg = err.message ?? `Gemini API error (${err.status})`;
+    return { status: 502, code: 'AI_ERROR', message: msg };
+  }
+  if (err instanceof Error) {
+    return { status: 500, code: 'INTERNAL_ERROR', message: err.message };
   }
   return { status: 500, code: 'INTERNAL_ERROR', message: 'Failed to get coach response' };
 }

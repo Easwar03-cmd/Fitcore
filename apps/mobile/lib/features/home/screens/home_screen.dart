@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,26 +144,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Text(
           'Hi, $userName 👋',
           style: AppTextStyles.titleLarge
-              .copyWith(color: AppColors.onBackground),
+              .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline_rounded),
-            tooltip: 'AI Coach',
-            onPressed: () => context.push(AppRoutes.coach),
-          ),
           IconButton(
             icon: const Icon(Icons.people_outline),
             tooltip: 'Social',
             onPressed: () => context.push(AppRoutes.social),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(AppRoutes.coach),
-        icon: const Icon(Icons.chat_bubble_outline_rounded),
-        label: const Text('AI Coach'),
-        tooltip: 'Open AI Coach',
       ),
       body: Stack(
         children: [
@@ -297,7 +286,7 @@ class _HealthPermissionsDialog extends StatelessWidget {
           ),
         ],
       ),
-      content: const Column(
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -319,7 +308,7 @@ class _HealthPermissionsDialog extends StatelessWidget {
           SizedBox(height: 10),
           Text(
             'You can change these permissions any time in your device settings.',
-            style: TextStyle(fontSize: 12, color: AppColors.onSurfaceVariant),
+            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
       ),
@@ -361,8 +350,8 @@ class _PermissionRow extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w600)),
                 Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.onSurfaceVariant)),
+                    style: TextStyle(
+                        fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -416,7 +405,7 @@ class _Dashboard extends StatelessWidget {
                   Text(
                     'Daily target · ${home.adaptiveTarget} kcal',
                     style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.onSurfaceVariant),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   if (home.caloriesBurnedToday > 0) ...[
                     const SizedBox(height: 4),
@@ -518,16 +507,16 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.wifi_off_rounded,
               size: 48,
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               message.replaceFirst('Exception: ', ''),
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.onSurfaceVariant),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

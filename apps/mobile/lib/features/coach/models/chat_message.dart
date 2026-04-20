@@ -13,8 +13,24 @@ class ChatMessage {
     required this.timestamp,
   });
 
+  /// Deserialises from the local storage format (includes all fields).
+  factory ChatMessage.fromStorageJson(Map<String, dynamic> json) => ChatMessage(
+        id: json['id'] as String,
+        role: json['role'] == 'user' ? MessageRole.user : MessageRole.coach,
+        text: json['text'] as String,
+        timestamp: DateTime.parse(json['timestamp'] as String),
+      );
+
+  /// Serialises to local storage format (full fidelity).
+  Map<String, dynamic> toStorageJson() => {
+        'id': id,
+        'role': role == MessageRole.user ? 'user' : 'coach',
+        'text': text,
+        'timestamp': timestamp.toIso8601String(),
+      };
+
   /// Serialises to the shape expected by the backend history array.
-  /// `coach` maps to `'assistant'` because the Claude API uses that term.
+  /// `coach` maps to `'assistant'` because the Gemini API uses that term.
   Map<String, dynamic> toJson() => {
         'role': role == MessageRole.user ? 'user' : 'assistant',
         'content': text,
