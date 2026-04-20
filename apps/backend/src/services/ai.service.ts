@@ -570,26 +570,23 @@ export async function sendCoachMessage(
     ? `${COACH_SYSTEM_PROMPT}\n\n${context}`
     : COACH_SYSTEM_PROMPT;
 
-  // Gemini uses 'model' instead of 'assistant' for the AI role.
-  // History = everything except the last message (which we send now).
-  const geminiHistory = messages.slice(0, -1).map((m) => ({
+  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+
+  // Build the full conversation as a contents array.
+  // Using generateContent (not startChat) avoids issues with chat session
+  // state when retrying and is more reliable with multi-turn history.
+  // Gemini requires: alternating user/model roles, last entry must be user.
+  const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
     parts: [{ text: m.content }],
   }));
 
-  const lastMessage = messages[messages.length - 1];
-  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-
-  // Create a fresh model + chat inside the retry lambda so that a failed
-  // attempt (which may corrupt the chat's internal history) never carries
-  // over to the next attempt.
   const result = await withGeminiRetry(() => {
     const model = genAI.getGenerativeModel({
       model: GEMINI_MODEL,
       systemInstruction: systemPrompt,
     });
-    const chat = model.startChat({ history: geminiHistory });
-    return chat.sendMessage(lastMessage.content);
+    return model.generateContent({ contents });
   });
   return result.response.text();
 }

@@ -44,16 +44,16 @@ const FREE_TIER_LIMIT = 5;
 
 // ─── Shared error handler ─────────────────────────────────────────────────────
 
-function handleAiError(err: unknown, request: { log: { error: (e: unknown) => void } }) {
-  request.log.error(err);
+function handleAiError(err: unknown, request: { log: { error: (...args: unknown[]) => void } }) {
   if (err instanceof GoogleGenerativeAIFetchError) {
+    request.log.error('[Gemini]', err.status, err.statusText, err.message);
     if (err.status === 429) {
       return { status: 503, code: 'AI_RATE_LIMITED', message: 'Gemini API rate limit hit. Please wait 60 seconds and try again.' };
     }
-    // Surface other Gemini API errors (400, 403, 500) with their message.
     const msg = err.message ?? `Gemini API error (${err.status})`;
     return { status: 502, code: 'AI_ERROR', message: msg };
   }
+  request.log.error('[AI]', err instanceof Error ? err.message : err);
   if (err instanceof Error) {
     return { status: 500, code: 'INTERNAL_ERROR', message: err.message };
   }
