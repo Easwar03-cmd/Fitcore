@@ -7,7 +7,7 @@ const envSchema = z.object({
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
-  ANTHROPIC_API_KEY: z.string().startsWith('sk-'),
+  GEMINI_API_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
   STRIPE_WEBHOOK_SECRET: z.string(),
   CLOUDINARY_URL: z.string().url(),

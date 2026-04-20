@@ -1,17 +1,19 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import IORedis from 'ioredis';
 import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
 
-// ─── System prompt (from CLAUDE.md spec) ─────────────────────────────────────
+// ─── System prompt ────────────────────────────────────────────────────────────
 
 const COACH_SYSTEM_PROMPT =
   'You are Zenfit Coach, a knowledgeable and motivating fitness assistant. ' +
-  'You have access to the user\'s fitness data including their goals, recent workouts, calorie logs, and body stats. ' +
+  "You have access to the user's fitness data including their goals, recent workouts, calorie logs, and body stats. " +
   'Give concise, actionable advice. Always be encouraging but honest. ' +
   'Never recommend extreme diets or dangerous exercises. ' +
   'If the user describes symptoms that could indicate a medical issue, always recommend consulting a doctor. ' +
   'Keep responses under 200 words unless the user explicitly asks for more detail.';
+
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 const FREE_TIER_DAILY_LIMIT = 5;
 
@@ -40,14 +42,13 @@ function getRedis(): IORedis {
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 
 export type RateLimitResult =
-  | { allowed: true; remaining: number | null } // null = unlimited (pro/coach)
+  | { allowed: true; remaining: number | null }
   | { allowed: false; remaining: 0 };
 
 export async function checkCoachRateLimit(
   userId: string,
   subscriptionTier: string | null,
 ): Promise<RateLimitResult> {
-  // Pro and Coach tiers are unlimited
   if (subscriptionTier === 'pro' || subscriptionTier === 'coach') {
     return { allowed: true, remaining: null };
   }
@@ -56,24 +57,16 @@ export async function checkCoachRateLimit(
     const redis = getRedis();
     const key = `coach:limit:${userId}`;
     const count = await redis.incr(key);
-    if (count === 1) {
-      // First message today — set 24 h TTL
-      await redis.expire(key, 24 * 60 * 60);
-    }
+    if (count === 1) await redis.expire(key, 24 * 60 * 60);
     const remaining = Math.max(0, FREE_TIER_DAILY_LIMIT - count);
     return count <= FREE_TIER_DAILY_LIMIT
       ? { allowed: true, remaining }
       : { allowed: false, remaining: 0 };
   } catch {
-    // Redis unavailable — fail open for better UX
     return { allowed: true, remaining: FREE_TIER_DAILY_LIMIT };
   }
 }
 
-/**
- * Read the current free-tier message count without incrementing.
- * Returns null when Redis is unavailable (caller should fail open).
- */
 export async function getFreeTierMessageCount(userId: string): Promise<number | null> {
   try {
     const redis = getRedis();
@@ -84,18 +77,12 @@ export async function getFreeTierMessageCount(userId: string): Promise<number | 
   }
 }
 
-/**
- * Increment the free-tier counter after a successful Claude call.
- * Sets a 24 h TTL only when the key is brand new (count goes 0 → 1).
- */
 export async function incrementFreeTierCount(userId: string): Promise<number> {
   try {
     const redis = getRedis();
     const key = `coach:limit:${userId}`;
     const count = await redis.incr(key);
-    if (count === 1) {
-      await redis.expire(key, 24 * 60 * 60);
-    }
+    if (count === 1) await redis.expire(key, 24 * 60 * 60);
     return count;
   } catch {
     return 0;
@@ -123,9 +110,7 @@ async function buildContext(userId: string): Promise<string> {
   ];
 
   if (bodyStat?.weightKg) lines.push(`Current weight: ${bodyStat.weightKg} kg`);
-  if (user.profile?.targetWeightKg) {
-    lines.push(`Target weight: ${user.profile.targetWeightKg} kg`);
-  }
+  if (user.profile?.targetWeightKg) lines.push(`Target weight: ${user.profile.targetWeightKg} kg`);
 
   lines.push(
     `Today – calories logged: ${Math.round(nutrition.calories)} kcal`,
@@ -137,7 +122,7 @@ async function buildContext(userId: string): Promise<string> {
   return `<user_context>\n${lines.join('\n')}\n</user_context>`;
 }
 
-// ─── Claude API call ──────────────────────────────────────────────────────────
+// ─── Gemini API call ──────────────────────────────────────────────────────────
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -145,23 +130,29 @@ export async function sendCoachMessage(
   userId: string,
   messages: ChatMessage[],
 ): Promise<string> {
-  const anthropic = new Anthropic({ apiKey: config.ANTHROPIC_API_KEY });
-  const context = await buildContext(userId);
+  if (messages.length === 0) return '';
 
-  // Inject live user context into system prompt.
-  // The base prompt is stable (cache-friendly); per-request context follows it.
+  const context = await buildContext(userId);
   const systemPrompt = context
     ? `${COACH_SYSTEM_PROMPT}\n\n${context}`
     : COACH_SYSTEM_PROMPT;
 
-  const stream = anthropic.messages.stream({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: GEMINI_MODEL,
+    systemInstruction: systemPrompt,
   });
 
-  const final = await stream.finalMessage();
-  const textBlock = final.content.find((b) => b.type === 'text');
-  return textBlock?.type === 'text' ? textBlock.text : '';
+  // Gemini uses 'model' instead of 'assistant' for the AI role.
+  // History = everything except the last message (which we send now).
+  const history = messages.slice(0, -1).map((m) => ({
+    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+    parts: [{ text: m.content }],
+  }));
+
+  const lastMessage = messages[messages.length - 1];
+
+  const chat = model.startChat({ history });
+  const result = await chat.sendMessage(lastMessage.content);
+  return result.response.text();
 }
