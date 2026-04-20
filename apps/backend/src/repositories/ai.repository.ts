@@ -60,6 +60,20 @@ export const aiRepository = {
       },
     }),
 
+  getFourWeekWorkoutSummary: async (userId: string) => {
+    const start = new Date();
+    start.setDate(start.getDate() - 28);
+    start.setHours(0, 0, 0, 0);
+    return prisma.workoutLog.findMany({
+      where: { userId, startedAt: { gte: start } },
+      orderBy: { startedAt: 'asc' },
+      select: {
+        startedAt: true,
+        sets: { select: { exerciseName: true } },
+      },
+    });
+  },
+
   getWeeklyWorkoutSummary: async (userId: string) => {
     const start = new Date();
     start.setDate(start.getDate() - 7);
