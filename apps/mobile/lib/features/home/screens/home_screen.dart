@@ -154,6 +154,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push(AppRoutes.coach),
+        icon: const Icon(Icons.chat_bubble_outline_rounded),
+        label: const Text('AI Coach'),
+        tooltip: 'Open AI Coach',
+      ),
       body: Stack(
         children: [
           Column(
