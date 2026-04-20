@@ -1,7 +1,27 @@
-import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai';
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError, SchemaType, type Schema } from '@google/generative-ai';
 import IORedis from 'ioredis';
 import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
+
+// ─── Retry helper ─────────────────────────────────────────────────────────────
+// Gemini free-tier: 15 RPM. Retries 3× with 1s / 2s / 4s backoff on 429.
+
+async function withGeminiRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const is429 = err instanceof GoogleGenerativeAIFetchError && err.status === 429;
+      if (is429 && attempt < maxAttempts) {
+        await new Promise<void>((res) => setTimeout(res, 1000 * 2 ** (attempt - 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // unreachable — TypeScript requires explicit return/throw after loop
+  throw new Error('withGeminiRetry: all attempts exhausted');
+}
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
@@ -201,10 +221,9 @@ export async function analyzeFoodPhoto(
     },
   });
 
-  const result = await model.generateContent([
-    { inlineData: { mimeType, data: base64Image } },
-    prompt,
-  ]);
+  const result = await withGeminiRetry(() =>
+    model.generateContent([{ inlineData: { mimeType, data: base64Image } }, prompt]),
+  );
 
   const text = result.response.text();
   const parsed = JSON.parse(text) as FoodPhotoAnalysis;
@@ -336,7 +355,7 @@ export async function generateMealPlan(userId: string): Promise<WeeklyMealPlan> 
     },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await withGeminiRetry(() => model.generateContent(prompt));
   const text = result.response.text();
   const parsed = JSON.parse(text) as WeeklyMealPlan;
 
@@ -440,8 +459,70 @@ export async function getWorkoutRecommendation(userId: string): Promise<WorkoutR
     generationConfig: { responseMimeType: 'application/json', responseSchema },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await withGeminiRetry(() => model.generateContent(prompt));
   return JSON.parse(result.response.text()) as WorkoutRecommendation;
+}
+
+// ─── Deload check ─────────────────────────────────────────────────────────────
+
+export interface DeloadCheck {
+  needsDeload: boolean;
+  consecutiveHighVolumeWeeks: number;
+  totalSetsThisWeek: number;
+  weeklyAverageSets: number;
+  reason: string;
+  recommendation: string;
+}
+
+const HIGH_VOLUME_THRESHOLD = 40; // sets/week considered high
+
+export async function getDeloadCheck(userId: string): Promise<DeloadCheck> {
+  const logs = await aiRepository.getFourWeekWorkoutSummary(userId);
+
+  // Bucket logs into 4 weekly slots (0 = 3 weeks ago, 3 = current week).
+  const now = new Date();
+  const weeklySetCounts = [0, 0, 0, 0];
+  for (const log of logs) {
+    const daysAgo = Math.floor(
+      (now.getTime() - log.startedAt.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const weekIdx = 3 - Math.floor(daysAgo / 7);
+    if (weekIdx >= 0 && weekIdx <= 3) weeklySetCounts[weekIdx] += log.sets.length;
+  }
+
+  const totalSetsThisWeek = weeklySetCounts[3];
+  const weeklyAverageSets = Math.round(
+    weeklySetCounts.reduce((a, b) => a + b, 0) / 4,
+  );
+
+  // Count consecutive high-volume weeks ending with the current week.
+  let consecutiveHighVolumeWeeks = 0;
+  for (let i = 3; i >= 0; i--) {
+    if (weeklySetCounts[i] >= HIGH_VOLUME_THRESHOLD) consecutiveHighVolumeWeeks++;
+    else break;
+  }
+
+  const needsDeload =
+    consecutiveHighVolumeWeeks >= 3 || weeklyAverageSets > 60;
+
+  const reason = needsDeload
+    ? consecutiveHighVolumeWeeks >= 3
+      ? `${consecutiveHighVolumeWeeks} consecutive high-volume weeks (≥${HIGH_VOLUME_THRESHOLD} sets each).`
+      : `4-week average of ${weeklyAverageSets} sets/week is very high.`
+    : '';
+
+  const recommendation = needsDeload
+    ? 'Cut volume by 40–50% and intensity by ~20% this week. Focus on technique and mobility. You\'ll come back stronger.'
+    : '';
+
+  return {
+    needsDeload,
+    consecutiveHighVolumeWeeks,
+    totalSetsThisWeek,
+    weeklyAverageSets,
+    reason,
+    recommendation,
+  };
 }
 
 // ─── Gemini API call ──────────────────────────────────────────────────────────
@@ -475,6 +556,6 @@ export async function sendCoachMessage(
   const lastMessage = messages[messages.length - 1];
 
   const chat = model.startChat({ history });
-  const result = await chat.sendMessage(lastMessage.content);
+  const result = await withGeminiRetry(() => chat.sendMessage(lastMessage.content));
   return result.response.text();
 }

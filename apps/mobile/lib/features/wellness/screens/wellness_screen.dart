@@ -70,7 +70,7 @@ class _WellnessDashboard extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Today\'s Readiness',
+                  'Recovery Score',
                   style: AppTextStyles.titleMedium
                       .copyWith(color: AppColors.onSurfaceVariant),
                 ),
@@ -147,15 +147,24 @@ class _ReadinessBreakdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    final hrvLabel = wellness.hrv != null
+        ? '${wellness.hrv!.round()} ms'
+        : '—';
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _Pill(
           label: 'Sleep',
           value: '${wellness.sleepScore}',
           color: AppColors.info,
         ),
-        const SizedBox(width: 8),
+        _Pill(
+          label: 'HRV',
+          value: hrvLabel,
+          color: AppColors.secondary,
+        ),
         _Pill(
           label: 'HR',
           value: wellness.restingHr != null
@@ -163,14 +172,13 @@ class _ReadinessBreakdown extends StatelessWidget {
               : '—',
           color: AppColors.error,
         ),
-        const SizedBox(width: 8),
         _Pill(
-          label: 'Recovery',
+          label: 'Load',
           value: wellness.readinessLevel == ReadinessLevel.rest
-              ? 'Low'
+              ? 'High'
               : wellness.readinessLevel == ReadinessLevel.light
                   ? 'Med'
-                  : 'High',
+                  : 'Low',
           color: AppColors.success,
         ),
       ],

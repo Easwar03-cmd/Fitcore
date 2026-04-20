@@ -37,6 +37,9 @@ const _kSleepStageTypes = [
   HealthDataType.SLEEP_REM,
 ];
 
+/// HRV — Apple Watch / wearable only. Requested best-effort.
+const _kHrvTypes = [HealthDataType.HEART_RATE_VARIABILITY_SDNN];
+
 // ── Sleep window helpers ───────────────────────────────────────────────────────
 
 /// Previous evening 8 pm — start of the sleep capture window.
@@ -93,9 +96,12 @@ class HealthService {
         permissions: _kBasePermissions,
       );
 
-      // Best-effort: sleep stage detail.  Fails silently on unsupported devices.
+      // Best-effort: sleep stage detail + HRV. Fail silently on unsupported devices.
       try {
         await _health.requestAuthorization(_kSleepStageTypes);
+      } catch (_) {}
+      try {
+        await _health.requestAuthorization(_kHrvTypes);
       } catch (_) {}
 
       return _authorised;
@@ -305,6 +311,35 @@ class HealthService {
     } catch (e) {
       _log.w('Could not fetch HR history', error: e);
       return List.filled(days, null);
+    }
+  }
+
+  // ── Read: HRV ────────────────────────────────────────────────────────────────
+
+  /// Average SDNN HRV in milliseconds from today's readings.
+  /// Returns null when no HRV data exists (most Android devices, iPhone without
+  /// Apple Watch). Callers must gracefully degrade when null is returned.
+  Future<double?> getTodayHRV() async {
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day);
+    try {
+      if (!_authorised) {
+        final granted = await requestPermissions();
+        if (!granted) return null;
+      }
+      final points = await _health.getHealthDataFromTypes(
+        types: _kHrvTypes,
+        startTime: midnight,
+        endTime: now,
+      );
+      if (points.isEmpty) return null;
+      final values = points
+          .map((p) => (p.value as NumericHealthValue).numericValue.toDouble())
+          .toList();
+      return values.reduce((a, b) => a + b) / values.length;
+    } catch (e) {
+      _log.w('Could not fetch HRV', error: e);
+      return null;
     }
   }
 

@@ -66,6 +66,7 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
     final f5 = health.getHeartRateHistoryDays(7);
     final f6 = _fetchMoodData(api);
     final f7 = _fetchYesterdayCalsBurned(api);
+    final f8 = health.getTodayHRV();
 
     final sleepMin = await f1;
     final stages = await f2;
@@ -74,13 +75,15 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
     final hrTrend = await f5;
     final (todayMood, moodHistory) = await f6;
     final yesterdayCalsBurned = await f7;
+    final hrv = await f8;
 
     final sleepScore = _computeSleepScore(sleepMin, stages);
     final readiness = _computeReadiness(
       sleepScore: sleepScore,
       restingHr: restingHr,
+      hrv: hrv,
       yesterdayCalsBurned: yesterdayCalsBurned,
-    );
+    ); // hrv: null on devices without a wearable → falls back to RHR
 
     return WellnessState(
       sleepMinutes: sleepMin,
@@ -89,6 +92,7 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
       sleepTrend: sleepTrend,
       restingHr: restingHr,
       hrTrend: hrTrend,
+      hrv: hrv,
       todayMood: todayMood,
       moodHistory: moodHistory,
       readinessScore: readiness,
@@ -145,21 +149,29 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
         .clamp(0, 100);
   }
 
-  /// readiness = sleepScore×0.4 + hrNorm×0.3 + trainingLoadScore×0.3
+  /// readiness = sleepScore×0.4 + hrComponent×0.3 + trainingLoadScore×0.3
+  /// hrComponent: HRV (10–100 ms → 0–100) if available, else RHR fallback.
   static int _computeReadiness({
     required int sleepScore,
     required int? restingHr,
+    double? hrv,
     required int yesterdayCalsBurned,
   }) {
-    // Map RHR 40-100 bpm → 100-0 score (lower RHR = better recovery).
-    final hrNorm = restingHr != null
-        ? ((100 - restingHr.clamp(40, 100)) / 60.0 * 100.0)
-            .clamp(0.0, 100.0)
-        : 50.0;
+    final double hrComponent;
+    if (hrv != null) {
+      // HRV 10–100 ms → 0–100 score (higher HRV = better recovery).
+      hrComponent = ((hrv - 10.0) / 90.0).clamp(0.0, 1.0) * 100.0;
+    } else {
+      // Map RHR 40-100 bpm → 100-0 score (lower RHR = better recovery).
+      hrComponent = restingHr != null
+          ? ((100 - restingHr.clamp(40, 100)) / 60.0 * 100.0)
+              .clamp(0.0, 100.0)
+          : 50.0;
+    }
     // High training load yesterday → lower readiness today.
     final trainingScore =
         100.0 - (yesterdayCalsBurned / 5.0).clamp(0.0, 90.0);
-    return (sleepScore * 0.4 + hrNorm * 0.3 + trainingScore * 0.3)
+    return (sleepScore * 0.4 + hrComponent * 0.3 + trainingScore * 0.3)
         .round()
         .clamp(0, 100);
   }

@@ -9,6 +9,7 @@ import {
   generateMealPlan,
   analyzeFoodPhoto,
   getWorkoutRecommendation,
+  getDeloadCheck,
   type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
@@ -185,6 +186,25 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       const analysis = await analyzeFoodPhoto(imageBase64, mimeType);
       return reply.send({ success: true, data: analysis });
+    } catch (err) {
+      const { status, code, message } = handleAiError(err, request);
+      return reply.status(status).send({ success: false, error: { code, message } });
+    }
+  });
+
+  // GET /api/v1/ai/deload-check
+  fastify.get('/deload-check', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+    try {
+      const check = await getDeloadCheck(request.user.userId);
+      return reply.send({ success: true, data: check });
     } catch (err) {
       const { status, code, message } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message } });

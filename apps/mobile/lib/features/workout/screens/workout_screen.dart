@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_routes.dart';
 import '../models/exercise.dart';
 import '../providers/workout_provider.dart';
+import '../providers/deload_check_provider.dart';
 import '../providers/workout_recommendation_provider.dart';
+import '../widgets/deload_banner_card.dart';
 import '../widgets/recommendation_card.dart';
 
 class WorkoutScreen extends ConsumerWidget {
@@ -15,6 +17,7 @@ class WorkoutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(workoutSessionProvider);
     final recommendationAsync = ref.watch(workoutRecommendationProvider);
+    final deloadAsync = ref.watch(deloadCheckProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -36,6 +39,18 @@ class WorkoutScreen extends ConsumerWidget {
               _ResumeCard(onResume: () => context.push(AppRoutes.activeWorkout)),
               const SizedBox(height: 16),
             ],
+
+            // ── Deload banner ─────────────────────────────────────────────
+            deloadAsync.when(
+              data: (check) => check != null
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: DeloadBannerCard(check: check),
+                    )
+                  : const SizedBox.shrink(),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
 
             // ── AI recommendation ─────────────────────────────────────────
             recommendationAsync.when(

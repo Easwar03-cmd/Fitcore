@@ -32,6 +32,7 @@ class WellnessState {
     required this.sleepTrend,
     this.restingHr,
     required this.hrTrend,
+    this.hrv,
     this.todayMood,
     required this.moodHistory,
     required this.readinessScore,
@@ -52,12 +53,15 @@ class WellnessState {
   /// Total sleep minutes for the past 7 nights, oldest first.
   final List<int> sleepTrend;
 
-  // ── Heart rate ───────────────────────────────────────────────────────────────
+  // ── Heart rate & HRV ─────────────────────────────────────────────────────────
   /// Today's average resting HR in bpm. Null when no readings exist.
   final int? restingHr;
 
   /// Average HR for each of the past 7 days, oldest first. Null = no data.
   final List<int?> hrTrend;
+
+  /// Today's average HRV in ms (SDNN). Null when no wearable data is available.
+  final double? hrv;
 
   // ── Mood ─────────────────────────────────────────────────────────────────────
   /// Today's logged mood score (1-5). Null if not yet logged.
@@ -104,6 +108,7 @@ class WellnessState {
         sleepTrend: sleepTrend,
         restingHr: restingHr,
         hrTrend: hrTrend,
+        hrv: hrv,
         todayMood: todayMood,
         moodHistory: moodHistory,
         readinessScore: readinessScore,
