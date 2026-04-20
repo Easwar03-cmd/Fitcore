@@ -48,7 +48,7 @@ function handleAiError(err: unknown, request: { log: { error: (e: unknown) => vo
   request.log.error(err);
   if (err instanceof GoogleGenerativeAIFetchError) {
     if (err.status === 429) {
-      return { status: 503, code: 'AI_UNAVAILABLE', message: 'AI service temporarily unavailable. Try again shortly.' };
+      return { status: 503, code: 'AI_RATE_LIMITED', message: 'Gemini API rate limit hit. Please wait 60 seconds and try again.' };
     }
     // Surface other Gemini API errors (400, 403, 500) with their message.
     const msg = err.message ?? `Gemini API error (${err.status})`;

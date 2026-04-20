@@ -4,10 +4,11 @@ import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
 
 // ─── Retry helper ─────────────────────────────────────────────────────────────
-// Gemini free-tier: 15 RPM (rate limit window resets every 60 s).
-// Retries 4× with 3 s / 6 s / 12 s backoff — long enough to outlast a busy window.
+// Gemini free-tier: 15 RPM. Rate limit windows reset every 60 s.
+// For real-time chat we do 2 fast retries (5 s / 15 s) then fail fast so the
+// user gets feedback quickly rather than waiting 60+ s for a background retry.
 
-const GEMINI_RETRY_DELAYS_MS = [3000, 6000, 12000];
+const GEMINI_RETRY_DELAYS_MS = [5000, 15000];
 
 async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
   let lastErr: unknown;
