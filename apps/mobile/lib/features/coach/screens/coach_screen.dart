@@ -58,11 +58,14 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
 
     try {
       await ref.read(coachNotifierProvider.notifier).sendMessage(text);
-    } on CoachUnavailableException catch (e) {
+    } catch (e) {
       if (mounted) {
+        final msg = e is CoachUnavailableException
+            ? e.message
+            : 'Something went wrong. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
+            content: Text(msg),
             action: SnackBarAction(
               label: 'Retry',
               onPressed: () {
@@ -73,8 +76,6 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
           ),
         );
       }
-    } catch (_) {
-      // Swallow unexpected errors silently — provider already rolled back state.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

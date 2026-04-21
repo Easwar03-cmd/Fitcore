@@ -152,14 +152,14 @@ class CoachNotifier extends _$CoachNotifier {
     }
   }
 
-  /// Calls /ai/chat, silently retrying once after 4 s if the backend is
-  /// temporarily busy (503). The typing indicator stays visible during the
-  /// retry so the user sees no interruption.
+  /// Calls /ai/chat, silently retrying once after 4 s on 503.
+  /// Always throws [CoachUnavailableException] on failure so the caller
+  /// never has to deal with raw DioExceptions.
   Future<Map<String, dynamic>> _callWithRetry(
     String message,
     List<Map<String, dynamic>> history,
   ) async {
-    Future<Map<String, dynamic>> call() async {
+    Future<Map<String, dynamic>> doCall() async {
       final res = await ref
           .read(apiClientProvider)
           .dio
@@ -170,19 +170,28 @@ class CoachNotifier extends _$CoachNotifier {
       return res.data!['data'] as Map<String, dynamic>;
     }
 
+    DioException? lastDio;
+
     try {
-      return await call();
+      return await doCall();
     } on DioException catch (e) {
-      // 503 = Gemini was momentarily busy. Wait and try once more silently.
-      if (e.response?.statusCode == 503) {
-        await Future.delayed(const Duration(seconds: 4));
-        return await call();
-      }
-      final body = e.response?.data as Map<String, dynamic>?;
-      final serverMsg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
-      throw CoachUnavailableException(
-        serverMsg ?? 'Something went wrong. Please try again.',
-      );
+      lastDio = e;
     }
+
+    // 503 = Gemini temporarily busy — retry once silently.
+    if (lastDio.response?.statusCode == 503) {
+      await Future.delayed(const Duration(seconds: 4));
+      try {
+        return await doCall();
+      } on DioException catch (e) {
+        lastDio = e;
+      }
+    }
+
+    final body = lastDio.response?.data as Map<String, dynamic>?;
+    final serverMsg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
+    throw CoachUnavailableException(
+      serverMsg ?? 'Something went wrong. Please try again.',
+    );
   }
 }

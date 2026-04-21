@@ -86,7 +86,7 @@ Use the user's data (goal, calories today, workouts done) when it's relevant —
 
 If there's a real medical concern, tell them to see a doctor. Never recommend dangerous practices.`;
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const FREE_TIER_DAILY_LIMIT = 5;
 
@@ -690,23 +690,28 @@ export async function sendCoachMessage(
 
   const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
 
-  // Build the full conversation as a contents array.
-  // Using generateContent (not startChat) avoids issues with chat session
-  // state when retrying and is more reliable with multi-turn history.
-  // Gemini requires: alternating user/model roles, last entry must be user.
   const contents = messages.map((m) => ({
     role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
     parts: [{ text: m.content }],
   }));
 
-  const result = await geminiQueue.enqueue(() =>
-    withGeminiRetry(() => {
-      const model = genAI.getGenerativeModel({
-        model: GEMINI_MODEL,
-        systemInstruction: systemPrompt,
-      });
-      return model.generateContent({ contents });
-    }, GEMINI_CHAT_RETRY_DELAYS_MS),
-  );
-  return result.response.text();
+  console.log(`[coach] queuing Gemini call — model=${GEMINI_MODEL} turns=${contents.length} userId=${userId}`);
+
+  try {
+    const result = await geminiQueue.enqueue(() =>
+      withGeminiRetry(() => {
+        const model = genAI.getGenerativeModel({
+          model: GEMINI_MODEL,
+          systemInstruction: systemPrompt,
+        });
+        return model.generateContent({ contents });
+      }, GEMINI_CHAT_RETRY_DELAYS_MS),
+    );
+    const text = result.response.text();
+    console.log(`[coach] Gemini replied — ${text.length} chars`);
+    return text;
+  } catch (err) {
+    console.error('[coach] Gemini call failed:', err instanceof Error ? err.message : err);
+    throw err;
+  }
 }
