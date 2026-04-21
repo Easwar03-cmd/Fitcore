@@ -1,4 +1,4 @@
-import 'dart:math' show max;
+﻿import 'dart:math' show max;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +41,7 @@ class SleepCard extends StatelessWidget {
             Expanded(
               child: Text('Sleep',
                   style: AppTextStyles.titleMedium
-                      .copyWith(color: AppColors.onBackground)),
+                      .copyWith(color: Theme.of(context).colorScheme.onSurface)),
             ),
             _ScoreBadge(score: sleepScore, color: AppColors.info),
           ],
@@ -50,10 +50,10 @@ class SleepCard extends StatelessWidget {
         // Duration headline
         Text(durationText,
             style: AppTextStyles.displayMedium
-                .copyWith(color: AppColors.onBackground)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurface)),
         Text('last night',
             style: AppTextStyles.bodySmall
-                .copyWith(color: AppColors.onSurfaceVariant)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         // Stages bar (only when stage data is available)
         if (stages != null && sleepMinutes > 0) ...[
           const SizedBox(height: 16),
@@ -62,7 +62,7 @@ class SleepCard extends StatelessWidget {
         const SizedBox(height: 16),
         Text('7-day trend',
             style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.onSurfaceVariant)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 8),
         SizedBox(height: 84, child: _SleepTrendChart(trend: sleepTrend)),
       ],
@@ -164,10 +164,10 @@ class _StageLegend extends StatelessWidget {
           children: [
             Text(value,
                 style: AppTextStyles.labelSmall
-                    .copyWith(color: AppColors.onBackground)),
+                    .copyWith(color: Theme.of(context).colorScheme.onSurface)),
             Text(label,
                 style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.onSurfaceVariant, fontSize: 10)),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10)),
           ],
         ),
       ],
@@ -190,7 +190,7 @@ class _SleepTrendChart extends StatelessWidget {
       return Center(
         child: Text('No trend data yet',
             style: AppTextStyles.bodySmall
-                .copyWith(color: AppColors.onSurfaceVariant)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
     }
 
@@ -238,7 +238,7 @@ class _SleepTrendChart extends StatelessWidget {
                   child: Text(
                     _kDayLabels[dt.weekday % 7],
                     style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.onSurfaceVariant),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 );
               },

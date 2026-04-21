@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -38,7 +38,7 @@ class StepCounterCard extends StatelessWidget {
             Text(
               'Steps',
               style: AppTextStyles.titleMedium
-                  .copyWith(color: AppColors.onBackground),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -46,7 +46,7 @@ class StepCounterCard extends StatelessWidget {
         Text(
           _formatSteps(steps),
           style: AppTextStyles.headlineLarge.copyWith(
-            color: goalReached ? AppColors.success : AppColors.onBackground,
+            color: goalReached ? AppColors.success : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -54,7 +54,7 @@ class StepCounterCard extends StatelessWidget {
         Text(
           '/ ${_formatSteps(stepGoal)} goal',
           style: AppTextStyles.bodySmall
-              .copyWith(color: AppColors.onSurfaceVariant),
+              .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 10),
         TweenAnimationBuilder<double>(
@@ -66,7 +66,7 @@ class StepCounterCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value,
               minHeight: 6,
-              backgroundColor: AppColors.surfaceVariant,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(
                 goalReached ? AppColors.success : AppColors.secondary,
               ),
@@ -79,7 +79,7 @@ class StepCounterCard extends StatelessWidget {
           child: Text(
             '$pct%',
             style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.onSurfaceVariant),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ],

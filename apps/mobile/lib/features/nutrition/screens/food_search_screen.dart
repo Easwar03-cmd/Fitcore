@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,11 +58,11 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
           controller: _controller,
           autofocus: true,
           textInputAction: TextInputAction.search,
-          style: const TextStyle(color: AppColors.onBackground),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: 'Search food…',
             hintStyle:
-                const TextStyle(color: AppColors.onSurfaceVariant, fontSize: 16),
+                TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
             suffixIcon: _controller.text.isNotEmpty
@@ -135,19 +135,19 @@ class _SearchHint extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.search, size: 64, color: AppColors.onSurfaceVariant),
+          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 16),
           Text(
             'Search for food by name',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(color: AppColors.onSurfaceVariant),
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             '"chicken breast", "oats", "banana"',
-            style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
           ),
         ],
       ),
@@ -160,20 +160,20 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.search_off, size: 48, color: AppColors.onSurfaceVariant),
+          Icon(Icons.search_off, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
           SizedBox(height: 12),
           Text(
             'No results found',
-            style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 15),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 15),
           ),
           SizedBox(height: 4),
           Text(
             'Try a different search term',
-            style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
           ),
         ],
       ),
@@ -199,7 +199,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.onSurfaceVariant),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),

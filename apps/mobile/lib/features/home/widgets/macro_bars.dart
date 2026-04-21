@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -34,7 +34,7 @@ class MacroBars extends StatelessWidget {
         Text(
           'Macros',
           style: AppTextStyles.titleMedium
-              .copyWith(color: AppColors.onBackground),
+              .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
         const SizedBox(height: 14),
         _MacroRow(
@@ -94,12 +94,12 @@ class _MacroRow extends StatelessWidget {
             Text(
               label,
               style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.onSurfaceVariant),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             Text(
               '${consumed.toInt()}$unit / ${target.toInt()}$unit',
               style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.onSurface),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -113,7 +113,7 @@ class _MacroRow extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value,
               minHeight: 8,
-              backgroundColor: AppColors.surfaceVariant,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),

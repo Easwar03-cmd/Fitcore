@@ -459,7 +459,10 @@ class _Dashboard extends StatelessWidget {
               children: [
                 Expanded(
                   child: AppCard(
-                    child: StepCounterCard(steps: home.steps),
+                    child: StepCounterCard(
+                      steps: home.steps,
+                      stepGoal: home.stepGoal,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

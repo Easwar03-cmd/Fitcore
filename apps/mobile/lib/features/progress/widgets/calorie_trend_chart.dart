@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -17,12 +17,12 @@ class CalorieTrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (days.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 160,
         child: Center(
           child: Text(
             'No calorie data yet.',
-            style: TextStyle(color: AppColors.onSurfaceVariant),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -32,7 +32,7 @@ class CalorieTrendChart extends StatelessWidget {
     final maxY = (maxCal > calorieTarget ? maxCal : calorieTarget.toDouble()) * 1.15;
     final theme = Theme.of(context);
     final labelStyle = theme.textTheme.labelSmall
-        ?.copyWith(color: AppColors.onSurfaceVariant);
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
 
     return BarChart(
       BarChartData(

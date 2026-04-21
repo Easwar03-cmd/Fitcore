@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -60,7 +60,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 Text(
                   'Used to calculate your personalised calorie target.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 32),
@@ -134,8 +134,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                                 : 'Tap to select',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   color: _dateOfBirth != null
-                                      ? AppColors.onSurface
-                                      : AppColors.onSurfaceVariant,
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ),
@@ -219,7 +219,7 @@ class _StepIndicator extends StatelessWidget {
             height: 4,
             margin: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary : AppColors.surfaceVariant,
+              color: active ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

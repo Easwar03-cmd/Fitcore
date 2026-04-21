@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -65,7 +65,7 @@ class _GoalSelectionScreenState extends ConsumerState<GoalSelectionScreen> {
               Text(
                 'We use this to personalise your calorie target and workout plan.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: 32),
@@ -123,10 +123,10 @@ class _GoalCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(30) : AppColors.surface,
+          color: isSelected ? AppColors.primary.withAlpha(30) : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+            color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -138,12 +138,12 @@ class _GoalCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.primary.withAlpha(50)
-                    : AppColors.surfaceVariant,
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 option.icon,
-                color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                 size: 24,
               ),
             ),
@@ -156,14 +156,14 @@ class _GoalCard extends StatelessWidget {
                     option.label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? AppColors.primary : AppColors.onSurface,
+                          color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface,
                         ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     option.description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
                 ],
@@ -193,7 +193,7 @@ class _StepIndicator extends StatelessWidget {
             height: 4,
             margin: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary : AppColors.surfaceVariant,
+              color: active ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(2),
             ),
           ),

@@ -55,6 +55,8 @@ export interface UserProfileDto {
   activityLevel: ActivityLevel;
   targetWeightKg: number | null;
   tdee: number | null;
+  currentWeightKg: number | null;
+  heightCm: number | null;
 }
 
 // ─── Nutrition ────────────────────────────────────────────────────────────────

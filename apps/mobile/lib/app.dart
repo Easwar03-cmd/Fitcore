@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/services/sync_queue_service.dart' show syncServiceProvider;
 import 'core/services/sync_status_provider.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'router/app_router.dart';
 
 class ZenfitApp extends ConsumerStatefulWidget {
@@ -30,10 +31,15 @@ class _ZenfitAppState extends ConsumerState<ZenfitApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-return MaterialApp.router(
+final themeMode = ref.watch(effectiveThemeModeProvider);
+    return MaterialApp.router(
       title: 'Zenfit',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
+      themeAnimationDuration: const Duration(milliseconds: 400),
+      themeAnimationCurve: Curves.easeInOut,
       routerConfig: router,
     );
   }

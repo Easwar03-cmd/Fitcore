@@ -5,20 +5,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/services/health_service.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/home_state.dart';
 
 final _log = Logger();
 
-// SharedPreferences keys
+// SharedPreferences key prefixes — always suffixed with userId so data
+// never leaks between accounts on the same device.
 const _kStreakCount = 'streak_count';
 const _kStreakLastDate = 'streak_last_date'; // YYYY-MM-DD
 const _kStreakGraceAvail = 'streak_grace_avail'; // bool: true = grace not yet used
-const _kWaterBase = 'water_ml_'; // + YYYY-MM-DD suffix
-const _kBurnedBase = 'calories_burned_'; // + YYYY-MM-DD suffix
+const _kWaterBase = 'water_ml_'; // + userId + YYYY-MM-DD suffix
+const _kBurnedBase = 'calories_burned_'; // + userId + YYYY-MM-DD suffix
 
 class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
   @override
-  Future<HomeDashboardState> build() => _loadState();
+  Future<HomeDashboardState> build() {
+    // Watch authProvider so this rebuilds when the logged-in user changes.
+    ref.watch(authProvider);
+    return _loadState();
+  }
+
+  // Use ref.read in action methods — ref.watch is only valid inside build().
+  String get _userId =>
+      ref.read(authProvider).valueOrNull?.user.id ?? 'anonymous';
 
   // ── Public actions ─────────────────────────────────────────────────────────
 
@@ -30,7 +40,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     final newTotal = current.caloriesBurnedToday + kcal;
     state = AsyncData(current.copyWith(caloriesBurnedToday: newTotal));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_burnedKey(), newTotal);
+    await prefs.setInt(_burnedKey(_userId), newTotal);
   }
 
   Future<void> addWater(int ml) async {
@@ -39,7 +49,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     final newMl = current.waterMl + ml;
     state = AsyncData(current.copyWith(waterMl: newMl));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_waterKey(), newMl);
+    await prefs.setInt(_waterKey(_userId), newMl);
   }
 
   /// Called by HomeScreen once food logs are available so streak can be updated.
@@ -47,7 +57,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     final current = state.valueOrNull;
     if (current == null) return;
     final prefs = await SharedPreferences.getInstance();
-    final (streak, graceUsed) = _computeAndSaveStreak(prefs, hasLogs: hasLogs);
+    final (streak, graceUsed) = _computeAndSaveStreak(prefs, _userId, hasLogs: hasLogs);
     state = AsyncData(current.copyWith(streak: streak, graceUsed: graceUsed));
   }
 
@@ -66,18 +76,20 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     final profile = await profileFuture;
     final steps = await stepsFuture;
 
+    final uid = _userId;
     final prefs = await SharedPreferences.getInstance();
-    final waterMl = prefs.getInt(_waterKey()) ?? 0;
-    final caloriesBurnedToday = prefs.getInt(_burnedKey()) ?? 0;
+    final waterMl = prefs.getInt(_waterKey(uid)) ?? 0;
+    final caloriesBurnedToday = prefs.getInt(_burnedKey(uid)) ?? 0;
     // On initial load show the persisted streak; updateStreakForToday()
     // is called by HomeScreen once it sees whether there are food logs today.
-    final streak = prefs.getInt(_kStreakCount) ?? 0;
-    final graceAvail = prefs.getBool(_kStreakGraceAvail) ?? true;
+    final streak = prefs.getInt('${_kStreakCount}_$uid') ?? 0;
+    final graceAvail = prefs.getBool('${_kStreakGraceAvail}_$uid') ?? true;
 
     return HomeDashboardState(
       tdee: profile.tdee,
       fitnessGoal: profile.fitnessGoal,
       activityLevel: profile.activityLevel,
+      weightKg: profile.weightKg,
       steps: steps,
       waterMl: waterMl,
       streak: streak,
@@ -99,13 +111,14 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
   /// Computes the new streak based on today's activity and persists to prefs.
   /// Returns (streakCount, graceUsed).
   (int, bool) _computeAndSaveStreak(
-    SharedPreferences prefs, {
+    SharedPreferences prefs,
+    String userId, {
     required bool hasLogs,
   }) {
     final today = _todayStr();
-    final lastDate = prefs.getString(_kStreakLastDate) ?? '';
-    var streak = prefs.getInt(_kStreakCount) ?? 0;
-    var graceAvail = prefs.getBool(_kStreakGraceAvail) ?? true;
+    final lastDate = prefs.getString('${_kStreakLastDate}_$userId') ?? '';
+    var streak = prefs.getInt('${_kStreakCount}_$userId') ?? 0;
+    var graceAvail = prefs.getBool('${_kStreakGraceAvail}_$userId') ?? true;
 
     // Already processed today — nothing to change.
     if (lastDate == today) return (streak, !graceAvail);
@@ -118,26 +131,23 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
         _dateStr(DateTime.now().subtract(const Duration(days: 2)));
 
     if (lastDate == yesterday) {
-      // Consecutive day — increment.
       streak++;
     } else if (lastDate == twoDaysAgo && graceAvail) {
-      // Missed yesterday but grace shield is available; streak survives.
       graceAvail = false;
     } else {
-      // Chain broken — restart.
       streak = 1;
       graceAvail = true;
     }
 
-    prefs.setInt(_kStreakCount, streak);
-    prefs.setString(_kStreakLastDate, today);
-    prefs.setBool(_kStreakGraceAvail, graceAvail);
+    prefs.setInt('${_kStreakCount}_$userId', streak);
+    prefs.setString('${_kStreakLastDate}_$userId', today);
+    prefs.setBool('${_kStreakGraceAvail}_$userId', graceAvail);
 
     return (streak, !graceAvail);
   }
 
-  static String _waterKey() => '$_kWaterBase${_todayStr()}';
-  static String _burnedKey() => '$_kBurnedBase${_todayStr()}';
+  static String _waterKey(String userId) => '$_kWaterBase${userId}_${_todayStr()}';
+  static String _burnedKey(String userId) => '$_kBurnedBase${userId}_${_todayStr()}';
 
   static String _todayStr() {
     final now = DateTime.now();

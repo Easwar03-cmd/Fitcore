@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -18,13 +18,13 @@ class StrengthCurveChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (curves.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 160,
         child: Center(
           child: Text(
             'Log weighted exercises to see strength curves.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.onSurfaceVariant),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -77,7 +77,7 @@ class StrengthCurveChart extends StatelessWidget {
 
     final theme = Theme.of(context);
     final labelStyle = theme.textTheme.labelSmall
-        ?.copyWith(color: AppColors.onSurfaceVariant);
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
 
     return Column(
       children: [
@@ -152,7 +152,7 @@ class StrengthCurveChart extends StatelessWidget {
                 Text(
                   name,
                   style: theme.textTheme.labelSmall
-                      ?.copyWith(color: AppColors.onSurfaceVariant),
+                      ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             );

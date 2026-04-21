@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,6 +25,11 @@ class NutritionScreen extends ConsumerWidget {
         title: const Text('Nutrition'),
         actions: [
           IconButton(
+            tooltip: 'Meal Plan',
+            icon: const Icon(Icons.restaurant_menu_outlined),
+            onPressed: () => context.push(AppRoutes.mealPlan),
+          ),
+          IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => context.push(AppRoutes.foodSearch),
           ),
@@ -33,6 +38,13 @@ class NutritionScreen extends ConsumerWidget {
             onPressed: () => context.push(AppRoutes.barcode),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'food_photo_fab',
+        onPressed: () => context.push(AppRoutes.foodPhoto),
+        backgroundColor: AppColors.primary,
+        tooltip: 'Log food by photo',
+        child: const Icon(Icons.camera_alt),
       ),
       body: logsState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -85,7 +97,7 @@ class _DaySummary extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -120,7 +132,7 @@ class _DaySummary extends StatelessWidget {
                       style: TextStyle(
                         color: isOver
                             ? AppColors.error
-                            : AppColors.onSurfaceVariant,
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
                       ),
                     ),
@@ -168,8 +180,8 @@ class _MacroTile extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(label,
-            style: const TextStyle(
-                color: AppColors.onSurfaceVariant, fontSize: 12)),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
       ],
     );
   }
@@ -195,7 +207,7 @@ class _ErrorView extends StatelessWidget {
             Text(message,
                 textAlign: TextAlign.center,
                 style:
-                    const TextStyle(color: AppColors.onSurfaceVariant)),
+                    TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
           ],

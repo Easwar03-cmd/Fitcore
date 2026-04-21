@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -40,13 +40,13 @@ class WaterTrackerCard extends StatelessWidget {
             Text(
               'Water',
               style: AppTextStyles.titleMedium
-                  .copyWith(color: AppColors.onBackground),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
             const Spacer(),
             Text(
               '${waterMl}ml / ${waterTargetMl}ml',
               style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.onSurfaceVariant),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -62,7 +62,7 @@ class WaterTrackerCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value,
               minHeight: 6,
-              backgroundColor: AppColors.surfaceVariant,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.info),
             ),
           ),
@@ -79,7 +79,7 @@ class WaterTrackerCard extends StatelessWidget {
                 filled
                     ? Icons.water_drop_rounded
                     : Icons.water_drop_outlined,
-                color: filled ? AppColors.info : AppColors.surfaceVariant,
+                color: filled ? AppColors.info : Theme.of(context).colorScheme.surfaceContainerHighest,
                 size: 22,
               ),
             );

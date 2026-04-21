@@ -1,4 +1,4 @@
-import 'dart:math' show max, min;
+﻿import 'dart:math' show max, min;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +49,7 @@ class HeartRateCard extends StatelessWidget {
             Expanded(
               child: Text('Resting Heart Rate',
                   style: AppTextStyles.titleMedium
-                      .copyWith(color: AppColors.onBackground)),
+                      .copyWith(color: Theme.of(context).colorScheme.onSurface)),
             ),
           ],
         ),
@@ -61,7 +61,7 @@ class HeartRateCard extends StatelessWidget {
             Text(
               restingHr != null ? '$restingHr' : '—',
               style: AppTextStyles.displayMedium
-                  .copyWith(color: AppColors.onBackground),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
             if (restingHr != null) ...[
               const SizedBox(width: 4),
@@ -69,7 +69,7 @@ class HeartRateCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Text('bpm',
                     style: AppTextStyles.bodySmall
-                        .copyWith(color: AppColors.onSurfaceVariant)),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ),
             ],
             const Spacer(),
@@ -91,7 +91,7 @@ class HeartRateCard extends StatelessWidget {
         const SizedBox(height: 16),
         Text('7-day trend',
             style: AppTextStyles.labelSmall
-                .copyWith(color: AppColors.onSurfaceVariant)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 8),
         SizedBox(height: 84, child: _HrTrendChart(trend: hrTrend)),
       ],
@@ -119,7 +119,7 @@ class _HrTrendChart extends StatelessWidget {
       return Center(
         child: Text('No HR data yet',
             style: AppTextStyles.bodySmall
-                .copyWith(color: AppColors.onSurfaceVariant)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
       );
     }
 
@@ -175,7 +175,7 @@ class _HrTrendChart extends StatelessWidget {
                   child: Text(
                     _kDayLabels[dt.weekday % 7],
                     style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.onSurfaceVariant),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 );
               },

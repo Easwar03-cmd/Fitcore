@@ -1,4 +1,4 @@
-import 'dart:math' show min, max;
+﻿import 'dart:math' show min, max;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +30,7 @@ class WeightTrendChart extends StatelessWidget {
     final xInterval = max(1.0, ((spots.length - 1) / 3).floorToDouble());
     final theme = Theme.of(context);
     final labelStyle = theme.textTheme.labelSmall
-        ?.copyWith(color: AppColors.onSurfaceVariant);
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
 
     return LineChart(
       LineChartData(
@@ -153,7 +153,7 @@ class _EmptyState extends StatelessWidget {
           message,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

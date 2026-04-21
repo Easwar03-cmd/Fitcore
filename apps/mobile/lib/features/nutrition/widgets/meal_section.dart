@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -145,7 +145,7 @@ class _EmptyPlaceholder extends StatelessWidget {
       child: Text(
         'Tap + to add $mealType',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontStyle: FontStyle.italic,
             ),
       ),
@@ -250,7 +250,7 @@ class _FoodChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -346,8 +346,8 @@ class _LogItem extends ConsumerWidget {
                     'P ${log.proteinG.toStringAsFixed(1)}  '
                     'C ${log.carbsG.toStringAsFixed(1)}  '
                     'F ${log.fatG.toStringAsFixed(1)}',
-                    style: const TextStyle(
-                        color: AppColors.onSurfaceVariant, fontSize: 12),
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                   ),
                 ],
               ),

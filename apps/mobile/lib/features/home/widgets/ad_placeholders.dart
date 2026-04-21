@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -43,10 +43,10 @@ class _CloseButton extends StatelessWidget {
         width: 28,
         height: 28,
         alignment: Alignment.center,
-        child: const Icon(
+        child: Icon(
           Icons.close_rounded,
           size: 16,
-          color: AppColors.onSurfaceVariant,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -82,31 +82,31 @@ class AdBannerPlaceholder extends ConsumerWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.surfaceVariant,
-                    AppColors.surfaceVariant.withAlpha(180),
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                    Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(180),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.onSurfaceVariant.withAlpha(40),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(40),
                 ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.image_outlined,
                     size: 20,
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   SizedBox(width: 8),
                   Text(
                     'Advertisement',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -163,10 +163,10 @@ class AdPopupPlaceholder extends ConsumerWidget {
           // Ad container
           Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.onSurfaceVariant.withAlpha(40),
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(40),
               ),
               boxShadow: [
                 BoxShadow(
@@ -176,21 +176,21 @@ class AdPopupPlaceholder extends ConsumerWidget {
                 ),
               ],
             ),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.image_outlined,
                     size: 22,
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   SizedBox(height: 4),
                   Text(
                     'Advertisement',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

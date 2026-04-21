@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -27,14 +27,14 @@ class StreakCard extends StatelessWidget {
           children: [
             Icon(
               Icons.local_fire_department_rounded,
-              color: hasStreak ? AppColors.warning : AppColors.onSurfaceVariant,
+              color: hasStreak ? AppColors.warning : Theme.of(context).colorScheme.onSurfaceVariant,
               size: 18,
             ),
             const SizedBox(width: 6),
             Text(
               'Streak',
               style: AppTextStyles.titleMedium
-                  .copyWith(color: AppColors.onBackground),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
             ),
           ],
         ),
@@ -55,7 +55,7 @@ class StreakCard extends StatelessWidget {
                 style: AppTextStyles.headlineLarge.copyWith(
                   color: hasStreak
                       ? AppColors.warning
-                      : AppColors.onSurfaceVariant,
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -64,7 +64,7 @@ class StreakCard extends StatelessWidget {
                 child: Text(
                   streak == 1 ? 'day' : 'days',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -82,7 +82,7 @@ class StreakCard extends StatelessWidget {
                   : Icons.shield_rounded,
               size: 13,
               color: graceUsed
-                  ? AppColors.onSurfaceVariant
+                  ? Theme.of(context).colorScheme.onSurfaceVariant
                   : AppColors.secondary,
             ),
             const SizedBox(width: 4),
@@ -91,7 +91,7 @@ class StreakCard extends StatelessWidget {
                 graceUsed ? 'Shield used' : 'Shield ready',
                 style: AppTextStyles.labelSmall.copyWith(
                   color: graceUsed
-                      ? AppColors.onSurfaceVariant
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
                       : AppColors.secondary,
                 ),
               ),

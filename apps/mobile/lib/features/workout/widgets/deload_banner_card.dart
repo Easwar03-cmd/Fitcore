@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -40,7 +40,7 @@ class DeloadBannerCard extends StatelessWidget {
                 Text(
                   check.reason,
                   style: AppTextStyles.bodySmall
-                      .copyWith(color: AppColors.onSurfaceVariant),
+                      .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 if (check.needsDeload) ...[
                   const SizedBox(height: 6),
@@ -48,7 +48,7 @@ class DeloadBannerCard extends StatelessWidget {
                     '${check.consecutiveHighVolumeWeeks} high-volume weeks · '
                     '~${check.weeklyAverageSets.round()} sets/week avg',
                     style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.onSurfaceVariant),
+                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ],

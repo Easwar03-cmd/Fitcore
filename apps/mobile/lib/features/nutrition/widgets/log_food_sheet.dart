@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -115,8 +115,8 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Container(
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -130,7 +130,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -147,14 +147,14 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               widget.item.nameHindi!.isNotEmpty)
             Text(
               widget.item.nameHindi!,
-              style: const TextStyle(
-                  color: AppColors.onSurfaceVariant, fontSize: 13),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
             )
           else if (widget.item.brand != null && widget.item.brand!.isNotEmpty)
             Text(
               widget.item.brand!,
-              style: const TextStyle(
-                  color: AppColors.onSurfaceVariant, fontSize: 13),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
             ),
           const SizedBox(height: 16),
 
@@ -181,7 +181,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               style: Theme.of(context)
                   .textTheme
                   .labelSmall
-                  ?.copyWith(color: AppColors.onSurfaceVariant),
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
           ],
@@ -294,7 +294,7 @@ class _MacroPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -330,8 +330,8 @@ class _MacroCol extends StatelessWidget {
                 color: color, fontWeight: FontWeight.w700, fontSize: 16)),
         const SizedBox(height: 2),
         Text(label,
-            style: const TextStyle(
-                color: AppColors.onSurfaceVariant, fontSize: 11)),
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11)),
       ],
     );
   }

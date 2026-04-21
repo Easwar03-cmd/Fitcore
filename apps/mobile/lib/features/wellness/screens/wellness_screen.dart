@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,7 +23,7 @@ class WellnessScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('Wellness',
             style: AppTextStyles.titleLarge
-                .copyWith(color: AppColors.onBackground)),
+                .copyWith(color: Theme.of(context).colorScheme.onSurface)),
       ),
       body: wellnessAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -72,7 +72,7 @@ class _WellnessDashboard extends StatelessWidget {
                 Text(
                   'Recovery Score',
                   style: AppTextStyles.titleMedium
-                      .copyWith(color: AppColors.onSurfaceVariant),
+                      .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 20),
                 ReadinessRing(
@@ -199,7 +199,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -209,7 +209,7 @@ class _Pill extends StatelessWidget {
               style: AppTextStyles.labelLarge.copyWith(color: color)),
           Text(label,
               style: AppTextStyles.labelSmall
-                  .copyWith(color: AppColors.onSurfaceVariant)),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );
@@ -232,13 +232,13 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.wifi_off_rounded,
-                size: 48, color: AppColors.onSurfaceVariant),
+            Icon(Icons.wifi_off_rounded,
+                size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               message.replaceFirst('Exception: ', ''),
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.onSurfaceVariant),
+                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

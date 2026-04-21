@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/progress_data.dart';
@@ -35,7 +35,7 @@ class WeeklySummaryCard extends StatelessWidget {
                 'Last Week',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelLarge
-                    ?.copyWith(color: AppColors.onSurfaceVariant),
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ],
@@ -89,8 +89,8 @@ class _MetricRow extends StatelessWidget {
   final double lastNumeric;
   final bool? higherIsBetter; // null = neutral (no colour coding)
 
-  Color _deltaColor() {
-    if (higherIsBetter == null) return AppColors.onSurfaceVariant;
+  Color _deltaColor(BuildContext context) {
+    if (higherIsBetter == null) return Theme.of(context).colorScheme.onSurfaceVariant;
     final isHigher = thisNumeric > lastNumeric;
     return (higherIsBetter! == isHigher) ? AppColors.success : AppColors.error;
   }
@@ -114,7 +114,7 @@ class _MetricRow extends StatelessWidget {
             textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: AppColors.onSurface,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -126,13 +126,13 @@ class _MetricRow extends StatelessWidget {
                 label,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.labelSmall
-                    ?.copyWith(color: AppColors.onSurfaceVariant),
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               if (delta.isNotEmpty)
                 Text(
                   delta,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: _deltaColor(),
+                    color: _deltaColor(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -144,7 +144,7 @@ class _MetricRow extends StatelessWidget {
             lastVal,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium
-                ?.copyWith(color: AppColors.onSurfaceVariant),
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ],

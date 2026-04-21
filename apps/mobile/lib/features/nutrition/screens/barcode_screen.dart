@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -110,7 +110,7 @@ class _BarcodeScreenState extends ConsumerState<BarcodeScreen> {
                     const SizedBox(height: 8),
                     Text(
                       e.toString(),
-                      style: const TextStyle(color: AppColors.onSurface),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
@@ -131,12 +131,12 @@ class _BarcodeScreenState extends ConsumerState<BarcodeScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.search_off,
-                            color: AppColors.onSurfaceVariant, size: 36),
+                        Icon(Icons.search_off,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant, size: 36),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Product not found in database',
-                          style: TextStyle(color: AppColors.onSurface),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 12),
@@ -278,8 +278,8 @@ class _ResultPanel extends StatelessWidget {
       left: 0,
       right: 0,
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(color: Colors.black54, blurRadius: 16),

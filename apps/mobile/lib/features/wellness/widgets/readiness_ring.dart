@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -78,7 +78,10 @@ class _ReadinessRingState extends State<ReadinessRing>
             height: widget.size,
             child: CustomPaint(
               painter: _ReadinessRingPainter(
-                  progress: _anim.value, color: _ringColor),
+                progress: _anim.value,
+                color: _ringColor,
+                trackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -86,14 +89,14 @@ class _ReadinessRingState extends State<ReadinessRing>
                     Text(
                       '${widget.score}',
                       style: AppTextStyles.displayMedium.copyWith(
-                        color: AppColors.onBackground,
+                        color: Theme.of(context).colorScheme.onSurface,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       'Readiness',
                       style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.onSurfaceVariant),
+                          .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -122,11 +125,15 @@ class _ReadinessRingState extends State<ReadinessRing>
 // ── Ring painter ──────────────────────────────────────────────────────────────
 
 class _ReadinessRingPainter extends CustomPainter {
-  const _ReadinessRingPainter(
-      {required this.progress, required this.color});
+  const _ReadinessRingPainter({
+    required this.progress,
+    required this.color,
+    required this.trackColor,
+  });
 
   final double progress;
   final Color color;
+  final Color trackColor;
 
   static const double _strokeWidth = 14.0;
 
@@ -141,7 +148,7 @@ class _ReadinessRingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = AppColors.surfaceVariant
+        ..color = trackColor
         ..strokeWidth = _strokeWidth
         ..style = PaintingStyle.stroke,
     );
@@ -164,5 +171,5 @@ class _ReadinessRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ReadinessRingPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.color != color || old.trackColor != trackColor;
 }

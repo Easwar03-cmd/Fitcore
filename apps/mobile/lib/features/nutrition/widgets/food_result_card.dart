@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/food_item.dart';
@@ -38,7 +38,7 @@ class FoodResultCard extends StatelessWidget {
                       Text(
                         item.brand!,
                         style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.onSurfaceVariant),
+                            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -46,11 +46,11 @@ class FoodResultCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     _MacroRow(item: item),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'per 100 g',
                       style: TextStyle(
                         fontSize: 10,
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -72,7 +72,7 @@ class _FoodImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl == null || imageUrl!.isEmpty) return _placeholder();
+    if (imageUrl == null || imageUrl!.isEmpty) return _placeholder(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: Image.network(
@@ -80,23 +80,23 @@ class _FoodImage extends StatelessWidget {
         width: 64,
         height: 64,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _placeholder(),
+        errorBuilder: (_, __, ___) => _placeholder(context),
         loadingBuilder: (_, child, progress) =>
-            progress == null ? child : _placeholder(),
+            progress == null ? child : _placeholder(context),
       ),
     );
   }
 
-  Widget _placeholder() => Container(
+  Widget _placeholder(BuildContext context) => Container(
         width: 64,
         height: 64,
         decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.fastfood_outlined,
-          color: AppColors.onSurfaceVariant,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
           size: 28,
         ),
       );

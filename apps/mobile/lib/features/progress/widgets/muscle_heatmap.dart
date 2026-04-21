@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
@@ -38,7 +38,7 @@ class MuscleHeatmap extends StatelessWidget {
                 Text(
                   'Back muscles',
                   style: theme.textTheme.labelSmall
-                      ?.copyWith(color: AppColors.onSurfaceVariant),
+                      ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 6),
                 _MuscleChip('Back', volume['back'] ?? 0),
@@ -54,7 +54,7 @@ class MuscleHeatmap extends StatelessWidget {
         Text(
           'Front view  ·  sets this week',
           style: theme.textTheme.labelSmall
-              ?.copyWith(color: AppColors.onSurfaceVariant, fontSize: 10),
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
         ),
       ],
     );
@@ -77,7 +77,7 @@ class _VolumeKey extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.labelSmall
-        ?.copyWith(color: AppColors.onSurfaceVariant);
+        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: _items.map((item) {

@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -84,6 +84,7 @@ class _CalorieRingState extends State<CalorieRing>
           painter: _RingPainter(
             progress: _progressAnim.value,
             isOver: isOver,
+            trackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           ),
           child: Center(
             child: Column(
@@ -92,14 +93,14 @@ class _CalorieRingState extends State<CalorieRing>
                 Text(
                   widget.consumed.toInt().toString(),
                   style: AppTextStyles.displayMedium.copyWith(
-                    color: AppColors.onBackground,
+                    color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 Text(
                   'kcal eaten',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -131,10 +132,15 @@ class _CalorieRingState extends State<CalorieRing>
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.progress, required this.isOver});
+  const _RingPainter({
+    required this.progress,
+    required this.isOver,
+    required this.trackColor,
+  });
 
   final double progress;
   final bool isOver;
+  final Color trackColor;
 
   static const double _strokeWidth = 16.0;
 
@@ -149,7 +155,7 @@ class _RingPainter extends CustomPainter {
       center,
       radius,
       Paint()
-        ..color = AppColors.surfaceVariant
+        ..color = trackColor
         ..strokeWidth = _strokeWidth
         ..style = PaintingStyle.stroke,
     );
@@ -172,5 +178,5 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.isOver != isOver;
+      old.progress != progress || old.isOver != isOver || old.trackColor != trackColor;
 }

@@ -55,7 +55,15 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/profile', async (request, reply) => {
     try {
       await request.jwtVerify();
-      const user = await userRepository.findById(request.user.userId);
+      const userId = request.user.userId;
+      const [user, latestStat] = await Promise.all([
+        userRepository.findById(userId),
+        prisma.bodyStat.findFirst({
+          where: { userId },
+          orderBy: { measuredAt: 'desc' },
+          select: { weightKg: true },
+        }),
+      ]);
       if (!user) {
         return reply.status(404).send({
           success: false,
@@ -73,6 +81,8 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
         activityLevel: user.profile.activityLevel as UserProfileDto['activityLevel'],
         targetWeightKg: user.profile.targetWeightKg,
         tdee: user.profile.tdee,
+        currentWeightKg: latestStat?.weightKg ?? null,
+        heightCm: user.heightCm ?? null,
       };
       return reply.send({ success: true, data: { user: toUserDto(user), profile } });
     } catch (err) {
