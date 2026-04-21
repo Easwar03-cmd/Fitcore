@@ -8,18 +8,25 @@ import { aiRepository } from '../repositories/ai.repository';
 // For real-time chat we do 2 fast retries (5 s / 15 s) then fail fast so the
 // user gets feedback quickly rather than waiting 60+ s for a background retry.
 
-const GEMINI_RETRY_DELAYS_MS = [5000, 15000];
+// Chat uses a single fast retry so the user gets quick feedback.
+// Background tasks (meal plan, food photo, workout rec) use longer delays
+// that can survive a full 60-second Gemini rate-limit window.
+const GEMINI_CHAT_RETRY_DELAYS_MS   = [4000];
+const GEMINI_BATCH_RETRY_DELAYS_MS  = [8000, 30000, 65000];
 
-async function withGeminiRetry<T>(fn: () => Promise<T>): Promise<T> {
+async function withGeminiRetry<T>(
+  fn: () => Promise<T>,
+  delays = GEMINI_BATCH_RETRY_DELAYS_MS,
+): Promise<T> {
   let lastErr: unknown;
-  for (let attempt = 0; attempt <= GEMINI_RETRY_DELAYS_MS.length; attempt++) {
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {
       return await fn();
     } catch (err) {
       lastErr = err;
       const is429 = err instanceof GoogleGenerativeAIFetchError && err.status === 429;
-      if (is429 && attempt < GEMINI_RETRY_DELAYS_MS.length) {
-        await new Promise<void>((res) => setTimeout(res, GEMINI_RETRY_DELAYS_MS[attempt]));
+      if (is429 && attempt < delays.length) {
+        await new Promise<void>((res) => setTimeout(res, delays[attempt]));
         continue;
       }
       throw err;
@@ -660,6 +667,6 @@ export async function sendCoachMessage(
       systemInstruction: systemPrompt,
     });
     return model.generateContent({ contents });
-  });
+  }, GEMINI_CHAT_RETRY_DELAYS_MS);
   return result.response.text();
 }

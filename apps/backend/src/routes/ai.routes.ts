@@ -2,10 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { GoogleGenerativeAIFetchError } from '@google/generative-ai';
 import {
-  checkCoachRateLimit,
   sendCoachMessage,
-  getFreeTierMessageCount,
-  incrementFreeTierCount,
   generateMealPlan,
   analyzeFoodPhoto,
   getWorkoutRecommendation,
@@ -13,7 +10,6 @@ import {
   type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
-import { config } from '../utils/config';
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -40,8 +36,6 @@ const chatRequestSchema = z.object({
   message: z.string().min(1).max(4000),
   history: z.array(chatHistoryItemSchema).max(20).default([]),
 });
-
-const FREE_TIER_LIMIT = 5;
 
 // ─── Shared error handler ─────────────────────────────────────────────────────
 
@@ -75,8 +69,6 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const userId = request.user.userId;
-
     const parsed = coachRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -85,23 +77,9 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const { messages } = parsed.data;
-
-    const { prisma: db } = await import('../utils/db');
-    const subscription = await db.subscription.findUnique({ where: { userId }, select: { tier: true } });
-    const tier = subscription?.tier ?? 'free';
-
-    const rateLimit = await checkCoachRateLimit(userId, tier);
-    if (!rateLimit.allowed) {
-      return reply.status(429).send({
-        success: false,
-        error: { code: 'RATE_LIMITED_COACH', message: 'Daily message limit reached. Upgrade to Pro for unlimited coaching.' },
-      });
-    }
-
     try {
-      const responseText = await sendCoachMessage(userId, messages as ChatMessage[]);
-      return reply.send({ success: true, data: { message: responseText, remainingMessages: rateLimit.remaining } });
+      const responseText = await sendCoachMessage(request.user.userId, parsed.data.messages as ChatMessage[]);
+      return reply.send({ success: true, data: { message: responseText } });
     } catch (err) {
       const { status, code, message } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message } });
@@ -131,36 +109,6 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { message, history } = parsed.data;
 
-    const [subscription, user] = await Promise.all([
-      prisma.subscription.findUnique({ where: { userId }, select: { tier: true } }),
-      prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
-    ]);
-    const tier = subscription?.tier ?? 'free';
-    const adminEmails = (config.ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
-    const isAdmin = adminEmails.includes(user?.email ?? '');
-    const isPaid = isAdmin || tier === 'pro' || tier === 'coach';
-
-    // The first message of a session (empty history) is a free opener — it is
-    // not counted toward the daily limit. Subsequent messages in the same
-    // conversation (history.length > 0) are counted for free-tier users.
-    const isSessionStarter = history.length === 0;
-
-    // Rate limit check (read-only — increment happens after success)
-    if (!isPaid && !isSessionStarter) {
-      const count = await getFreeTierMessageCount(userId);
-      if (count !== null && count >= FREE_TIER_LIMIT) {
-        return reply.status(429).send({
-          success: false,
-          error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Daily message limit reached. Upgrade to Pro for unlimited coaching.',
-            messagesUsedToday: count,
-            limit: FREE_TIER_LIMIT,
-          },
-        });
-      }
-    }
-
     try {
       const messages: ChatMessage[] = [
         ...history.map((h) => ({ role: h.role as 'user' | 'assistant', content: h.content })),
@@ -168,9 +116,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       ];
 
       const replyText = await sendCoachMessage(userId, messages);
-      const messagesUsedToday = (isPaid || isSessionStarter) ? 0 : await incrementFreeTierCount(userId);
-
-      return reply.send({ success: true, data: { reply: replyText, messagesUsedToday, dailyLimit: isPaid ? 0 : FREE_TIER_LIMIT } });
+      return reply.send({ success: true, data: { reply: replyText } });
     } catch (err) {
       const { status, code, message: msg } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message: msg } });

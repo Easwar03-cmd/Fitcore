@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -58,16 +58,6 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
 
     try {
       await ref.read(coachNotifierProvider.notifier).sendMessage(text);
-    } on RateLimitException {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Daily message limit reached (5/5). Upgrade to Pro for unlimited coaching.',
-            ),
-          ),
-        );
-      }
     } on CoachUnavailableException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -76,11 +66,8 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final msg = e is CoachUnavailableException
-            ? e.message
-            : 'Failed to get response. Please try again.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
+          const SnackBar(content: Text('Failed to get a response. Please try again.')),
         );
       }
     } finally {
@@ -90,8 +77,6 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
 
   /// Expands coach messages that contain double-newline separators into
   /// individual display entries so each paragraph appears as its own bubble.
-  /// State (and therefore history sent to the backend) stays unchanged —
-  /// only the display list is affected.
   List<ChatMessage> _expandForDisplay(List<ChatMessage> messages) {
     final result = <ChatMessage>[];
     for (final msg in messages) {
@@ -122,9 +107,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
   Widget build(BuildContext context) {
     final messages = ref.watch(coachNotifierProvider);
     final display = _expandForDisplay(messages);
-    final rateLimit = ref.watch(coachRateLimitProvider);
-    final isRateLimited =
-        rateLimit.limit > 0 && rateLimit.used >= rateLimit.limit;
+    final hasRealHistory = messages.any((m) => !m.isLocal);
 
     return Scaffold(
       appBar: AppBar(
@@ -148,164 +131,41 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
           ],
         ),
         actions: [
-          if (messages.isNotEmpty)
+          if (hasRealHistory)
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded),
               tooltip: 'Clear chat',
-              onPressed: () => _confirmClear(),
+              onPressed: _confirmClear,
             ),
         ],
       ),
       body: Column(
         children: [
-          if (rateLimit.limit > 0 && rateLimit.used > 0)
-            _RateLimitBanner(used: rateLimit.used, limit: rateLimit.limit),
           Expanded(
-            child: messages.isEmpty
-                ? _EmptyState(onSuggestionTap: (text) {
-                    _controller.text = text;
-                    _send();
-                  })
-                : ListView.builder(
-                    reverse: true,
-                    padding: const EdgeInsets.all(12),
-                    itemCount: display.length + (_isLoading ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (_isLoading && index == 0) {
-                        return const Padding(
-                          padding: EdgeInsets.only(bottom: 4),
-                          child: TypingIndicator(),
-                        );
-                      }
-                      final msgIndex = display.length -
-                          1 -
-                          (index - (_isLoading ? 1 : 0));
-                      return ChatBubble(message: display[msgIndex]);
-                    },
-                  ),
+            child: ListView.builder(
+              reverse: true,
+              padding: const EdgeInsets.all(12),
+              itemCount: display.length + (_isLoading ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (_isLoading && index == 0) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: TypingIndicator(),
+                  );
+                }
+                final msgIndex =
+                    display.length - 1 - (index - (_isLoading ? 1 : 0));
+                return ChatBubble(message: display[msgIndex]);
+              },
+            ),
           ),
           CoachInputBar(
             controller: _controller,
             focusNode: _focusNode,
             isLoading: _isLoading,
-            isRateLimited: isRateLimited,
             onSend: _send,
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─── Rate-limit banner ────────────────────────────────────────────────────────
-
-class _RateLimitBanner extends StatelessWidget {
-  const _RateLimitBanner({required this.used, required this.limit});
-  final int used;
-  final int limit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.amber.shade100,
-      child: Text(
-        '$used / $limit messages used today',
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.amber.shade900,
-            ),
-      ),
-    );
-  }
-}
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onSuggestionTap});
-  final void Function(String text) onSuggestionTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.psychology_outlined,
-                size: 48,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Your AI Coach',
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineMedium
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Ask me anything about your workouts, nutrition, or fitness goals.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 32),
-            ..._suggestions.map((s) => _SuggestionChip(text: s, onTap: () => onSuggestionTap(s))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-const _suggestions = [
-  'How many calories should I eat today?',
-  'Give me a quick 20-minute workout',
-  'Am I overtraining this week?',
-];
-
-class _SuggestionChip extends StatelessWidget {
-  const _SuggestionChip({required this.text, required this.onTap});
-  final String text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.primary.withAlpha(80)),
-          ),
-          child: Text(
-            text,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
-          ),
-        ),
       ),
     );
   }
