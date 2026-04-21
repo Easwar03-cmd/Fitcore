@@ -3,9 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../providers/food_photo_provider.dart';
 import '../providers/nutrition_provider.dart';
 import '../widgets/detected_food_card.dart';
@@ -31,6 +34,35 @@ class _FoodPhotoScreenState extends ConsumerState<FoodPhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sub = ref.watch(subscriptionProvider).valueOrNull;
+    if (sub != null && !sub.isPaid) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Log Food by Photo')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_rounded, size: 48),
+                const SizedBox(height: 16),
+                const Text('Food photo logging requires Pro or Coach.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  icon: const Icon(Icons.workspace_premium_rounded),
+                  label: const Text('Upgrade to unlock'),
+                  onPressed: () => context.push(AppRoutes.paywall,
+                      extra: 'Food photo logging'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final state = ref.watch(foodPhotoProvider);
 
     // When logging completes, refresh nutrition and pop.

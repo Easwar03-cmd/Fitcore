@@ -44,4 +44,6 @@ abstract final class AppRoutes {
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
   static const wearableIntegrations = '/profile/wearables';
+  static const subscription = '/profile/subscription';
+  static const paywall = '/paywall';
 }

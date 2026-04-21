@@ -51,9 +51,7 @@ class ProfileScreen extends ConsumerWidget {
               _TileData(
                 icon: Icons.workspace_premium_rounded,
                 label: 'Subscription',
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Coming soon')),
-                ),
+                onTap: () => context.push(AppRoutes.subscription),
               ),
             ],
           ),

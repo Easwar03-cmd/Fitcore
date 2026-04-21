@@ -10,6 +10,8 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().min(10),
   STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
   STRIPE_WEBHOOK_SECRET: z.string(),
+  STRIPE_PRO_PRICE_ID: z.string().optional(),
+  STRIPE_COACH_PRICE_ID: z.string().optional(),
   CLOUDINARY_URL: z.string().url(),
   OPEN_FOOD_FACTS_BASE_URL: z.string().url().default('https://world.openfoodfacts.org'),
   USDA_API_KEY: z.string(),

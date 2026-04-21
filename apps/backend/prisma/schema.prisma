@@ -119,11 +119,13 @@ model Goal {
 }
 
 model Subscription {
-  id         String    @id @default(cuid())
-  userId     String    @unique
-  tier       String    // free | pro | coach
-  stripeId   String?
-  validUntil DateTime?
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  tier             String    // free | pro | coach
+  stripeId         String?   // Stripe subscription ID
+  stripeCustomerId String?   @unique
+  stripePriceId    String?
+  validUntil       DateTime?
 
   user User @relation(fields: [userId], references: [id])
 }

@@ -134,6 +134,16 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    const userId = request.user.userId;
+
+    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
+    if ((subscription?.tier ?? 'free') === 'free') {
+      return reply.status(403).send({
+        success: false,
+        error: { code: 'UPGRADE_REQUIRED', message: 'Food photo logging is available on Pro and Coach plans. Upgrade to unlock.' },
+      });
+    }
+
     const parsed = foodPhotoRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
