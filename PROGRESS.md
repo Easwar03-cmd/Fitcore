@@ -1,6 +1,99 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-21 (session 28)
+**Duration:** ~3 hours
+**What was built:**
+
+### AI Coach — full rebuild
+- Removed 5/day rate limit entirely from `/ai/chat` and `/ai/coach` routes
+- Upgraded model from `gemini-2.0-flash` → `gemini-2.5-flash`
+- Greeting message injected locally on first open: "Hey {firstName}! How can I help you today?" — uses `isLocal: bool` flag on `ChatMessage` so it never gets sent to Gemini as history
+- Suggestion chips and rate-limit banner removed from coach UI
+- `CoachInputBar` simplified — `isRateLimited` param removed
+- Silent retry: 503 from backend triggers a 4 s wait then one automatic retry, typing indicator stays visible throughout; only shows error (with Retry snackbar that restores the typed message) if both attempts fail
+- `_callWithRetry` in provider always converts all `DioException` paths to `CoachUnavailableException` so nothing can be silently swallowed
+- Added `console.log` before/after every Gemini chat call → Railway logs now show model, turn count, reply length, and full error on failure
+
+### Gemini rate-limit fix — server-side queue
+- `GeminiQueue` class in `ai.service.ts` serialises all Gemini API calls with a 4.5 s minimum gap between requests, staying well under the 15 RPM free-tier limit (and effective on paid tiers too)
+- All four call sites (chat, food photo, meal plan, workout recommendation) go through the queue
+- `workoutRecommendationProvider.keepAlive()` prevents re-fetching on every WorkoutScreen navigation (was the primary source of concurrent burst calls)
+
+### Gym vs Home AI workout recommendations — fully split
+- `GET /ai/workout-recommendation?type=gym|home` — backend reads `?type` query param
+- Gym prompt: enforces barbell/dumbbell/cable/machine exercises
+- Home prompt: `CRITICAL` — forbids all equipment, bodyweight-only exercises only
+- `workoutRecommendationProvider` converted to a Riverpod `AsyncNotifierProvider.family<..., WorkoutType>` — `WorkoutType.gym` and `WorkoutType.home` have completely independent state and keepAlive
+- New **`GymWorkoutScreen`** at `/workout/gym`: "Get AI Gym Recommendation" button → generates gym-specific plan; "Browse Exercises" card → exercise picker → active workout
+- **`HomeWorkoutListScreen`**: AI home recommendation tile added at the top (hidden in pickMode); shows loading card, generated `RecommendationCard`, or retry tile
+- **`WorkoutScreen`**: "Gym Workout" card now navigates to `/workout/gym` instead of directly to exercise picker; subtitles updated to mention AI; standalone recommendation removed from this screen entirely
+- New route `/workout/gym` registered in `app_router.dart` and `AppRoutes`
+
+### Back navigation fix
+- `PopScope` wraps `MainShell` scaffold
+- Back press on any non-Home tab → `context.go(AppRoutes.home)`
+- Back press on Home tab → `canPop: true`, system exits the app
+
+**Decisions made:**
+- Coach rate limit removed permanently — billing is enabled on the Gemini API key, free-tier 5/day cap no longer makes sense
+- Workout recommendation is manual-only (no auto-fetch on build) — prevents startup Gemini bursts; user taps when they want a suggestion
+- Gemini calls are serialised server-side (queue) rather than client-side — single source of truth, works across all features not just chat
+
+**Known issues:**
+- None observed during testing session
+
+**What to tackle next session:**
+- Phase 4: User search + friend system (backend Friendship model + `/social/*` routes + Flutter FriendSearchScreen)
+- Activity feed (social posts when workout/food milestones hit)
+- Grocery list generated from the weekly meal plan (Phase 3 remaining item)
+- Stripe subscription integration — paywall screens for Pro/Coach features
+
+---
+
+## Previous session
+**Date:** 2026-04-20 (session 27)
+**What was built:**
+
+### Theme System — Light / Dark / Auto (pre-Phase 4 infrastructure)
+
+**New files:**
+- `apps/mobile/lib/core/theme/theme_provider.dart` — `ThemePreference` enum (auto/light/dark); `ThemeNotifier` (Riverpod `NotifierProvider`) persists choice in SharedPreferences, defaults to `auto`; `effectiveThemeModeProvider` computes `ThemeMode` from preference + current time, schedules a `Timer` that fires at the next 6 AM / 6 PM boundary and calls `ref.invalidateSelf()` so the switch happens without polling
+
+**Modified files:**
+- `app_colors.dart` — added 6 light-theme neutral constants (`lightBackground`, `lightSurface`, `lightSurfaceVariant`, `lightOnBackground`, `lightOnSurface`, `lightOnSurfaceVariant`); brand + semantic colors unchanged
+- `app_theme.dart` — added `AppTheme.light`; extracted shared `_textTheme` + `_buttonShape`; both themes now expose `surfaceContainerHighest` and `outline` in `ColorScheme`
+- `app.dart` — `MaterialApp.router` now uses `theme: AppTheme.light`, `darkTheme: AppTheme.dark`, `themeMode` from `effectiveThemeModeProvider`, `themeAnimationDuration: 400ms`, `themeAnimationCurve: Curves.easeInOut`
+- `profile_screen.dart` — new "Appearance" settings group with `_ThemeToggleCard` (`SegmentedButton` with Auto ✦ / Light ☀ / Dark ☾ icons); `_SettingsCard`, `_SettingsTile`, `_GroupLabel` migrated to `Theme.of(context).colorScheme.*`
+
+**Light-mode text visibility fix:**
+- 209 hardcoded `AppColors.onSurface / onBackground / onSurfaceVariant / surface / surfaceVariant / background` references across 40 widget files replaced with `Theme.of(context).colorScheme.*` via PowerShell bulk replace
+- `const` conflicts (widgets implicitly const that now contained non-const `Theme.of(context)` calls) resolved by a Python paren-balancing script run twice — first pass removed innermost `const`, second pass removed outer propagated `const`
+- Custom painters (`_RingPainter` in `calorie_ring.dart`, `_ReadinessRingPainter` in `readiness_ring.dart`) don't have BuildContext; fixed by adding a `trackColor` constructor param, passed from the parent `build()` method
+- `_placeholder()` in `food_result_card.dart` and `_deltaColor()` in `weekly_summary_card.dart` updated to accept `BuildContext` as a parameter
+- `_kMoodColors` top-level const list in `mood_logger_card.dart` reverted the neutral slot back to `AppColors.onSurfaceVariant` (it's a chart data color, not text)
+
+**Decisions made:**
+- 6 AM = light on, 6 PM = dark on — matches typical usage pattern (fresh morning, relaxed evening)
+- Auto-switch uses a `Timer` in `effectiveThemeModeProvider` that fires at the exact boundary and invalidates the provider; no polling, no `AppLifecycleObserver` needed
+- `const` removal done with a Python script (paren-balancing + statement-boundary detection) rather than 155+ manual edits
+- Track colors in custom painters passed as constructor params — painters are const-friendly, context-free; this is the Flutter-idiomatic pattern
+- `AppColors.onSurfaceVariant` kept as a static constant for the mood chart neutral color (chart data colors are intentionally fixed, not theme-reactive)
+
+**What's broken / known issues:**
+- Some `prefer_const_constructors` linter *warnings* (not errors) remain in files where enclosing `const` was stripped — performance hints only, no functional impact
+- Card/container widgets in screens not touched this session that still use `AppColors.surface` or `AppColors.surfaceVariant` as explicit `color:` arguments may render with dark card backgrounds in light mode — text is now fully readable; card backgrounds are a lower-priority follow-up
+
+## Next session
+**Priority task:** Grocery list from meal plan (Phase 3) — extract all ingredients from cached `WeeklyMealPlan`, deduplicate and group by category, render checklist at `/nutrition/meal-plan/grocery`
+**Files to look at first:**
+- `apps/mobile/lib/features/nutrition/models/meal_plan.dart`
+- `apps/mobile/lib/features/nutrition/screens/meal_plan_screen.dart`
+- `apps/mobile/lib/features/nutrition/providers/meal_plan_provider.dart`
+
+---
+
+## Last session (archived)
 **Date:** 2026-04-20 (session 26)
 **What was built:**
 
@@ -52,13 +145,6 @@ Three bugs found and fixed:
 **What's broken / known issues:**
 - If Gemini free-tier quota (1500 req/day) is fully exhausted, the app returns "AI service temporarily unavailable" regardless of retries — no fix possible without upgrading the API key
 - Workout recommendation still auto-loads Gemini on tab open; if the coach is used at the same time, they compete for the 15 RPM slot (both will succeed eventually via retries, but one will be slow)
-
-## Next session
-**Priority task:** Grocery list from meal plan (Phase 3) — extract all ingredients from cached `WeeklyMealPlan`, deduplicate and group by category, render checklist at `/nutrition/meal-plan/grocery`
-**Files to look at first:**
-- `apps/mobile/lib/features/nutrition/models/meal_plan.dart`
-- `apps/mobile/lib/features/nutrition/screens/meal_plan_screen.dart`
-- `apps/mobile/lib/features/nutrition/providers/meal_plan_provider.dart`
 
 ---
 

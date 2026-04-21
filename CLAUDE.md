@@ -356,7 +356,8 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle); Railway production deployment live at https://fitcore-production-c558.up.railway.app; GitHub Actions CD on push to main
 - [x] Auth screens (signup, login, forgot password)
 - [x] Onboarding flow (goal selection, body stats, activity level)
-- [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout)
+- [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout); PopScope in MainShell: back on any non-Home tab goes to /home, back on Home exits app
+- [x] Light / dark / auto theme system — `AppTheme.light` + `AppTheme.dark`; `ThemePreference` enum (auto/light/dark) persisted in SharedPreferences; `effectiveThemeModeProvider` auto-switches at 6 AM (light) / 6 PM (dark) via a boundary Timer; 400ms animated crossfade (`themeAnimationDuration`); toggle in Profile → Appearance via `SegmentedButton`; all 209 hardcoded neutral `AppColors.*` references replaced with `Theme.of(context).colorScheme.*` for full light-mode text visibility
 - [x] Food search + logging (Open Food Facts API + USDA + Indian food database) — three parallel searches; Indian results surface first; 150-item curated Indian food database bundled as `assets/data/indian_foods.json`; serving-chip quick-select in log sheet for Indian foods; NutritionScreen meal sections redesigned as tappable `MealCard` widgets (emoji + kcal header + `+` button; empty placeholder; collapsed horizontal `FoodChip` scroll + "See all" toggle; expanded full list with swipe-to-delete; flutter_animate entry animations; `mealType` passed via GoRouter `extra` to pre-select meal in `LogFoodSheet`)
 - [x] Barcode scanner
 - [x] Macro/calorie dashboard for the day
@@ -379,12 +380,12 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Push notifications (reminders, streaks) — FCM token registration, local scheduled notifications (workout/food/streak), weekly summary BullMQ job
 
 ### Phase 3 — AI Features
-- [x] AI coach chat (Gemini API integration) — `gemini-2.0-flash`; Redis rate limit (5/day free, unlimited pro/coach); live user context injected; full chat UI with suggestion chips, typing indicator, rate-limit banner; coach screen rebuilt: `reverse:true` list, amber rate-limit banner, bot avatar bubbles, `CoachInputBar` extracted to own file; 429 envelope bug fixed (`error` field, not `data`)
+- [x] AI coach chat (Gemini API integration) — upgraded to `gemini-2.5-flash`; rate limits removed entirely; greeting message injected on first open ("Hey {name}!"); RAG context cache (nutrition/workout/body, 15-min TTL) injected per message; multi-bubble display; silent 4s auto-retry on 503; all errors surface with Retry snackbar; suggestion chips + rate-limit banner removed; `isLocal` flag on ChatMessage keeps greeting out of backend history
 - [x] Adaptive daily calorie target (post-workout adjustment) — `caloriesBurnedToday` persisted in SharedPreferences (daily key); `adaptiveTarget = tdee + caloriesBurnedToday` on `HomeDashboardState`; `WorkoutSessionNotifier.finishWorkout` calls `homeProvider.addBurnedCalories` on both online save and offline enqueue; calorie ring, macro bars, and target label all use `adaptiveTarget`; "+X kcal from workout" chip shown when burned > 0
 - [x] AI meal plan generator (weekly) — Gemini JSON schema; 7-day plan; Pro/Coach gate; cached in SharedPreferences; expandable PlannedMealCard; paywall view for free tier
 - [ ] Grocery list from meal plan
 - [x] Food photo logging (Gemini Vision) — multimodal analysis; detects all items in mixed dishes; proportional macro scaling on serving edit; camera FAB on NutritionScreen; available all tiers
-- [x] Workout recommendation engine — Gemini-powered; analyzes 7-day training history + goal + recovery; GET /ai/workout-recommendation (all tiers); RecommendationCard on WorkoutScreen with refresh
+- [x] Workout recommendation engine — split into gym vs home; `GET /ai/workout-recommendation?type=gym|home`; gym prompt enforces equipment exercises, home prompt enforces bodyweight-only; `workoutRecommendationProvider` is a Riverpod family (WorkoutType.gym / .home) with keepAlive and manual-only generate(); new GymWorkoutScreen at `/workout/gym`; home recommendation section at top of HomeWorkoutListScreen; main WorkoutScreen navigates to each sub-screen instead of auto-fetching
 - [x] Home workout page — 40 bodyweight/calisthenics exercises in kHomeExerciseLibrary; HomeWorkoutListScreen at /workout/home; category + difficulty filter chips; SetInputMode (repsOnly / durationOnly / repsAndWeight) on SetLogger; no weight input for bodyweight exercises
 - [x] Recovery score (HRV + sleep + training load) — HRV (SDNN) fetched from HealthKit/Google Fit; formula: sleepScore×0.4 + hrComponent×0.3 + trainingLoad×0.3; HRV preferred over RHR when available (10–100ms → 0–100); falls back to resting HR; Wellness screen card renamed "Recovery Score"; 4-pill breakdown: Sleep · HRV · HR · Load
 - [x] Deload week detection — pure algorithmic (no Gemini); 4-week set count analysis via getFourWeekWorkoutSummary; flags ≥3 consecutive weeks ≥40 sets or 4-week avg >60 sets; GET /ai/deload-check; DeloadBannerCard on WorkoutScreen (amber warning / green OK)
@@ -595,7 +596,7 @@ At the beginning of every Claude Code session, do this in order:
 - Be concise. Avoid long summaries or explanations.
 - Only explain what's necessary — skip preamble and post-amble.
 - Prefer short responses unless asked for detail.
-
+ef  
 
 (add new decisions here as you make them)
 ```
