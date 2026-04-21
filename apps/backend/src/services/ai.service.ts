@@ -123,47 +123,125 @@ export async function incrementFreeTierCount(userId: string): Promise<number> {
   }
 }
 
-// ─── Context cache (5-minute TTL, avoids 5 DB queries per message) ───────────
+// ─── RAG-lite: topic-specific context caches (15-min TTL) ────────────────────
+// Each topic has its own cache so a nutrition question doesn't evict
+// workout cache and vice versa.
 
-const _contextCache = new Map<string, { context: string; expiresAt: number }>();
+const CTX_TTL = 15 * 60 * 1000;
 
-// ─── Context builder ──────────────────────────────────────────────────────────
+type CtxTopic = 'nutrition' | 'workout' | 'body';
 
-async function buildContext(userId: string): Promise<string> {
+const _profileCache  = new Map<string, { lines: string[]; expiresAt: number }>();
+const _nutritionCache = new Map<string, { line: string;   expiresAt: number }>();
+const _workoutCache  = new Map<string, { lines: string[]; expiresAt: number }>();
+const _bodyCache     = new Map<string, { lines: string[]; expiresAt: number }>();
+
+// ─── Topic detection ──────────────────────────────────────────────────────────
+
+const CASUAL_RE = /^(hi+|hello|hey|thanks?|thank you|ok|okay|sure|bye|good|great|yes|no|lol|haha|cool|nice|awesome|got it|sounds good|perfect|alright|sup|what'?s up|wassup|yep|nope|hmm+)[\s!?.]*$/i;
+
+function isCasualMessage(msg: string): boolean {
+  const t = msg.trim();
+  if (t.length <= 12) return true;
+  return CASUAL_RE.test(t);
+}
+
+function detectTopics(msg: string): Set<CtxTopic> {
+  const topics = new Set<CtxTopic>();
+  const m = msg.toLowerCase();
+
+  if (/\b(calori|eat|food|meal|diet|macr|protein|carb|fat|fiber|hungry|breakfast|lunch|dinner|snack|nutri|what.*eat|how much.*eat|should.*eat)\b/.test(m)) {
+    topics.add('nutrition');
+  }
+  if (/\b(workout|exercise|train|gym|lift|run|running|sets?|reps?|cardio|muscle|squat|bench|deadlift|session|volume|strength|weights?|push|pull)\b/.test(m)) {
+    topics.add('workout');
+  }
+  if (/\b(weigh|body fat|bmi|physique|progress|body stat|measurement|\bkg\b|\blbs?\b|\bpounds?\b|bulk|cut|lean)\b/.test(m)) {
+    topics.add('body');
+  }
+
+  return topics;
+}
+
+// ─── Context retriever ────────────────────────────────────────────────────────
+// Only fetches the DB data that is actually relevant to the user's message.
+// Casual / short messages get no context — the AI answers from general knowledge.
+
+async function retrieveContext(userId: string, userMessage: string): Promise<string> {
+  if (isCasualMessage(userMessage)) return '';
+
+  const topics = detectTopics(userMessage);
+  if (topics.size === 0) return '';
+
   const now = Date.now();
-  const cached = _contextCache.get(userId);
-  if (cached && cached.expiresAt > now) return cached.context;
+  const parts: string[] = [];
 
-  const [user, nutrition, workout, weekCount, bodyStat] = await Promise.all([
-    aiRepository.getUserWithProfile(userId),
-    aiRepository.getTodayNutrition(userId),
-    aiRepository.getTodayWorkout(userId),
-    aiRepository.getWeekWorkoutCount(userId),
-    aiRepository.getLatestBodyStat(userId),
-  ]);
+  // ── Profile (name + goal) — fetched once for any topic-bearing message ──
+  const cachedProfile = _profileCache.get(userId);
+  if (cachedProfile && cachedProfile.expiresAt > now) {
+    parts.push(...cachedProfile.lines);
+  } else {
+    const user = await aiRepository.getUserWithProfile(userId);
+    if (!user) return '';
+    const profileLines = [
+      `User: ${user.name}`,
+      `Goal: ${user.profile?.fitnessGoal ?? 'not set'}`,
+      `Activity level: ${user.profile?.activityLevel ?? 'not set'}`,
+      `TDEE: ${user.profile?.tdee ?? 'unknown'} kcal`,
+    ];
+    if (user.profile?.targetWeightKg) profileLines.push(`Target weight: ${user.profile.targetWeightKg} kg`);
+    _profileCache.set(userId, { lines: profileLines, expiresAt: now + CTX_TTL });
+    parts.push(...profileLines);
+  }
 
-  if (!user) return '';
+  // ── Nutrition (today's calories + macros) ──
+  if (topics.has('nutrition')) {
+    const cachedNutrition = _nutritionCache.get(userId);
+    if (cachedNutrition && cachedNutrition.expiresAt > now) {
+      parts.push(cachedNutrition.line);
+    } else {
+      const nutrition = await aiRepository.getTodayNutrition(userId);
+      const line = `Today – calories: ${Math.round(nutrition.calories)} kcal | protein: ${Math.round(nutrition.proteinG)}g | carbs: ${Math.round(nutrition.carbsG)}g | fat: ${Math.round(nutrition.fatG)}g`;
+      _nutritionCache.set(userId, { line, expiresAt: now + CTX_TTL });
+      parts.push(line);
+    }
+  }
 
-  const lines: string[] = [
-    `User: ${user.name}`,
-    `Goal: ${user.profile?.fitnessGoal ?? 'not set'}`,
-    `Activity level: ${user.profile?.activityLevel ?? 'not set'}`,
-    `TDEE: ${user.profile?.tdee ?? 'unknown'} kcal`,
-  ];
+  // ── Workout (today + this week) ──
+  if (topics.has('workout')) {
+    const cachedWorkout = _workoutCache.get(userId);
+    if (cachedWorkout && cachedWorkout.expiresAt > now) {
+      parts.push(...cachedWorkout.lines);
+    } else {
+      const [workout, weekCount] = await Promise.all([
+        aiRepository.getTodayWorkout(userId),
+        aiRepository.getWeekWorkoutCount(userId),
+      ]);
+      const workoutLines = [
+        `Workout today: ${workout ? `Yes (${workout.name}${workout.durationMin ? `, ${workout.durationMin} min` : ''})` : 'No'}`,
+        `Workouts this week: ${weekCount}`,
+      ];
+      _workoutCache.set(userId, { lines: workoutLines, expiresAt: now + CTX_TTL });
+      parts.push(...workoutLines);
+    }
+  }
 
-  if (bodyStat?.weightKg) lines.push(`Current weight: ${bodyStat.weightKg} kg`);
-  if (user.profile?.targetWeightKg) lines.push(`Target weight: ${user.profile.targetWeightKg} kg`);
+  // ── Body stats (current weight) ──
+  if (topics.has('body')) {
+    const cachedBody = _bodyCache.get(userId);
+    if (cachedBody && cachedBody.expiresAt > now) {
+      if (cachedBody.lines.length > 0) parts.push(...cachedBody.lines);
+    } else {
+      const bodyStat = await aiRepository.getLatestBodyStat(userId);
+      const bodyLines: string[] = [];
+      if (bodyStat?.weightKg) bodyLines.push(`Current weight: ${bodyStat.weightKg} kg`);
+      _bodyCache.set(userId, { lines: bodyLines, expiresAt: now + CTX_TTL });
+      parts.push(...bodyLines);
+    }
+  }
 
-  lines.push(
-    `Today – calories logged: ${Math.round(nutrition.calories)} kcal`,
-    `Today – protein: ${Math.round(nutrition.proteinG)}g / carbs: ${Math.round(nutrition.carbsG)}g / fat: ${Math.round(nutrition.fatG)}g`,
-    `Workout today: ${workout ? `Yes (${workout.name}${workout.durationMin ? `, ${workout.durationMin} min` : ''})` : 'No'}`,
-    `Workouts this week: ${weekCount}`,
-  );
-
-  const context = `<user_context>\n${lines.join('\n')}\n</user_context>`;
-  _contextCache.set(userId, { context, expiresAt: now + 5 * 60 * 1000 });
-  return context;
+  if (parts.length === 0) return '';
+  return `<user_context>\n${parts.join('\n')}\n</user_context>`;
 }
 
 // ─── Food photo analysis ──────────────────────────────────────────────────────
@@ -559,7 +637,8 @@ export async function sendCoachMessage(
 ): Promise<string> {
   if (messages.length === 0) return '';
 
-  const context = await buildContext(userId);
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  const context = await retrieveContext(userId, lastUserMessage);
   const systemPrompt = context
     ? `${COACH_SYSTEM_PROMPT}\n\n${context}`
     : COACH_SYSTEM_PROMPT;
