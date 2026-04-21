@@ -39,21 +39,6 @@ function tierFromPriceId(priceId: string): 'pro' | 'coach' | 'free' {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
-  // Override JSON parser for this plugin scope — return raw Buffer so the webhook
-  // route can verify the Stripe signature against the raw body.
-  fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (_req, body, done) => {
-    done(null, body);
-  });
-
-  const parseJson = (body: unknown): Record<string, unknown> => {
-    if (!body || (body as Buffer).length === 0) return {};
-    try {
-      return JSON.parse((body as Buffer).toString()) as Record<string, unknown>;
-    } catch {
-      return {};
-    }
-  };
-
   // ── GET /api/v1/payments/subscription ────────────────────────────────────────
   fastify.get('/subscription', async (request, reply) => {
     try {
@@ -84,9 +69,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { userId } = request.user;
-    const body = parseJson(request.body);
-
-    const parsed = z.object({ tier: z.enum(['pro', 'coach']) }).safeParse(body);
+    const parsed = z.object({ tier: z.enum(['pro', 'coach']) }).safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'tier must be pro or coach' } });
     }
@@ -156,10 +139,13 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'Missing stripe-signature header' });
     }
 
+    // rawBody is the unparsed JSON string saved by the global content-type parser.
+    const rawBody = (request as unknown as Record<string, unknown>).rawBody as string ?? '';
+
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
-        request.body as Buffer,
+        rawBody,
         sig,
         config.STRIPE_WEBHOOK_SECRET,
       );

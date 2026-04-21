@@ -55,6 +55,8 @@ async function bootstrap() {
   // Allow DELETE/GET requests that carry Content-Type: application/json but no
   // body. Dio (Flutter HTTP client) sends this header on every request by default.
   server.addContentTypeParser('application/json', { parseAs: 'string' }, (_req, body, done) => {
+    // Save raw string so webhook routes can verify Stripe signatures.
+    (_req as Record<string, unknown>).rawBody = body ?? '';
     if (!body || (body as string).trim() === '') {
       done(null, {});
       return;
