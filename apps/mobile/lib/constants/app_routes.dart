@@ -27,6 +27,7 @@ abstract final class AppRoutes {
   static const workoutSummary = '/workout/summary';
   static const workoutHistory = '/workout/history';
   static const homeWorkouts = '/workout/home';
+  static const gymWorkout = '/workout/gym';
 
   // Progress sub-routes
   static const bodyLog = '/progress/body';

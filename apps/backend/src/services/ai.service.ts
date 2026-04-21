@@ -531,7 +531,10 @@ export interface WorkoutRecommendation {
   intensity: 'light' | 'moderate' | 'hard';
 }
 
-export async function getWorkoutRecommendation(userId: string): Promise<WorkoutRecommendation> {
+export async function getWorkoutRecommendation(
+  userId: string,
+  type: 'gym' | 'home' = 'gym',
+): Promise<WorkoutRecommendation> {
   const [user, bodyStat, weeklyWorkouts] = await Promise.all([
     aiRepository.getUserWithProfile(userId),
     aiRepository.getLatestBodyStat(userId),
@@ -543,7 +546,6 @@ export async function getWorkoutRecommendation(userId: string): Promise<WorkoutR
   const goal = user.profile?.fitnessGoal ?? 'maintain';
   const activityLevel = user.profile?.activityLevel ?? 'moderate';
 
-  // Summarise last 7 days of training
   const historyLines: string[] = weeklyWorkouts.map((w) => {
     const date = w.startedAt.toISOString().split('T')[0];
     const exercises = [...new Set(w.sets.map((s) => s.exerciseName))].join(', ');
@@ -557,9 +559,16 @@ export async function getWorkoutRecommendation(userId: string): Promise<WorkoutR
     return w.startedAt >= today;
   });
 
+  const equipmentRule = type === 'home'
+    ? 'CRITICAL: Recommend ONLY bodyweight/calisthenics exercises — no equipment whatsoever. ' +
+      'Use exercises like push-ups, pull-ups, squats, lunges, dips, pike push-ups, burpees, ' +
+      'mountain climbers, hollow body holds, pistol squats, handstand push-ups, etc.'
+    : 'Recommend gym exercises using equipment (barbells, dumbbells, cables, machines, etc.). ' +
+      'Include compound lifts and accessory work appropriate for a gym setting.';
+
   const prompt =
     `You are a personal trainer. Based on the user's recent workout history, ` +
-    `recommend the optimal workout for today.\n\n` +
+    `recommend the optimal ${type === 'home' ? 'home/bodyweight' : 'gym'} workout for today.\n\n` +
     `User goal: ${goal}\n` +
     `Activity level: ${activityLevel}\n` +
     (bodyStat?.weightKg ? `Body weight: ${bodyStat.weightKg} kg\n` : '') +
@@ -567,9 +576,10 @@ export async function getWorkoutRecommendation(userId: string): Promise<WorkoutR
     `Workout history (last 7 days):\n` +
     (historyLines.length > 0 ? historyLines.join('\n') : 'No workouts logged this week') +
     `\n\nRules:\n` +
-    `- Recommend the muscle groups most in need of training based on the history\n` +
-    `- If the user just trained yesterday (hard session), suggest light or a different muscle group\n` +
-    `- If no workouts this week, suggest a full-body or compound session\n` +
+    `- ${equipmentRule}\n` +
+    `- Recommend the muscle groups most in need of training based on history\n` +
+    `- If the user trained hard yesterday, suggest a lighter session or different muscle group\n` +
+    `- If no workouts this week, suggest a full-body session\n` +
     `- Include 4–6 exercises with sets, reps (or duration as a string like "30s"), and rest in seconds\n` +
     `- intensity must be one of: light, moderate, hard`;
 

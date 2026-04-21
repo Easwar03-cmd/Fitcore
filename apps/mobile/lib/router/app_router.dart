@@ -28,6 +28,7 @@ import '../features/social/screens/social_screen.dart';
 import '../features/wellness/screens/wellness_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
+import '../features/workout/screens/gym_workout_screen.dart';
 import '../features/workout/screens/home_workout_list_screen.dart';
 import '../features/workout/screens/workout_history_screen.dart';
 import '../features/workout/screens/workout_screen.dart';
@@ -139,6 +140,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: 'history',
                 name: 'workout-history',
                 builder: (context, state) => const WorkoutHistoryScreen(),
+              ),
+              GoRoute(
+                path: 'gym',
+                name: 'gym-workout',
+                builder: (context, state) => const GymWorkoutScreen(),
               ),
               GoRoute(
                 path: 'home',

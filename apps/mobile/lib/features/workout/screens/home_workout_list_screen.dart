@@ -7,6 +7,8 @@ import '../../../constants/app_routes.dart';
 import '../models/exercise.dart';
 import '../models/home_exercise.dart';
 import '../providers/workout_provider.dart';
+import '../providers/workout_recommendation_provider.dart';
+import '../widgets/recommendation_card.dart';
 
 class HomeWorkoutListScreen extends ConsumerStatefulWidget {
   const HomeWorkoutListScreen({super.key, this.pickMode = false});
@@ -87,6 +89,9 @@ class _HomeWorkoutListScreenState
       ),
       body: Column(
         children: [
+          // ── AI home recommendation ───────────────────────────────────────
+          if (!widget.pickMode) const _HomeRecommendationSection(),
+
           // ── Category filter ──────────────────────────────────────────────
           _CategoryBar(
             selected: _selectedCategory,
@@ -345,6 +350,112 @@ class _MuscleChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+// ── AI home recommendation section ────────────────────────────────────────────
+
+class _HomeRecommendationSection extends ConsumerWidget {
+  const _HomeRecommendationSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recAsync =
+        ref.watch(workoutRecommendationProvider(WorkoutType.home));
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: recAsync.when(
+        data: (rec) => rec != null
+            ? RecommendationCard(
+                recommendation: rec,
+                onRefresh: () => ref
+                    .read(workoutRecommendationProvider(WorkoutType.home)
+                        .notifier)
+                    .generate(),
+              )
+            : _GenerateTile(
+                onTap: () => ref
+                    .read(workoutRecommendationProvider(WorkoutType.home)
+                        .notifier)
+                    .generate(),
+              ),
+        loading: () => Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: theme.colorScheme.primary),
+                ),
+                const SizedBox(width: 14),
+                Text('Generating home workout recommendation…',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ],
+            ),
+          ),
+        ),
+        error: (_, __) => _GenerateTile(
+          isError: true,
+          onTap: () => ref
+              .read(
+                  workoutRecommendationProvider(WorkoutType.home).notifier)
+              .generate(),
+        ),
+      ),
+    );
+  }
+}
+
+class _GenerateTile extends StatelessWidget {
+  const _GenerateTile({required this.onTap, this.isError = false});
+  final VoidCallback onTap;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  isError
+                      ? Icons.refresh_rounded
+                      : Icons.auto_awesome_rounded,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  isError
+                      ? 'Could not load recommendation — tap to retry'
+                      : 'Get AI Home Workout Recommendation',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w500),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );

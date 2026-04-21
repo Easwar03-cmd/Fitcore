@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
-import '../models/exercise.dart';
-import '../providers/workout_provider.dart';
 import '../providers/deload_check_provider.dart';
-import '../providers/workout_recommendation_provider.dart';
+import '../providers/workout_provider.dart';
 import '../widgets/deload_banner_card.dart';
-import '../widgets/recommendation_card.dart';
 
 class WorkoutScreen extends ConsumerWidget {
   const WorkoutScreen({super.key});
@@ -16,7 +13,6 @@ class WorkoutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(workoutSessionProvider);
-    final recommendationAsync = ref.watch(workoutRecommendationProvider);
     final deloadAsync = ref.watch(deloadCheckProvider);
 
     return Scaffold(
@@ -52,43 +48,6 @@ class WorkoutScreen extends ConsumerWidget {
               error: (_, __) => const SizedBox.shrink(),
             ),
 
-            // ── AI recommendation ─────────────────────────────────────────
-            recommendationAsync.when(
-              data: (rec) => rec != null
-                  ? Column(
-                      children: [
-                        RecommendationCard(
-                          recommendation: rec,
-                          onRefresh: () => ref
-                              .read(workoutRecommendationProvider.notifier)
-                              .generate(),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _AiRecommendationButton(
-                        onTap: () => ref
-                            .read(workoutRecommendationProvider.notifier)
-                            .generate(),
-                      ),
-                    ),
-              loading: () => const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: _AiRecommendationLoading(),
-              ),
-              error: (_, __) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _AiRecommendationButton(
-                  onTap: () => ref
-                      .read(workoutRecommendationProvider.notifier)
-                      .generate(),
-                  isError: true,
-                ),
-              ),
-            ),
-
             // ── Section header ────────────────────────────────────────────
             Text(
               'Start a workout',
@@ -103,9 +62,9 @@ class WorkoutScreen extends ConsumerWidget {
             _WorkoutTypeCard(
               icon: Icons.fitness_center_rounded,
               title: 'Gym Workout',
-              subtitle: 'Log sets with weights — barbell, dumbbells, machines.',
+              subtitle: 'AI recommendation + log sets with weights.',
               color: Theme.of(context).colorScheme.primary,
-              onTap: () => _startGym(context, ref),
+              onTap: () => context.push(AppRoutes.gymWorkout),
             ),
             const SizedBox(height: 12),
 
@@ -113,7 +72,7 @@ class WorkoutScreen extends ConsumerWidget {
             _WorkoutTypeCard(
               icon: Icons.sports_gymnastics_rounded,
               title: 'Home Workout',
-              subtitle: 'Bodyweight & calisthenics — no equipment needed.',
+              subtitle: 'AI recommendation + bodyweight & calisthenics.',
               color: const Color(0xFF805AD5),
               onTap: () => context.push(AppRoutes.homeWorkouts),
             ),
@@ -121,14 +80,6 @@ class WorkoutScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _startGym(BuildContext context, WidgetRef ref) async {
-    final exercise = await context.push<Exercise>(AppRoutes.exercisePicker);
-    if (exercise != null && context.mounted) {
-      ref.read(workoutSessionProvider.notifier).startWorkout(exercise);
-      context.push(AppRoutes.activeWorkout);
-    }
   }
 }
 
@@ -207,99 +158,6 @@ class _WorkoutTypeCard extends StatelessWidget {
                   size: 16, color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── AI recommendation button ──────────────────────────────────────────────────
-
-class _AiRecommendationButton extends StatelessWidget {
-  const _AiRecommendationButton({required this.onTap, this.isError = false});
-  final VoidCallback onTap;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isError ? 'Try again' : 'Get AI Recommendation',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      isError
-                          ? 'Could not load. Tap to retry.'
-                          : 'Let AI suggest the best workout for today',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AiRecommendationLoading extends StatelessWidget {
-  const _AiRecommendationLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              'Analysing your training history…',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-          ],
         ),
       ),
     );

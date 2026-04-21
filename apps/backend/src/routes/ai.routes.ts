@@ -184,9 +184,11 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const userId = request.user.userId;
+    const query = request.query as { type?: string };
+    const type = query.type === 'home' ? 'home' : 'gym';
 
     try {
-      const recommendation = await getWorkoutRecommendation(userId);
+      const recommendation = await getWorkoutRecommendation(userId, type);
       return reply.send({ success: true, data: recommendation });
     } catch (err) {
       const { status, code, message } = handleAiError(err, request);

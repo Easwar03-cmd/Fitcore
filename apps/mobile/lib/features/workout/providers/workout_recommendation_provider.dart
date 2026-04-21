@@ -6,16 +6,21 @@ import '../models/workout_recommendation.dart';
 
 final _log = Logger();
 
-final workoutRecommendationProvider =
-    AsyncNotifierProvider<WorkoutRecommendationNotifier, WorkoutRecommendation?>(
-        WorkoutRecommendationNotifier.new);
+enum WorkoutType { gym, home }
+
+/// Family provider — one independent state per [WorkoutType].
+/// Neither auto-fetches on build; call [generate()] explicitly.
+final workoutRecommendationProvider = AsyncNotifierProvider.family<
+    WorkoutRecommendationNotifier,
+    WorkoutRecommendation?,
+    WorkoutType>(WorkoutRecommendationNotifier.new);
 
 class WorkoutRecommendationNotifier
-    extends AsyncNotifier<WorkoutRecommendation?> {
+    extends FamilyAsyncNotifier<WorkoutRecommendation?, WorkoutType> {
   @override
-  Future<WorkoutRecommendation?> build() async {
+  Future<WorkoutRecommendation?> build(WorkoutType arg) async {
     ref.keepAlive();
-    return null; // Not auto-fetched — user triggers via button.
+    return null;
   }
 
   Future<void> generate() async {
@@ -24,15 +29,16 @@ class WorkoutRecommendationNotifier
   }
 
   Future<WorkoutRecommendation?> _fetch() async {
+    final typeParam = arg == WorkoutType.home ? 'home' : 'gym';
     try {
       final response = await ref
           .read(apiClientProvider)
           .dio
-          .get('/ai/workout-recommendation');
+          .get('/ai/workout-recommendation?type=$typeParam');
       final data = response.data['data'] as Map<String, dynamic>;
       return WorkoutRecommendation.fromJson(data);
     } catch (e, st) {
-      _log.w('Could not load workout recommendation', error: e, stackTrace: st);
+      _log.w('Could not load $typeParam recommendation', error: e, stackTrace: st);
       rethrow;
     }
   }
