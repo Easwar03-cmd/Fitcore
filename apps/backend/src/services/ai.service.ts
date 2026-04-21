@@ -3,16 +3,48 @@ import IORedis from 'ioredis';
 import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
 
-// ─── Retry helper ─────────────────────────────────────────────────────────────
-// Gemini free-tier: 15 RPM. Rate limit windows reset every 60 s.
-// For real-time chat we do 2 fast retries (5 s / 15 s) then fail fast so the
-// user gets feedback quickly rather than waiting 60+ s for a background retry.
+// ─── Gemini request queue ─────────────────────────────────────────────────────
+// Gemini free-tier: 15 RPM = 1 request every 4 seconds.
+// Serialising all calls through a single queue prevents concurrent bursts that
+// trigger 429s. Each task waits for the previous one to finish, then the queue
+// inserts a 4.5 s gap before the next call starts.
 
-// Chat uses a single fast retry so the user gets quick feedback.
-// Background tasks (meal plan, food photo, workout rec) use longer delays
-// that can survive a full 60-second Gemini rate-limit window.
-const GEMINI_CHAT_RETRY_DELAYS_MS   = [4000];
-const GEMINI_BATCH_RETRY_DELAYS_MS  = [8000, 30000, 65000];
+const GEMINI_MIN_GAP_MS = 4500;
+
+class GeminiQueue {
+  private readonly q: Array<() => Promise<void>> = [];
+  private running = false;
+
+  enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.q.push(async () => {
+        try { resolve(await fn()); } catch (e) { reject(e); }
+      });
+      if (!this.running) this._drain();
+    });
+  }
+
+  private async _drain() {
+    this.running = true;
+    while (this.q.length > 0) {
+      const task = this.q.shift()!;
+      await task();
+      if (this.q.length > 0) {
+        await new Promise<void>(r => setTimeout(r, GEMINI_MIN_GAP_MS));
+      }
+    }
+    this.running = false;
+  }
+}
+
+const geminiQueue = new GeminiQueue();
+
+// ─── Retry helper ─────────────────────────────────────────────────────────────
+// With the queue in front, 429s should be rare. We keep a short retry as a
+// safety net for transient spikes.
+
+const GEMINI_CHAT_RETRY_DELAYS_MS  = [4000];
+const GEMINI_BATCH_RETRY_DELAYS_MS = [8000, 30000];
 
 async function withGeminiRetry<T>(
   fn: () => Promise<T>,
@@ -330,8 +362,10 @@ export async function analyzeFoodPhoto(
     },
   });
 
-  const result = await withGeminiRetry(() =>
-    model.generateContent([{ inlineData: { mimeType, data: base64Image } }, prompt]),
+  const result = await geminiQueue.enqueue(() =>
+    withGeminiRetry(() =>
+      model.generateContent([{ inlineData: { mimeType, data: base64Image } }, prompt]),
+    ),
   );
 
   const text = result.response.text();
@@ -464,7 +498,9 @@ export async function generateMealPlan(userId: string): Promise<WeeklyMealPlan> 
     },
   });
 
-  const result = await withGeminiRetry(() => model.generateContent(prompt));
+  const result = await geminiQueue.enqueue(() =>
+    withGeminiRetry(() => model.generateContent(prompt)),
+  );
   const text = result.response.text();
   const parsed = JSON.parse(text) as WeeklyMealPlan;
 
@@ -568,7 +604,9 @@ export async function getWorkoutRecommendation(userId: string): Promise<WorkoutR
     generationConfig: { responseMimeType: 'application/json', responseSchema },
   });
 
-  const result = await withGeminiRetry(() => model.generateContent(prompt));
+  const result = await geminiQueue.enqueue(() =>
+    withGeminiRetry(() => model.generateContent(prompt)),
+  );
   return JSON.parse(result.response.text()) as WorkoutRecommendation;
 }
 
@@ -661,12 +699,14 @@ export async function sendCoachMessage(
     parts: [{ text: m.content }],
   }));
 
-  const result = await withGeminiRetry(() => {
-    const model = genAI.getGenerativeModel({
-      model: GEMINI_MODEL,
-      systemInstruction: systemPrompt,
-    });
-    return model.generateContent({ contents });
-  }, GEMINI_CHAT_RETRY_DELAYS_MS);
+  const result = await geminiQueue.enqueue(() =>
+    withGeminiRetry(() => {
+      const model = genAI.getGenerativeModel({
+        model: GEMINI_MODEL,
+        systemInstruction: systemPrompt,
+      });
+      return model.generateContent({ contents });
+    }, GEMINI_CHAT_RETRY_DELAYS_MS),
+  );
   return result.response.text();
 }

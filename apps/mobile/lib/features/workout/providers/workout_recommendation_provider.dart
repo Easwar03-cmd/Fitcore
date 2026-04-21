@@ -13,7 +13,11 @@ final workoutRecommendationProvider =
 class WorkoutRecommendationNotifier
     extends AsyncNotifier<WorkoutRecommendation?> {
   @override
-  Future<WorkoutRecommendation?> build() => _fetch();
+  Future<WorkoutRecommendation?> build() {
+    // Keep alive so navigating away and back doesn't re-hit Gemini.
+    ref.keepAlive();
+    return _fetch();
+  }
 
   Future<WorkoutRecommendation?> _fetch() async {
     try {
