@@ -13,10 +13,14 @@ final workoutRecommendationProvider =
 class WorkoutRecommendationNotifier
     extends AsyncNotifier<WorkoutRecommendation?> {
   @override
-  Future<WorkoutRecommendation?> build() {
-    // Keep alive so navigating away and back doesn't re-hit Gemini.
+  Future<WorkoutRecommendation?> build() async {
     ref.keepAlive();
-    return _fetch();
+    return null; // Not auto-fetched — user triggers via button.
+  }
+
+  Future<void> generate() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(_fetch);
   }
 
   Future<WorkoutRecommendation?> _fetch() async {
@@ -29,12 +33,7 @@ class WorkoutRecommendationNotifier
       return WorkoutRecommendation.fromJson(data);
     } catch (e, st) {
       _log.w('Could not load workout recommendation', error: e, stackTrace: st);
-      return null;
+      rethrow;
     }
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(_fetch);
   }
 }

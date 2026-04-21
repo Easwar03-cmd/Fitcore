@@ -48,14 +48,12 @@ class CoachNotifier extends _$CoachNotifier {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_historyKey(userId));
       if (raw == null) {
-        // Fresh session — inject local greeting, no API call needed.
         _injectGreeting(firstName);
         return;
       }
       final list = (jsonDecode(raw) as List)
           .map((e) => ChatMessage.fromStorageJson(e as Map<String, dynamic>))
           .toList();
-      // If saved history only contains a stale greeting, refresh it.
       if (list.isNotEmpty) {
         state = list;
       } else {
@@ -101,7 +99,6 @@ class CoachNotifier extends _$CoachNotifier {
     if (auth != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_historyKey(auth.user.id));
-      // Re-inject a fresh greeting after clearing.
       _injectGreeting(auth.user.name.split(' ').first);
     } else {
       state = const [];
@@ -121,7 +118,6 @@ class CoachNotifier extends _$CoachNotifier {
       timestamp: DateTime.now(),
     );
 
-    // Only non-local messages are sent as history so the AI gets real turns.
     final historySnapshot = state
         .where((m) => !m.isLocal)
         .map((m) => {
@@ -133,19 +129,11 @@ class CoachNotifier extends _$CoachNotifier {
         ? historySnapshot.sublist(historySnapshot.length - 20)
         : historySnapshot;
 
-    // Optimistic insert.
     state = [...state, userMsg];
 
     try {
-      final res = await ref
-          .read(apiClientProvider)
-          .dio
-          .post<Map<String, dynamic>>(
-            '/ai/chat',
-            data: {'message': trimmed, 'history': history},
-          );
+      final data = await _callWithRetry(trimmed, history);
 
-      final data = res.data!['data'] as Map<String, dynamic>;
       final coachMsg = ChatMessage(
         id: _uuid.v4(),
         role: MessageRole.coach,
@@ -156,27 +144,45 @@ class CoachNotifier extends _$CoachNotifier {
       final updated = [...state, coachMsg];
       state = updated;
       await _saveHistory(updated);
-    } on DioException catch (e) {
-      state = state.where((m) => m.id != userMsg.id).toList();
-
-      if (e.response?.statusCode == 503) {
-        final body = e.response?.data as Map<String, dynamic>?;
-        final msg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
-        throw CoachUnavailableException(
-          msg ?? 'Coach is a bit busy right now. Please try again in a moment.',
-        );
-      }
-
-      final body = e.response?.data as Map<String, dynamic>?;
-      final serverMsg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
-      if (serverMsg != null) throw CoachUnavailableException(serverMsg);
-
-      _log.e('CoachNotifier.sendMessage DioException', error: e);
-      rethrow;
     } catch (e, st) {
+      // Roll back the user message only on final failure.
       state = state.where((m) => m.id != userMsg.id).toList();
       _log.e('CoachNotifier.sendMessage failed', error: e, stackTrace: st);
       rethrow;
+    }
+  }
+
+  /// Calls /ai/chat, silently retrying once after 4 s if the backend is
+  /// temporarily busy (503). The typing indicator stays visible during the
+  /// retry so the user sees no interruption.
+  Future<Map<String, dynamic>> _callWithRetry(
+    String message,
+    List<Map<String, dynamic>> history,
+  ) async {
+    Future<Map<String, dynamic>> call() async {
+      final res = await ref
+          .read(apiClientProvider)
+          .dio
+          .post<Map<String, dynamic>>(
+            '/ai/chat',
+            data: {'message': message, 'history': history},
+          );
+      return res.data!['data'] as Map<String, dynamic>;
+    }
+
+    try {
+      return await call();
+    } on DioException catch (e) {
+      // 503 = Gemini was momentarily busy. Wait and try once more silently.
+      if (e.response?.statusCode == 503) {
+        await Future.delayed(const Duration(seconds: 4));
+        return await call();
+      }
+      final body = e.response?.data as Map<String, dynamic>?;
+      final serverMsg = (body?['error'] as Map<String, dynamic>?)?['message'] as String?;
+      throw CoachUnavailableException(
+        serverMsg ?? 'Something went wrong. Please try again.',
+      );
     }
   }
 }

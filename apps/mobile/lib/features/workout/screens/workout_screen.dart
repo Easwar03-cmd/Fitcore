@@ -61,17 +61,32 @@ class WorkoutScreen extends ConsumerWidget {
                           recommendation: rec,
                           onRefresh: () => ref
                               .read(workoutRecommendationProvider.notifier)
-                              .refresh(),
+                              .generate(),
                         ),
                         const SizedBox(height: 16),
                       ],
                     )
-                  : const SizedBox.shrink(),
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _AiRecommendationButton(
+                        onTap: () => ref
+                            .read(workoutRecommendationProvider.notifier)
+                            .generate(),
+                      ),
+                    ),
               loading: () => const Padding(
                 padding: EdgeInsets.only(bottom: 16),
-                child: LinearProgressIndicator(),
+                child: _AiRecommendationLoading(),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, __) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _AiRecommendationButton(
+                  onTap: () => ref
+                      .read(workoutRecommendationProvider.notifier)
+                      .generate(),
+                  isError: true,
+                ),
+              ),
             ),
 
             // ── Section header ────────────────────────────────────────────
@@ -192,6 +207,99 @@ class _WorkoutTypeCard extends StatelessWidget {
                   size: 16, color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── AI recommendation button ──────────────────────────────────────────────────
+
+class _AiRecommendationButton extends StatelessWidget {
+  const _AiRecommendationButton({required this.onTap, this.isError = false});
+  final VoidCallback onTap;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isError ? 'Try again' : 'Get AI Recommendation',
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      isError
+                          ? 'Could not load. Tap to retry.'
+                          : 'Let AI suggest the best workout for today',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AiRecommendationLoading extends StatelessWidget {
+  const _AiRecommendationLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              'Analysing your training history…',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
       ),
     );

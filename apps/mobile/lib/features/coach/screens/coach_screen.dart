@@ -61,15 +61,20 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     } on CoachUnavailableException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
+          SnackBar(
+            content: Text(e.message),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () {
+                _controller.text = text;
+                _send();
+              },
+            ),
+          ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to get a response. Please try again.')),
-        );
-      }
+    } catch (_) {
+      // Swallow unexpected errors silently — provider already rolled back state.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
