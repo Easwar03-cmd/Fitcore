@@ -365,7 +365,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Rest timer
 - [x] Workout history list
 - [x] Body weight logging
-- [x] Home dashboard (calorie ring, steps, water, streak)
+- [x] Home dashboard (calorie ring, steps, water, streak) — personalised targets fixed: TDEE now correctly parsed from nested `profile` key in API response (was always falling back to 2000); step goal personalised by activity level (sedentary 7k → very_active 15k) + fitness goal (+2k lose_weight, +3k endurance, 0 build_muscle); water target = `weightKg × 30–40 ml/kg` by activity level, rounded to 50 ml, clamped 1,500–5,000 ml; `/user/profile` endpoint now returns `currentWeightKg` (latest BodyStat) and `heightCm`; all SharedPreferences keys now scoped by userId (streak, water, burned kcal, meal plan cache) — data can no longer leak between accounts on the same device; `homeProvider` and `mealPlanProvider` watch `authProvider` and rebuild on login/logout/account switch
 
 ### Phase 2 — Integrations & Analytics
 - [x] Apple HealthKit sync — steps, HR, sleep, weight read; workout energy write; one-time permissions prompt

@@ -1,6 +1,54 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-21 (session 29)
+**Duration:** ~2 hours
+**What was built:**
+
+### Data isolation — per-user SharedPreferences scoping
+- All SharedPreferences keys that stored user-specific data (streak count, streak last date, streak grace flag, daily water ml, daily burned kcal, weekly meal plan cache) were global strings — any new account signing in on the same device silently inherited the previous user's data
+- Every key now includes the userId as part of the key: `streak_count_{uid}`, `water_ml_{uid}_{date}`, `meal_plan_v1_{uid}`, etc.
+- `homeProvider` and `mealPlanProvider` now call `ref.watch(authProvider)` inside `build()` so they automatically rebuild whenever the logged-in user changes (login, logout, or account switch); action methods use `ref.read` (correct Riverpod pattern)
+- Coach history was already userId-scoped from a previous session; no change needed there
+
+### Personalised calorie target — TDEE parsing bug fixed
+- `UserProfileDto.fromJson` was called with the full `{ user, profile }` envelope from `GET /api/v1/user/profile` but read `tdee` at the top level, where it doesn't exist — so every user always saw 2,000 kcal regardless of their stats
+- Parser now reads from the nested `profile` sub-object first, with a top-level fallback for safety
+- Backend `POST /user/profile` (onboarding save) was also constructing `UserProfileDto` without the new `currentWeightKg` and `heightCm` fields — caused a TypeScript TS2739 compile error that broke the Railway deployment; fixed by passing the values already in scope from the request body
+
+### Personalised step goal
+- `StepCounterCard` always showed 10,000 as the goal (hardcoded default, never overridden by the caller)
+- Added `stepGoal` computed getter to `HomeDashboardState` using WHO/ACSM evidence-based tiers by activity level: sedentary 7,000 · light 8,500 · moderate 10,000 · active 12,000 · very_active 15,000; plus goal adjustment: +2,000 for lose_weight (extra NEAT accelerates fat loss), +3,000 for endurance (zone-2 volume), 0 for build_muscle (excessive steps impair hypertrophy recovery), clamped 5,000–20,000
+- `home_screen.dart` now passes `stepGoal: home.stepGoal` to `StepCounterCard`
+
+### Personalised water target
+- Water target was fixed activity-level buckets (2,000–3,000 ml) with no weight consideration
+- Replaced with `weightKg × ml_per_kg` where ml_per_kg varies by activity: sedentary 30 · light 33 · moderate 35 · active 38 · very_active 40; result rounded to nearest 50 ml, clamped 1,500–5,000 ml
+- Falls back to activity-level buckets gracefully when `weightKg` is null (e.g. profile fetch failed)
+- Backend `GET /user/profile` now fetches the latest `BodyStat` in parallel and returns `currentWeightKg` and `heightCm` alongside the existing profile fields; `UserProfileDto` in shared types updated to include both fields
+
+### Deploy
+- Committed 48-file changeset (all previous session work + today's fixes) and pushed to `main`
+- Railway backend redeployed successfully (after fixing the TS2739 error in a follow-up push)
+- Flutter release APK built (`app-release.apk`, 105 MB, arm64) and installed on CPH2401 (Android 14) via wireless ADB
+
+**Decisions made:**
+- Step goals are activity + goal adjusted, not flat 10,000 — a sedentary user targeting weight loss gets 9,000 (achievable), a very-active endurance athlete gets 18,000 (appropriate); build_muscle gets no bonus because high step counts cut into recovery
+- Water formula is weight-based (35 ml/kg range) rather than fixed buckets because body size is the dominant driver of hydration needs, not just activity
+- `ref.watch(authProvider)` only in `build()`, `ref.read` in action methods — strict Riverpod convention to avoid spurious subscriptions from outside the reactive graph
+
+**Known issues:**
+- None observed after install; backend healthy on Railway
+
+**What to tackle next session:**
+- Phase 3 remaining: Grocery list generated from the weekly meal plan (one `[ ]` left in Phase 3)
+- Phase 4 start: User search + friend system (Prisma Friendship model already exists; need `/social/search` and `/social/friends` routes + Flutter FriendSearchScreen)
+- Activity feed (post events when workout/food/weight milestones are logged)
+- Stripe subscription integration — paywall for Pro/Coach features
+
+---
+
+## Previous session
 **Date:** 2026-04-21 (session 28)
 **Duration:** ~3 hours
 **What was built:**
