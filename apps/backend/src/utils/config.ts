@@ -14,6 +14,8 @@ const envSchema = z.object({
   OPEN_FOOD_FACTS_BASE_URL: z.string().url().default('https://world.openfoodfacts.org'),
   USDA_API_KEY: z.string(),
   AMPLITUDE_API_KEY: z.string().optional(),
+  // Comma-separated emails that bypass the daily AI coach rate limit (dev/admin accounts).
+  ADMIN_EMAILS: z.string().optional(),
   // Firebase Admin SDK — required for server-sent push notifications.
   // Set to the full service account JSON as a single-line string.
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),

@@ -13,6 +13,7 @@ import {
   type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
+import { config } from '../utils/config';
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -130,9 +131,14 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { message, history } = parsed.data;
 
-    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
+    const [subscription, user] = await Promise.all([
+      prisma.subscription.findUnique({ where: { userId }, select: { tier: true } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+    ]);
     const tier = subscription?.tier ?? 'free';
-    const isPaid = tier === 'pro' || tier === 'coach';
+    const adminEmails = (config.ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim()).filter(Boolean);
+    const isAdmin = adminEmails.includes(user?.email ?? '');
+    const isPaid = isAdmin || tier === 'pro' || tier === 'coach';
 
     // Rate limit check (read-only — increment happens after success)
     if (!isPaid) {
