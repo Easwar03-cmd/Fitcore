@@ -140,8 +140,13 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     const isAdmin = adminEmails.includes(user?.email ?? '');
     const isPaid = isAdmin || tier === 'pro' || tier === 'coach';
 
+    // The first message of a session (empty history) is a free opener — it is
+    // not counted toward the daily limit. Subsequent messages in the same
+    // conversation (history.length > 0) are counted for free-tier users.
+    const isSessionStarter = history.length === 0;
+
     // Rate limit check (read-only — increment happens after success)
-    if (!isPaid) {
+    if (!isPaid && !isSessionStarter) {
       const count = await getFreeTierMessageCount(userId);
       if (count !== null && count >= FREE_TIER_LIMIT) {
         return reply.status(429).send({
@@ -157,17 +162,15 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      // Build full message list and delegate entirely to sendCoachMessage
-      // (which injects live user context via buildContext).
       const messages: ChatMessage[] = [
         ...history.map((h) => ({ role: h.role as 'user' | 'assistant', content: h.content })),
         { role: 'user' as const, content: message },
       ];
 
       const replyText = await sendCoachMessage(userId, messages);
-      const messagesUsedToday = isPaid ? 0 : await incrementFreeTierCount(userId);
+      const messagesUsedToday = (isPaid || isSessionStarter) ? 0 : await incrementFreeTierCount(userId);
 
-      return reply.send({ success: true, data: { reply: replyText, messagesUsedToday } });
+      return reply.send({ success: true, data: { reply: replyText, messagesUsedToday, dailyLimit: isPaid ? 0 : FREE_TIER_LIMIT } });
     } catch (err) {
       const { status, code, message: msg } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message: msg } });

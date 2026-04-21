@@ -19,7 +19,7 @@ final _log = Logger();
 // ─── Rate-limit state ─────────────────────────────────────────────────────────
 
 final coachRateLimitProvider = StateProvider<({int used, int limit})>(
-  (ref) => (used: 0, limit: 5),
+  (ref) => (used: 0, limit: 0),
 );
 
 // ─── Exceptions ───────────────────────────────────────────────────────────────
@@ -157,10 +157,9 @@ class CoachNotifier extends _$CoachNotifier {
       final usedToday = data['messagesUsedToday'] as int?;
       final dailyLimit = data['dailyLimit'] as int?;
       if (usedToday != null) {
-        final current = ref.read(coachRateLimitProvider);
         ref.read(coachRateLimitProvider.notifier).state = (
           used: usedToday,
-          limit: dailyLimit ?? current.limit,
+          limit: dailyLimit ?? ref.read(coachRateLimitProvider).limit,
         );
       }
     } on DioException catch (e) {
@@ -173,6 +172,8 @@ class CoachNotifier extends _$CoachNotifier {
         final current = ref.read(coachRateLimitProvider);
         final used = errData?['messagesUsedToday'] as int? ?? current.used;
         final limit = errData?['limit'] as int? ?? current.limit;
+        // Persist rate-limited state so the input bar disables immediately.
+        ref.read(coachRateLimitProvider.notifier).state = (used: used, limit: limit);
         throw RateLimitException(used, limit);
       }
 
