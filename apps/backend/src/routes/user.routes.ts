@@ -148,6 +148,8 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
         activityLevel: updatedUser.profile!.activityLevel as UserProfileDto['activityLevel'],
         targetWeightKg: updatedUser.profile!.targetWeightKg,
         tdee: updatedUser.profile!.tdee,
+        currentWeightKg: weightKg,
+        heightCm: heightCm,
       };
 
       return reply.status(201).send({
