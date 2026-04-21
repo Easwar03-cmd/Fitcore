@@ -117,7 +117,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.send({ success: true, data: { url: session.url } });
     } catch (err) {
-      request.log.error('[Stripe] checkout error', err);
+      request.log.error({ err }, '[Stripe] checkout error');
       return reply.status(502).send({ success: false, error: { code: 'STRIPE_ERROR', message: 'Failed to create checkout session' } });
     }
   });
@@ -144,7 +144,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       });
       return reply.send({ success: true, data: { url: session.url } });
     } catch (err) {
-      request.log.error('[Stripe] portal error', err);
+      request.log.error({ err }, '[Stripe] portal error');
       return reply.status(502).send({ success: false, error: { code: 'STRIPE_ERROR', message: 'Failed to create portal session' } });
     }
   });
@@ -164,14 +164,14 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
         config.STRIPE_WEBHOOK_SECRET,
       );
     } catch (err) {
-      request.log.error('[Stripe webhook] signature verification failed', err);
+      request.log.error({ err }, '[Stripe webhook] signature verification failed');
       return reply.status(400).send({ error: 'Invalid webhook signature' });
     }
 
     try {
       await handleWebhookEvent(event, request.log);
     } catch (err) {
-      request.log.error('[Stripe webhook] handler error', err);
+      request.log.error({ err }, '[Stripe webhook] handler error');
       return reply.status(500).send({ error: 'Webhook handler failed' });
     }
 
