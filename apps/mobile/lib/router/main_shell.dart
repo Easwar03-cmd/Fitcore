@@ -54,8 +54,16 @@ class _MainShellState extends ConsumerState<MainShell>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: widget.child,
+    final onHome = _tabIndex(context) == 0;
+
+    return PopScope(
+      // Allow system back to exit only when already on the Home tab.
+      canPop: onHome,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(AppRoutes.home);
+      },
+      child: Scaffold(
+        body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _tabIndex(context),
         onTap: (i) => context.go(_tabs[i]),
@@ -87,6 +95,7 @@ class _MainShellState extends ConsumerState<MainShell>
           ),
         ],
       ),
+    ),
     );
   }
 }
