@@ -1,6 +1,57 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-22 (session 30)
+**Duration:** ~2 hours
+**What was built:**
+
+### Stripe subscription integration (Phase 4)
+
+**Backend — `payments.routes.ts`**
+- `GET /api/v1/payments/subscription` — returns current tier + validUntil for the authenticated user
+- `POST /api/v1/payments/checkout` — creates a Stripe Checkout Session for `pro` or `coach` tier; creates a Stripe Customer on first checkout and stores `stripeCustomerId` on the Subscription row
+- `POST /api/v1/payments/portal` — creates a Stripe Billing Portal session so paid users can change plan, update payment method, or cancel
+- `POST /api/v1/payments/webhook` — verifies Stripe signature using raw body (saved in global content-type parser); handles `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+- `/payment/success` and `/payment/cancel` — HTML landing pages served from Railway so Stripe has valid redirect URLs after checkout
+- `GET /ai/analyze-food-photo` now returns `403 UPGRADE_REQUIRED` for free-tier users (was open to all)
+
+**Prisma**
+- Added `stripeCustomerId String? @unique` and `stripePriceId String?` to `Subscription` model
+- Migration `20260421000000_add_stripe_subscription_fields` runs on Railway deploy via `prisma migrate deploy`
+- `config.ts` accepts optional `STRIPE_PRO_PRICE_ID` and `STRIPE_COACH_PRICE_ID` env vars
+
+**Flutter**
+- `SubscriptionInfo` model with `isPro`, `isCoach`, `isPaid` helpers and `validUntil` expiry check
+- `SubscriptionNotifier` (Riverpod `AsyncNotifier`) — fetches status on build, exposes `createCheckoutUrl`, `createPortalUrl`, `refresh`; rebuilds on auth change
+- `PaywallScreen` — Free / Pro / Coach tier cards with feature comparison list and upgrade CTAs; shows locked-feature banner when navigated to from a gated screen
+- `SubscriptionScreen` — current plan badge, renews/expires date, "Manage billing" button (opens Stripe portal); `WidgetsBindingObserver` refreshes subscription when user returns from browser; free users see upgrade CTA
+- Profile screen Subscription tile now navigates to `SubscriptionScreen` (was "Coming soon")
+- `FoodPhotoScreen` shows an inline paywall with upgrade CTA for free-tier users instead of loading the camera
+- Routes: `/profile/subscription` and `/paywall` added to `AppRoutes` and `app_router.dart`
+
+### Bug fixes during deployment
+- **TS2769** — four `request.log.error(msg, err)` calls in payments routes used wrong Pino argument order; fixed to `({ err }, msg)`
+- **FST_ERR_CTP_ALREADY_PRESENT** — Fastify v5 rejects re-registering `application/json` in a child plugin; fixed by saving `rawBody` in the global parser in `index.ts` and removing the override from the payments plugin
+- **TS2352** — `_req as Record<string, unknown>` needed `as unknown` intermediary; fixed
+- **Prisma client stale** — local client didn't know about new fields until `yarn prisma generate` was run; Dockerfile already runs this so Railway was fine
+- **`canLaunchUrl` always false on Android API 30+** — `<queries>` block in `AndroidManifest.xml` was missing `https`/`http` scheme intents; added them; also removed the `canLaunchUrl` gate from paywall screen (calls `launchUrl` directly, surfaces real error on failure)
+
+**Decisions made:**
+- Raw body for Stripe webhook is captured in the global content-type parser (`rawBody` property on request) rather than registering a separate buffer parser — avoids Fastify v5 plugin scoping restriction
+- `canLaunchUrl` is not used as a gate for Stripe checkout/portal URLs — it is unreliable for https on Android without `QUERY_ALL_PACKAGES` and would silently block the redirect
+- Subscription status is re-fetched on `AppLifecycleState.resumed` in `SubscriptionScreen` so no deep link or webhook polling is needed to reflect a completed payment
+
+**Known issues:**
+- None observed after install
+
+**What to tackle next session:**
+- Phase 4 remaining social features: user search + friend system, activity feed, 30-day challenges, leaderboards, XP + level system, badges, streak shields
+- Coach marketplace (basic listing)
+- Grocery list from meal plan (one remaining Phase 3 item, low priority)
+
+---
+
+## Previous session
 **Date:** 2026-04-21 (session 29)
 **Duration:** ~2 hours
 **What was built:**

@@ -398,8 +398,8 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [ ] XP + level system
 - [ ] Badges & achievements
 - [ ] Streak shields
-- [ ] Stripe subscription integration (Free / Pro / Coach tiers)
-- [ ] Paywall screens for premium features
+- [x] Stripe subscription integration (Free / Pro / Coach tiers)
+- [x] Paywall screens for premium features
 - [ ] Coach marketplace (basic)
 - [x] Ad placeholder slots (home screen banner + popup) — swap for AdWidget from google_mobile_ads before launch; TODO(admob) comments mark each slot
 

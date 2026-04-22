@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,35 +21,33 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   bool _loadingCoach = false;
 
   Future<void> _upgrade(String tier) async {
-    if (tier == 'pro') {
-      setState(() => _loadingPro = true);
-    } else {
-      setState(() => _loadingCoach = true);
-    }
+    setState(() {
+      if (tier == 'pro') { _loadingPro = true; } else { _loadingCoach = true; }
+    });
 
     try {
       final url =
           await ref.read(subscriptionProvider.notifier).createCheckoutUrl(tier);
       final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (mounted) {
-          await ref.read(subscriptionProvider.notifier).refresh();
-        }
+      // Launch directly — canLaunchUrl is unreliable for https on Android
+      // without the QUERY_ALL_PACKAGES permission.
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (mounted) {
+        await ref.read(subscriptionProvider.notifier).refresh();
       }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final msg = (e.response?.data as Map?)?['error']?['message'] as String?
+          ?? 'Server error. Try again.';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open checkout. Try again.')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open checkout: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _loadingPro = false;
-          _loadingCoach = false;
-        });
-      }
+      if (mounted) setState(() { _loadingPro = false; _loadingCoach = false; });
     }
   }
 
