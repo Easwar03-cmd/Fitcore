@@ -32,6 +32,8 @@ class CoachNotifier extends _$CoachNotifier {
 
   @override
   List<ChatMessage> build() {
+    // Watch so this rebuilds (and loads the correct history) when auth changes.
+    ref.watch(authProvider);
     _loadHistory();
     return const [];
   }

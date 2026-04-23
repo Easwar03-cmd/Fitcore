@@ -229,7 +229,7 @@ class _FoodChipRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 30,
+      height: 32,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(right: 12),
@@ -241,14 +241,43 @@ class _FoodChipRow extends StatelessWidget {
   }
 }
 
-class _FoodChip extends StatelessWidget {
+class _FoodChip extends ConsumerWidget {
   const _FoodChip({required this.log});
   final FoodLog log;
 
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove entry?'),
+        content: Text('Remove "${log.foodName}" from your log?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remove',
+                  style: TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
+      ref.read(foodLogsProvider.notifier).removeLogLocally(log.id);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.only(left: 10, right: 4, top: 5, bottom: 5),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
@@ -257,7 +286,7 @@ class _FoodChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 110),
+            constraints: const BoxConstraints(maxWidth: 100),
             child: Text(
               log.foodName,
               style: const TextStyle(fontSize: 12),
@@ -265,13 +294,22 @@ class _FoodChip extends StatelessWidget {
               maxLines: 1,
             ),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
             '${log.calories.round()} kcal',
             style: const TextStyle(
               fontSize: 11,
               color: AppColors.calories,
               fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 2),
+          GestureDetector(
+            onTap: () => _delete(context, ref),
+            child: Icon(
+              Icons.close,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -329,7 +367,7 @@ class _LogItem extends ConsumerWidget {
       onDismissed: (_) =>
           ref.read(foodLogsProvider.notifier).removeLogLocally(log.id),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
         child: Row(
           children: [
             Expanded(
@@ -347,15 +385,50 @@ class _LogItem extends ConsumerWidget {
                     'C ${log.carbsG.toStringAsFixed(1)}  '
                     'F ${log.fatG.toStringAsFixed(1)}',
                     style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 12),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Text(
               '${log.calories.round()} kcal',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 18),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Delete',
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Remove entry?'),
+                    content: Text('Remove "${log.foodName}" from your log?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Remove',
+                              style: TextStyle(color: AppColors.error))),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                try {
+                  await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
+                  ref.read(foodLogsProvider.notifier).removeLogLocally(log.id);
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(SnackBar(content: Text(e.toString())));
+                  }
+                }
+              },
             ),
           ],
         ),

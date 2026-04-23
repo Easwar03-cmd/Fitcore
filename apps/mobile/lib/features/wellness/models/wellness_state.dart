@@ -97,6 +97,17 @@ class WellnessState {
     return 'Below average';
   }
 
+  static const WellnessState empty = WellnessState(
+    sleepMinutes: 0,
+    sleepScore: 0,
+    sleepTrend: [],
+    hrTrend: [],
+    moodHistory: [],
+    readinessScore: 0,
+    readinessLabel: '—',
+    readinessLevel: ReadinessLevel.light,
+  );
+
   WellnessState copyWithMood({
     required int todayMood,
     required List<MoodLogEntry> moodHistory,

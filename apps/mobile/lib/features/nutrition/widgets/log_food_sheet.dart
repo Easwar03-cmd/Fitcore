@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,8 +6,9 @@ import '../../../core/theme/app_colors.dart';
 import '../models/food_item.dart';
 import '../providers/nutrition_provider.dart';
 
-// Serving unit → grams multiplier (used when no serving chip is selected)
-const _unitMultipliers = {'g': 1.0, 'cup': 240.0, 'piece': 100.0};
+// Unit → multiplier maps. For liquids 1 ml ≈ 1 g (beverage density ~1).
+const _solidUnits = {'g': 1.0, 'cup': 240.0, 'piece': 100.0};
+const _liquidUnits = {'ml': 1.0, 'cup': 240.0};
 
 const _mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
 const _mealLabels = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -40,19 +41,27 @@ class _LogFoodSheet extends ConsumerStatefulWidget {
 }
 
 class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
-  final _qtyController = TextEditingController(text: '100');
-  String _unit = 'g';
+  late final TextEditingController _qtyController;
+  late String _unit;
   late String _mealType;
   bool _saving = false;
+
+  Map<String, double> get _unitMap =>
+      widget.item.isLiquid ? _liquidUnits : _solidUnits;
 
   @override
   void initState() {
     super.initState();
     _mealType = widget.initialMealType ?? 'lunch';
+    // Default to ml for liquids, g for solids
+    _unit = widget.item.isLiquid ? 'ml' : 'g';
+    _qtyController = TextEditingController(
+      text: widget.item.isLiquid ? '250' : '100',
+    );
   }
 
-  /// When non-null, a quick-select chip has been tapped and this overrides
-  /// the text-field + unit calculation.
+  /// When non-null, a quick-select chip has been tapped and overrides the
+  /// text-field + unit calculation.
   double? _chipServingG;
 
   @override
@@ -62,8 +71,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
   }
 
   double get _quantity => double.tryParse(_qtyController.text) ?? 0;
-  double get _servingG =>
-      _chipServingG ?? (_quantity * _unitMultipliers[_unit]!);
+  double get _servingG => _chipServingG ?? (_quantity * (_unitMap[_unit] ?? 1.0));
   double get _factor => _servingG / 100.0;
 
   double get _calories => widget.item.caloriesPer100g * _factor;
@@ -71,22 +79,20 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
   double get _carbs => widget.item.carbsPer100g * _factor;
   double get _fat => widget.item.fatPer100g * _factor;
 
-  List<ServingOption> get _servings =>
-      widget.item.commonServings ?? [];
+  List<ServingOption> get _servings => widget.item.commonServings ?? [];
 
-  bool get _hasServings => widget.item.isIndian && _servings.isNotEmpty;
+  // Show quick chips for any local food that has commonServings defined
+  bool get _hasServings => _servings.isNotEmpty;
 
   void _selectChip(ServingOption option) {
     setState(() {
       _chipServingG = option.grams;
-      // Keep the text field in sync so power users can still tweak it
       _qtyController.text = option.grams.toStringAsFixed(0);
-      _unit = 'g';
+      _unit = widget.item.isLiquid ? 'ml' : 'g';
     });
   }
 
   void _onManualInput(String _) {
-    // Tapping the text field after a chip was selected clears the chip lock
     setState(() => _chipServingG = null);
   }
 
@@ -117,7 +123,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -148,17 +154,19 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
             Text(
               widget.item.nameHindi!,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13),
             )
           else if (widget.item.brand != null && widget.item.brand!.isNotEmpty)
             Text(
               widget.item.brand!,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 13),
             ),
           const SizedBox(height: 16),
 
-          // ── Quick-select serving chips (Indian foods only) ─────────────────
+          // ── Quick-select serving chips (any local food with commonServings) ──
           if (_hasServings) ...[
             Text('Quick select', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
@@ -168,8 +176,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               children: _servings.map((option) {
                 final selected = _chipServingG == option.grams;
                 return ChoiceChip(
-                  label: Text(option.label,
-                      style: const TextStyle(fontSize: 12)),
+                  label: Text(option.label, style: const TextStyle(fontSize: 12)),
                   selected: selected,
                   onSelected: (_) => _selectChip(option),
                 );
@@ -208,13 +215,13 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               const SizedBox(width: 12),
               Expanded(
                 child: SegmentedButton<String>(
-                  segments: _unitMultipliers.keys
+                  segments: _unitMap.keys
                       .map((u) => ButtonSegment(value: u, label: Text(u)))
                       .toList(),
                   selected: {_unit},
                   onSelectionChanged: (s) => setState(() {
                     _unit = s.first;
-                    _chipServingG = null; // manual unit change clears chip lock
+                    _chipServingG = null;
                   }),
                   style: const ButtonStyle(
                     visualDensity: VisualDensity.compact,
@@ -263,9 +270,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.white),
                     )
-                  : Text(
-                      'Log ${_calories.round()} kcal to $_mealType',
-                    ),
+                  : Text('Log ${_calories.round()} kcal to $_mealType'),
             ),
           ),
         ],
@@ -300,14 +305,22 @@ class _MacroPreview extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _MacroCol(label: 'kcal', value: calories.round().toString(),
+          _MacroCol(
+              label: 'kcal',
+              value: calories.round().toString(),
               color: AppColors.calories),
-          _MacroCol(label: 'Protein',
-              value: '${protein.toStringAsFixed(1)}g', color: AppColors.protein),
-          _MacroCol(label: 'Carbs',
-              value: '${carbs.toStringAsFixed(1)}g', color: AppColors.carbs),
-          _MacroCol(label: 'Fat',
-              value: '${fat.toStringAsFixed(1)}g', color: AppColors.fat),
+          _MacroCol(
+              label: 'Protein',
+              value: '${protein.toStringAsFixed(1)}g',
+              color: AppColors.protein),
+          _MacroCol(
+              label: 'Carbs',
+              value: '${carbs.toStringAsFixed(1)}g',
+              color: AppColors.carbs),
+          _MacroCol(
+              label: 'Fat',
+              value: '${fat.toStringAsFixed(1)}g',
+              color: AppColors.fat),
         ],
       ),
     );
@@ -331,7 +344,8 @@ class _MacroCol extends StatelessWidget {
         const SizedBox(height: 2),
         Text(label,
             style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11)),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 11)),
       ],
     );
   }

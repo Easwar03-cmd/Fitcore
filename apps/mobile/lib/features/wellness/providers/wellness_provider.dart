@@ -5,13 +5,19 @@ import 'package:logger/logger.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/services/health_service.dart';
 import '../../../core/services/sync_queue_service.dart' show syncServiceProvider;
+import '../../auth/providers/auth_provider.dart';
 import '../models/wellness_state.dart';
 
 final _log = Logger();
 
 class WellnessNotifier extends AsyncNotifier<WellnessState> {
   @override
-  Future<WellnessState> build() => _loadState();
+  Future<WellnessState> build() {
+    if (ref.watch(authProvider).valueOrNull == null) {
+      return Future.value(WellnessState.empty);
+    }
+    return _loadState();
+  }
 
   // ── Public actions ──────────────────────────────────────────────────────────
 

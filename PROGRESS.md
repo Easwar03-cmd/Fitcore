@@ -1,7 +1,110 @@
 # Zenfit — Build Progress
 
 ## Last session
-**Date:** 2026-04-23 (session 32)
+**Date:** 2026-04-24 (session 33)
+**Duration:** ~3 hours
+**What was built:**
+
+### AI Exercise Form Monitor — major rework & stability pass
+
+The form monitor shipped in session 31 had three critical bugs that were fully fixed and then improved further this session.
+
+**Bug fixes**
+- **Skeleton coordinate transform** — ML Kit returns landmarks already in the display-oriented (post-rotation) coordinate space, not raw sensor space. The old code re-applied the rotation on top, double-transforming everything and pushing the skeleton off-screen. Rewrote `PoseOverlayPainter._toScreen` to use the correct per-rotation axis flip (`srcW - lmX` for `rotation270deg`, which is standard for CPH2401 / OPPO front cameras) followed by the FittedBox.cover scale + crop offset so dots land exactly on the user's joints.
+- **Always-green badge** — Two root causes: (1) `copyWith(currentPose: null)` silently no-ops because Dart's `??` can't clear to null — fixed with a `clearPose: bool` sentinel. (2) `PoseAnalyzer` was returning `PoseFeedback.good` for every "not-in-position" early exit. Fixed by adding `FeedbackLevel.none` + `PoseFeedback.noPose` / `PoseFeedback.ready` states.
+- **Exercise chip text invisible** — `Colors.white12` background with `fontSize: 12` was near-invisible. Changed to `Color(0xFF374151)` background, solid blue selected state, white text, explicit border.
+
+**Stability improvements**
+- `PoseSmoother` service (new) — exponential moving average (α=0.5) applied to all 33 landmark positions every frame; eliminates per-frame jitter without adding perceptible lag at 6fps
+- 2-frame feedback debouncing in `ExerciseMonitorNotifier` — feedback must be identical for 2 consecutive frames before the UI updates; prevents single-frame glitches from flashing on screen
+- Frame rate raised from 4fps (250ms) → 6.7fps (150ms) for smoother real-time tracking
+- Full-body skeleton: added nose → shoulder head connections, ankle → foot index leg extensions, dark halo under every bone so skeleton is visible on both light and dark backgrounds
+
+**Phase-based rep counter**
+- Replaced fragile "good-frame streak → non-good frame" heuristic with a proper movement phase detector in `ExerciseMonitorNotifier._updateRepCount`
+- Each exercise has a `RepThresholds(bottom, top)` in `kRepThresholds`; a rep is only counted when the primary angle crosses the bottom threshold (depth) and then returns past the top threshold (standing)
+- Primary angle extracted via `PoseAnalyzer.primaryAngle()` — knee angle for squat/lunge, elbow angle for push-up/OHP/bicep curl/pull-up, shoulder–hip–knee for deadlift/RDL
+- Plank has no rep counting (hold exercise)
+
+**Exercise-specific engagement detection**
+- Every exercise now has an explicit "are you actually doing this?" check at the top of its analyzer method; returns `PoseFeedback.ready` (gray, "Get into position") when the user is standing idle
+- Bicep Curl: arms fully straight (elbow >160°) → "Start curling — bend your elbows"; only analyses elbow drift + ROM when actually curling
+- Pull-up: wrists below shoulder level → "Hang from the bar to start"; only analyses swing + chin-above-bar when actually hanging
+- Deadlift / Romanian DL: shoulder–hip y-gap too large (upright posture) → "Hinge at the hips to start"; checks flat back only when in the hinge
+- Push-up: body too vertical (vertSpan > horizSpan × 1.2) → "Get on the floor — face down"
+- Plank: same horizontal body check → "Get into plank position"
+- Squat, Lunge, OHP: already had correct engagement gates (knee angle / wrist position)
+
+**Additional form checks added**
+- Squat: knee valgus detection ("Push knees out"), depth nudge ("Squat deeper" if knee >130°)
+- Bicep curl: full extension check at bottom ("Fully extend arms at the bottom"), full contraction at top
+- Pull-up: dead hang extension check
+- Deadlift: hip drive cue ("Drive hips forward") when shoulder–hip–knee angle over-acute
+- Both sides of the body used wherever both are visible; falls back to more visible side
+
+**Files added / changed**
+- `lib/features/workout/services/pose_smoother.dart` — new EMA smoothing service
+- `lib/features/workout/services/pose_analyzer.dart` — engagement detection + bilateral angles + improved thresholds
+- `lib/features/workout/providers/exercise_monitor_provider.dart` — smoother, debouncing, phase-based rep counter, `clearPose` sentinel
+- `lib/features/workout/widgets/pose_overlay_painter.dart` — correct coordinate transform, full skeleton, halo
+- `lib/features/workout/widgets/form_feedback_card.dart` — handles `FeedbackLevel.none`
+- `lib/features/workout/models/pose_feedback.dart` — added `none` level, `noPose` + `ready` constants
+- `lib/features/workout/screens/exercise_monitor_screen.dart` — chip styling, "step into frame" placeholder, 150ms frame rate
+
+**Decisions made**
+- EMA α=0.5: fast enough to track real movement at 6fps, smooth enough to eliminate jitter. Could be tuned lower (smoother) if certain phones show landmark noise; do not go above 0.6 or tracking lags behind fast movements.
+- FeedbackLevel.none used for both "no person detected" and "person detected but not in position" — same gray styling, different messages. This avoids adding a fourth enum value and keeps the visual language simple (two states: informational gray vs active green/amber).
+- Engagement thresholds (e.g. hipMidY − shMidY > shWidth × 1.7 for deadlift) calibrated for a front-facing phone camera. These may need tuning if users report false "Get into position" messages while mid-rep — adjust the multiplier in `pose_analyzer.dart`.
+- Per-exercise `RepThresholds` stored as a const map in `pose_analyzer.dart` so they're easy to tune without touching provider logic.
+
+**Known issues**
+- Plank and push-up engagement detection relies on the body being horizontal in the camera frame. If the phone is propped directly in front of the user (face-on view), the body appears foreshortened and the horizSpan check may not work well. Works best from a side-profile camera angle.
+- Deadlift hip-hinge engagement uses the shoulder–hip y-gap as a proxy for forward lean, which is a front-camera approximation. From a strict front-facing view, forward lean (depth change) is invisible; the y-gap proxy works but the threshold may feel slightly late for users with long torsos. Consider relaxing `1.7` to `1.5` if users report it never entering analysis mode.
+- Pull-up wrist-above-shoulder gate is strict: both wrists must be above both shoulders. Users with asymmetric bar grips may see "Hang from the bar" flash on one side. If this is reported, change to "either wrist above either shoulder".
+
+---
+
+## Previous session
+**Date:** 2026-04-25 (session 34)
+**Duration:** ~2.5 hours
+**What was built:**
+
+### Multi-cuisine food database
+- Replaced `assets/data/indian_foods.json` with `assets/data/local_foods.json` — ~280 clean-named items across 12 categories: Indian (35), American (20), Italian (15), Chinese (16), Fruits (20), Vegetables (18), Proteins/Meat (10), Dairy & Eggs (11), Grains (9), Beverages (18), Nuts & Seeds (10), Snacks (8)
+- All names are consumer-friendly ("Boiled Egg", "Chicken Breast (Cooked)") — no USDA comma-reversal style
+- Added `isLiquid` flag to `FoodItem` model and new `fromLocalJson` factory; updated `IndianFoodService` to load the new file
+- USDA name normalizer added to `FoodItem.fromUsdaJson`: inverts "Egg, boiled" → "Boiled Egg", strips category prefixes like "Beverages,", caps long descriptions to 2 meaningful parts
+- `ml` unit added to `log_food_sheet.dart` for liquids (1ml = 1g for beverage calorie calculation); liquid foods default to `ml` unit + 250 starting amount; solids keep `g/cup/piece`
+- Quick-select serving chips now appear for any food with `commonServings` — previously only Indian foods got chips
+
+### Delete logged foods
+- Collapsed chip row: added × button on every `_FoodChip` widget (triggers confirm dialog → deleteLog + removeLogLocally)
+- Expanded row: added visible trash `IconButton` on every `_LogItem` row, in addition to the existing swipe-to-delete gesture
+
+### Water persistence bug fix
+- **Root cause**: in `HomeDashboardNotifier._loadState()`, `_userId` was evaluated via `ref.read(authProvider)` *after* `await profileFuture` — an async gap of ~300ms. During cold start, `authProvider` is still `AsyncLoading` at that point, so `valueOrNull` is `null` → uid falls back to `'anonymous'` → water is read from `water_ml_anonymous_YYYY-MM-DD` (always 0)
+- **Fix**: capture `userId` synchronously at the top of `build()` from `ref.watch(authProvider).valueOrNull?.user.id` before any async work begins. Pass it as a parameter to `_loadState(userId:)` so there is no re-read mid-flight
+
+### Breakfast and lunch notifications
+- Added `scheduleBreakfastReminder()` (8:00 AM) and `scheduleLunchReminder()` (1:00 PM) to `NotificationService`
+- Notification IDs 13 and 14 reserved
+- Both wired into `restoreSchedules()` reading prefs keys `notif_breakfast_enabled` (default true) and `notif_lunch_enabled` (default true)
+- Breakfast copy: "Good morning! Log your breakfast 🍳"; Lunch copy: "Lunchtime! Don't forget to log 🥗"
+
+**Decisions made**
+- Local food database replaces the old 150-item Indian-only JSON. The new file still loads through the same `IndianFoodService` / `openFoodFactsServiceProvider` stack (no provider renaming) to avoid breaking existing call sites. The service class name `IndianFoodService` is now a misnomer but harmless — rename in a future session if it creates confusion.
+- `isLiquid` flag on FoodItem is the single source of truth for whether to show ml/cup vs g/cup/piece in the log sheet. Beverages in the local DB all have `isLiquid: true`; items from USDA/OFF never set it (defaults false), so those always show g-based units.
+- Water key capture in `build()` rather than inside `_loadState()` is the canonical pattern going forward for any user-scoped prefs that must be read mid-async. Added comment explaining the reason so future contributors don't "simplify" it back.
+
+**Known issues**
+- `notif_breakfast_enabled` and `notif_lunch_enabled` prefs are not yet surfaced in the Profile → Notifications settings UI. The notifications fire by default (true) but the user has no in-app toggle to disable them. Add toggles to the notifications settings screen next session.
+- The old `assets/data/indian_foods.json` file still exists in the repo (not deleted). It is no longer loaded by any code but wastes ~15 KB in the APK. Safe to delete next session.
+- USDA name normalization handles most cases well but some multi-part names still produce awkward output (e.g. "Chicken (Broilers or Fryers, Breast)"). The normalizer is good enough for now; a proper title-case + stopword pass can improve it later.
+
+---
+
+## Session 33
+**Date:** 2026-04-24
 **Duration:** ~2 hours
 **What was built:**
 

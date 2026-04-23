@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/services/sync_queue_service.dart' show syncServiceProvider;
+import '../../auth/providers/auth_provider.dart';
 import '../models/body_stat.dart';
 
 final _log = Logger();
@@ -14,7 +15,10 @@ final bodyLogProvider =
 
 class BodyLogNotifier extends AsyncNotifier<List<BodyStat>> {
   @override
-  Future<List<BodyStat>> build() => _fetch();
+  Future<List<BodyStat>> build() {
+    if (ref.watch(authProvider).valueOrNull == null) return Future.value([]);
+    return _fetch();
+  }
 
   Future<List<BodyStat>> _fetch() async {
     try {

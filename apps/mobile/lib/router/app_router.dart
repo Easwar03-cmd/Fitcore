@@ -29,6 +29,7 @@ import '../features/social/screens/leaderboard_screen.dart';
 import '../features/social/screens/social_screen.dart';
 import '../features/wellness/screens/wellness_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
+import '../features/workout/screens/exercise_monitor_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
 import '../features/workout/screens/home_workout_list_screen.dart';
@@ -147,6 +148,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: 'gym',
                 name: 'gym-workout',
                 builder: (context, state) => const GymWorkoutScreen(),
+              ),
+              GoRoute(
+                path: 'monitor',
+                name: 'exercise-monitor',
+                builder: (context, state) => const ExerciseMonitorScreen(),
               ),
               GoRoute(
                 path: 'home',

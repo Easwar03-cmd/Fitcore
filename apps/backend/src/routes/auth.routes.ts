@@ -12,6 +12,7 @@ import {
   toUserDto,
 } from '../services/auth.service';
 import { config } from '../utils/config';
+import { sendPasswordResetEmail, isEmailConfigured } from '../services/email.service';
 import type { AuthResponse } from '@zenfit/shared';
 
 // ─── Redis for password-reset codes (lazy, fail-open) ────────────────────────
@@ -276,7 +277,18 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       await redis.set(`pwd_reset:${code}`, user.id, 'EX', RESET_TTL);
     }
 
-    // In production, email the code. For now, return it directly.
+    if (isEmailConfigured) {
+      await sendPasswordResetEmail(email, code).catch((err) => {
+        request.log.error({ err }, 'Failed to send password reset email');
+      });
+      return reply.send({
+        success: true,
+        data: { message: 'If that email is registered, a reset code has been sent.' },
+      });
+    }
+
+    // SMTP not configured — return code directly so dev/test flows still work.
+    request.log.warn({ code }, 'SMTP not configured — returning reset code in response (dev only)');
     return reply.send({ success: true, data: { code, expiresInMinutes: 15 } });
   });
 

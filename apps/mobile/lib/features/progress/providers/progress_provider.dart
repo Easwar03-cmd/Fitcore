@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../workout/models/workout_log.dart';
 import '../models/body_stat.dart';
 import '../models/progress_data.dart';
@@ -14,7 +15,12 @@ final progressProvider =
 
 class ProgressNotifier extends AsyncNotifier<ProgressData> {
   @override
-  Future<ProgressData> build() => _fetch();
+  Future<ProgressData> build() {
+    if (ref.watch(authProvider).valueOrNull == null) {
+      return Future.value(ProgressData.empty);
+    }
+    return _fetch();
+  }
 
   Future<void> refresh() async {
     state = const AsyncLoading();

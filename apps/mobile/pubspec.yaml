@@ -54,6 +54,7 @@ dependencies:
   firebase_messaging: ^15.1.0
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
+  flutter_timezone: ^5.0.0
 
   # Food photo / ML Kit
   google_mlkit_text_recognition: ^0.14.0
@@ -79,6 +80,10 @@ dependencies:
   # Image handling
   cached_network_image: ^3.3.1
   image_picker: ^1.1.2
+
+  # AI pose detection (exercise form monitor)
+  google_mlkit_pose_detection: ^0.13.0
+  camera: ^0.11.0
 
   # URL launcher (OAuth wearable connect flows)
   url_launcher: ^6.3.0

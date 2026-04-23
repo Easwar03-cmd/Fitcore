@@ -21,6 +21,13 @@ const envSchema = z.object({
   // Firebase Admin SDK — required for server-sent push notifications.
   // Set to the full service account JSON as a single-line string.
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  // SMTP email — all optional; if unset the app falls back to logging the reset code.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_SECURE: z.string().optional(), // 'true' for TLS (port 465)
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(), // e.g. "Zenfit <no-reply@zenfit.app>"
 });
 
 const parsed = envSchema.safeParse(process.env);

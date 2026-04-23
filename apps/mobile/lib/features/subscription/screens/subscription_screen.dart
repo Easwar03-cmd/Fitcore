@@ -142,9 +142,17 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                     padding: const EdgeInsets.symmetric(vertical: 14)),
                 onPressed: _openingPortal ? null : _openPortal,
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.swap_horiz_rounded),
+                label: const Text('Switch / compare plans'),
+                style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () => context.push(AppRoutes.paywall),
+              ),
               const SizedBox(height: 12),
               Text(
-                'Change plan, update payment method, or cancel — all from the Stripe billing portal.',
+                'Update payment method or cancel via "Manage billing". Switch tiers from the plans screen.',
                 style: tt.bodySmall
                     ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
                 textAlign: TextAlign.center,

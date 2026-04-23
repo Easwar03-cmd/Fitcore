@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/services/open_food_facts_service.dart';
 import '../../../core/services/sync_queue_service.dart' show syncServiceProvider;
+import '../../auth/providers/auth_provider.dart';
 import '../models/food_item.dart';
 import '../models/food_log.dart';
 
@@ -67,7 +68,12 @@ final foodBarcodeProvider =
 
 class FoodLogsNotifier extends AsyncNotifier<DayLogs> {
   @override
-  Future<DayLogs> build() => _fetchToday();
+  Future<DayLogs> build() {
+    if (ref.watch(authProvider).valueOrNull == null) {
+      return Future.value(const DayLogs(logs: [], totals: DayTotals.zero));
+    }
+    return _fetchToday();
+  }
 
   Future<DayLogs> _fetchToday() async {
     final now = DateTime.now();

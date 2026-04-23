@@ -59,6 +59,14 @@
 -keep class io.sentry.android.** { *; }
 -dontwarn io.sentry.android.**
 
+# ── flutter_local_notifications (Gson TypeToken) ─────────────────────────────
+# R8 strips generic signatures from Gson's TypeToken, crashing the plugin's
+# scheduled-notification cache on startup. Keep the class and all subclasses.
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepattributes Signature
+-keepattributes *Annotation*
+
 # ── Firebase / FCM ────────────────────────────────────────────────────────────
 -keep class com.google.firebase.** { *; }
 -dontwarn com.google.firebase.**

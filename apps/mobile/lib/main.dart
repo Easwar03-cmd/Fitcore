@@ -31,6 +31,10 @@ Future<void> main() async {
   // Request permission once on first launch (no-op on subsequent launches).
   await NotificationService.instance.requestPermissions();
 
+  // Restore scheduled local notifications — a device reboot clears all pending
+  // OS alarms so we must re-schedule them every time the app starts.
+  await NotificationService.instance.restoreSchedules();
+
   final sentryDsn = dotenv.env['FLUTTER_SENTRY_DSN'] ?? '';
   // A valid Sentry DSN starts with "https://". Stub/placeholder values would
   // cause SentryFlutter.init() to throw an ArgumentError, which prevents

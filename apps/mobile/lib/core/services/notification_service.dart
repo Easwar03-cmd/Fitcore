@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -11,6 +13,8 @@ import 'package:timezone/timezone.dart' as tz;
 const _kWorkoutReminderId = 10;
 const _kFoodLogReminderId = 11;
 const _kStreakWarningId = 12;
+const _kBreakfastReminderId = 13;
+const _kLunchReminderId = 14;
 const _kSyncFailedBaseId = 20; // 20–29 reserved for sync-failure alerts
 
 // ─── Android notification channel IDs ────────────────────────────────────────
@@ -45,6 +49,15 @@ class NotificationService {
     if (_initialised) return;
 
     tz.initializeTimeZones();
+    // Set device local timezone so scheduled notifications fire at the correct
+    // local time (tz.local defaults to UTC if this is omitted).
+    try {
+      final tzInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+    } catch (e) {
+      debugPrint('[NotificationService] Could not resolve local timezone: $e');
+      // tz.local stays as UTC — notifications will still fire, just offset
+    }
 
     // Local notifications init
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -176,7 +189,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // repeat daily
@@ -204,7 +217,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -235,7 +248,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -244,6 +257,62 @@ class NotificationService {
 
   /// Call when the user has met their daily streak requirement.
   Future<void> cancelStreakWarning() => _flnp.cancel(_kStreakWarningId);
+
+  /// Schedule a daily breakfast reminder at 8:00 AM local time.
+  Future<void> scheduleBreakfastReminder({required bool enabled}) async {
+    await _flnp.cancel(_kBreakfastReminderId);
+    if (!enabled) return;
+
+    await _flnp.zonedSchedule(
+      _kBreakfastReminderId,
+      "Good morning! Log your breakfast 🍳",
+      "Start your day right — log what you're eating for breakfast.",
+      _nextOccurrence(8, 0),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _kRemindersChannelId,
+          _kRemindersChannelName,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(sound: 'default'),
+      ),
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelBreakfastReminder() => _flnp.cancel(_kBreakfastReminderId);
+
+  /// Schedule a daily lunch reminder at 1:00 PM local time.
+  Future<void> scheduleLunchReminder({required bool enabled}) async {
+    await _flnp.cancel(_kLunchReminderId);
+    if (!enabled) return;
+
+    await _flnp.zonedSchedule(
+      _kLunchReminderId,
+      "Lunchtime! Don't forget to log 🥗",
+      "Keep your nutrition on track — log your lunch now.",
+      _nextOccurrence(13, 0),
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _kRemindersChannelId,
+          _kRemindersChannelName,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(sound: 'default'),
+      ),
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> cancelLunchReminder() => _flnp.cancel(_kLunchReminderId);
 
   // ── Sync failure alerts ────────────────────────────────────────────────────
 
@@ -271,6 +340,34 @@ class NotificationService {
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
     );
+  }
+
+  // ── Schedule restoration ───────────────────────────────────────────────────
+
+  /// Re-applies all notification schedules from persisted preferences.
+  /// Call this on every app start — a device reboot clears all pending OS
+  /// alarms and they must be rescheduled.
+  Future<void> restoreSchedules() async {
+    final prefs = await SharedPreferences.getInstance();
+    final workoutEnabled = prefs.getBool('notif_workout_enabled') ?? true;
+    final workoutHour = prefs.getInt('notif_workout_hour') ?? 9;
+    final workoutMinute = prefs.getInt('notif_workout_minute') ?? 0;
+    final foodLogEnabled = prefs.getBool('notif_food_log_enabled') ?? true;
+    final streakEnabled = prefs.getBool('notif_streak_warning_enabled') ?? true;
+    final breakfastEnabled = prefs.getBool('notif_breakfast_enabled') ?? true;
+    final lunchEnabled = prefs.getBool('notif_lunch_enabled') ?? true;
+
+    await Future.wait([
+      scheduleWorkoutReminder(
+        enabled: workoutEnabled,
+        hour: workoutHour,
+        minute: workoutMinute,
+      ),
+      scheduleFoodLogReminder(enabled: foodLogEnabled),
+      scheduleStreakWarning(enabled: streakEnabled),
+      scheduleBreakfastReminder(enabled: breakfastEnabled),
+      scheduleLunchReminder(enabled: lunchEnabled),
+    ]);
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

@@ -76,6 +76,17 @@ class WorkoutScreen extends ConsumerWidget {
               color: const Color(0xFF805AD5),
               onTap: () => context.push(AppRoutes.homeWorkouts),
             ),
+            const SizedBox(height: 12),
+
+            // ── AI Form Monitor card ──────────────────────────────────────
+            _WorkoutTypeCard(
+              icon: Icons.visibility_rounded,
+              title: 'AI Form Monitor',
+              subtitle:
+                  'Live camera pose detection — green means perfect form.',
+              color: const Color(0xFF059669),
+              onTap: () => context.push(AppRoutes.exerciseMonitor),
+            ),
           ],
         ),
       ),

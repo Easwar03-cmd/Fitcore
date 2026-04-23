@@ -21,19 +21,21 @@ const _kBurnedBase = 'calories_burned_'; // + userId + YYYY-MM-DD suffix
 class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
   @override
   Future<HomeDashboardState> build() {
-    // Watch authProvider so this rebuilds when the logged-in user changes.
-    ref.watch(authProvider);
-    return _loadState();
+    // Capture userId synchronously here — BEFORE any async gaps — so that
+    // _loadState() never evaluates it mid-flight when authProvider might still
+    // be AsyncLoading (which would produce 'anonymous' and read the wrong key).
+    final authState = ref.watch(authProvider);
+    final userId = authState.valueOrNull?.user.id ?? 'anonymous';
+    return _loadState(userId: userId);
   }
 
-  // Use ref.read in action methods — ref.watch is only valid inside build().
+  // Keep _userId for action methods called from the UI (auth is always loaded
+  // by the time the user interacts with buttons).
   String get _userId =>
       ref.read(authProvider).valueOrNull?.user.id ?? 'anonymous';
 
   // ── Public actions ─────────────────────────────────────────────────────────
 
-  /// Adds [kcal] to today's burned-calorie total and persists it.
-  /// Called by [WorkoutSessionNotifier] after a workout is successfully saved.
   Future<void> addBurnedCalories(int kcal) async {
     final current = state.valueOrNull;
     if (current == null) return;
@@ -46,44 +48,43 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
   Future<void> addWater(int ml) async {
     final current = state.valueOrNull;
     if (current == null) return;
+    final uid = _userId;
     final newMl = current.waterMl + ml;
     state = AsyncData(current.copyWith(waterMl: newMl));
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_waterKey(_userId), newMl);
+    await prefs.setInt(_waterKey(uid), newMl);
   }
 
-  /// Called by HomeScreen once food logs are available so streak can be updated.
   Future<void> updateStreakForToday({required bool hasLogs}) async {
     final current = state.valueOrNull;
     if (current == null) return;
     final prefs = await SharedPreferences.getInstance();
-    final (streak, graceUsed) = _computeAndSaveStreak(prefs, _userId, hasLogs: hasLogs);
+    final (streak, graceUsed) =
+        _computeAndSaveStreak(prefs, _userId, hasLogs: hasLogs);
     state = AsyncData(current.copyWith(streak: streak, graceUsed: graceUsed));
   }
 
   Future<void> refresh() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(_loadState);
+    state = await AsyncValue.guard(
+        () => _loadState(userId: _userId));
   }
 
   // ── Private ────────────────────────────────────────────────────────────────
 
-  Future<HomeDashboardState> _loadState() async {
-    // Kick off profile and steps fetches in parallel.
+  Future<HomeDashboardState> _loadState({required String userId}) async {
     final profileFuture = _fetchProfile();
     final stepsFuture = ref.read(healthServiceProvider).getTodaySteps();
 
     final profile = await profileFuture;
     final steps = await stepsFuture;
 
-    final uid = _userId;
+    // userId is already captured before any async gap — always correct.
     final prefs = await SharedPreferences.getInstance();
-    final waterMl = prefs.getInt(_waterKey(uid)) ?? 0;
-    final caloriesBurnedToday = prefs.getInt(_burnedKey(uid)) ?? 0;
-    // On initial load show the persisted streak; updateStreakForToday()
-    // is called by HomeScreen once it sees whether there are food logs today.
-    final streak = prefs.getInt('${_kStreakCount}_$uid') ?? 0;
-    final graceAvail = prefs.getBool('${_kStreakGraceAvail}_$uid') ?? true;
+    final waterMl = prefs.getInt(_waterKey(userId)) ?? 0;
+    final caloriesBurnedToday = prefs.getInt(_burnedKey(userId)) ?? 0;
+    final streak = prefs.getInt('${_kStreakCount}_$userId') ?? 0;
+    final graceAvail = prefs.getBool('${_kStreakGraceAvail}_$userId') ?? true;
 
     return HomeDashboardState(
       tdee: profile.tdee,
@@ -103,13 +104,12 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
       final res = await ref.read(apiClientProvider).dio.get('/user/profile');
       return UserProfileDto.fromJson(res.data['data'] as Map<String, dynamic>);
     } on DioException catch (e, st) {
-      _log.e('Failed to fetch user profile — using TDEE fallback', error: e, stackTrace: st);
+      _log.e('Failed to fetch user profile — using TDEE fallback',
+          error: e, stackTrace: st);
       return UserProfileDto.fallback;
     }
   }
 
-  /// Computes the new streak based on today's activity and persists to prefs.
-  /// Returns (streakCount, graceUsed).
   (int, bool) _computeAndSaveStreak(
     SharedPreferences prefs,
     String userId, {
@@ -120,13 +120,11 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     var streak = prefs.getInt('${_kStreakCount}_$userId') ?? 0;
     var graceAvail = prefs.getBool('${_kStreakGraceAvail}_$userId') ?? true;
 
-    // Already processed today — nothing to change.
     if (lastDate == today) return (streak, !graceAvail);
-
-    // Today doesn't qualify yet; keep existing streak display.
     if (!hasLogs) return (streak, !graceAvail);
 
-    final yesterday = _dateStr(DateTime.now().subtract(const Duration(days: 1)));
+    final yesterday =
+        _dateStr(DateTime.now().subtract(const Duration(days: 1)));
     final twoDaysAgo =
         _dateStr(DateTime.now().subtract(const Duration(days: 2)));
 
@@ -146,8 +144,10 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
     return (streak, !graceAvail);
   }
 
-  static String _waterKey(String userId) => '$_kWaterBase${userId}_${_todayStr()}';
-  static String _burnedKey(String userId) => '$_kBurnedBase${userId}_${_todayStr()}';
+  static String _waterKey(String userId) =>
+      '$_kWaterBase${userId}_${_todayStr()}';
+  static String _burnedKey(String userId) =>
+      '$_kBurnedBase${userId}_${_todayStr()}';
 
   static String _todayStr() {
     final now = DateTime.now();
@@ -156,8 +156,7 @@ class HomeDashboardNotifier extends AsyncNotifier<HomeDashboardState> {
         '${now.day.toString().padLeft(2, '0')}';
   }
 
-  static String _dateStr(DateTime dt) =>
-      '${dt.year}-'
+  static String _dateStr(DateTime dt) => '${dt.year}-'
       '${dt.month.toString().padLeft(2, '0')}-'
       '${dt.day.toString().padLeft(2, '0')}';
 }

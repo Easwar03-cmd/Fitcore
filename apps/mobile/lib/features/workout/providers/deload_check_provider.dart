@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/deload_check.dart';
 
 final _log = Logger();
@@ -12,7 +13,10 @@ final deloadCheckProvider =
 
 class DeloadCheckNotifier extends AsyncNotifier<DeloadCheck?> {
   @override
-  Future<DeloadCheck?> build() => _fetch();
+  Future<DeloadCheck?> build() {
+    if (ref.watch(authProvider).valueOrNull == null) return Future.value(null);
+    return _fetch();
+  }
 
   Future<DeloadCheck?> _fetch() async {
     try {

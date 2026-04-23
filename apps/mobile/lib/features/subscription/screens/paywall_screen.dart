@@ -55,6 +55,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final currentTier =
+        ref.watch(subscriptionProvider).valueOrNull?.tier ?? 'free';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Upgrade Zenfit')),
@@ -85,7 +87,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               price: '\$0',
               color: cs.surfaceContainerHighest,
               labelColor: cs.onSurface,
-              isCurrent: true,
+              isCurrent: currentTier == 'free',
               features: const [
                 _Feature('Calorie & macro tracking', true),
                 _Feature('Workout logging', true),
@@ -108,6 +110,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               color: const Color(0xFF6C63FF),
               labelColor: Colors.white,
               badge: 'Most popular',
+              isCurrent: currentTier == 'pro',
               features: const [
                 _Feature('Everything in Free', true),
                 _Feature('Unlimited AI coach', true),
@@ -117,18 +120,22 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 _Feature('Full wearable sync', true),
                 _Feature('Coach marketplace', false),
               ],
-              cta: _loadingPro
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Upgrade to Pro',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w700)),
-              onTap:
-                  _loadingPro || _loadingCoach ? null : () => _upgrade('pro'),
+              cta: currentTier == 'pro'
+                  ? null
+                  : _loadingPro
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          currentTier == 'coach' ? 'Switch to Pro' : 'Upgrade to Pro',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700)),
+              onTap: currentTier == 'pro' || _loadingPro || _loadingCoach
+                  ? null
+                  : () => _upgrade('pro'),
             ).animate().fadeIn(delay: 250.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
 
             const SizedBox(height: 16),
@@ -140,22 +147,26 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               period: '/mo',
               color: const Color(0xFFFF6B35),
               labelColor: Colors.white,
+              isCurrent: currentTier == 'coach',
               features: const [
                 _Feature('Everything in Pro', true),
                 _Feature('Coach marketplace access', true),
                 _Feature('Priority support', true),
               ],
-              cta: _loadingCoach
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Text('Upgrade to Coach',
-                      style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w700)),
-              onTap: _loadingPro || _loadingCoach
+              cta: currentTier == 'coach'
+                  ? null
+                  : _loadingCoach
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(
+                          currentTier == 'pro' ? 'Switch to Coach' : 'Upgrade to Coach',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700)),
+              onTap: currentTier == 'coach' || _loadingPro || _loadingCoach
                   ? null
                   : () => _upgrade('coach'),
             ).animate().fadeIn(delay: 350.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),

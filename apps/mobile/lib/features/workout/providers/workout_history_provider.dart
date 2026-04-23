@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../models/workout_log.dart';
 
 final _log = Logger();
@@ -13,7 +14,10 @@ final workoutHistoryProvider =
 
 class WorkoutHistoryNotifier extends AsyncNotifier<List<WorkoutLog>> {
   @override
-  Future<List<WorkoutLog>> build() => _fetch();
+  Future<List<WorkoutLog>> build() {
+    if (ref.watch(authProvider).valueOrNull == null) return Future.value([]);
+    return _fetch();
+  }
 
   Future<List<WorkoutLog>> _fetch() async {
     try {

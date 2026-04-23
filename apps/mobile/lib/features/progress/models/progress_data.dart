@@ -71,4 +71,17 @@ class ProgressData {
 
   /// Last 5 workout logs for the "Recent Workouts" card in the progress tab.
   final List<WorkoutLog> recentWorkouts;
+
+  static const ProgressData empty = ProgressData(
+    bodyStats: [],
+    calorieTrend: [],
+    strengthCurves: {},
+    muscleVolume: {},
+    thisWeek: WeeklySummary(
+        workoutsCompleted: 0, avgDailyCalories: 0, totalVolumeKg: 0),
+    lastWeek: WeeklySummary(
+        workoutsCompleted: 0, avgDailyCalories: 0, totalVolumeKg: 0),
+    calorieTarget: 0,
+    recentWorkouts: [],
+  );
 }
