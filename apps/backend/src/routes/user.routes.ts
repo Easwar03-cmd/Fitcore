@@ -205,6 +205,44 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
+  // DELETE /api/v1/user/account
+  // Permanently deletes the authenticated user and all their data.
+  fastify.delete('/account', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const userId = request.user.userId;
+
+    try {
+      // Delete in FK-safe order: child records first, then the user row.
+      await prisma.$transaction([
+        prisma.exerciseSet.deleteMany({ where: { workoutLog: { userId } } }),
+        prisma.workoutLog.deleteMany({ where: { userId } }),
+        prisma.foodLog.deleteMany({ where: { userId } }),
+        prisma.bodyStat.deleteMany({ where: { userId } }),
+        prisma.goal.deleteMany({ where: { userId } }),
+        prisma.friendship.deleteMany({ where: { userId } }),
+        prisma.subscription.deleteMany({ where: { userId } }),
+        prisma.userProfile.deleteMany({ where: { userId } }),
+        prisma.user.delete({ where: { id: userId } }),
+      ]);
+
+      return reply.send({ success: true, data: { message: 'Account deleted.' } });
+    } catch (err) {
+      request.log.error(err);
+      return reply.status(500).send({
+        success: false,
+        error: { code: 'INTERNAL_ERROR', message: 'Failed to delete account' },
+      });
+    }
+  });
+
   // GET /api/v1/user/stats
   fastify.get('/stats', async (_request, reply) => {
     return reply.status(501).send({

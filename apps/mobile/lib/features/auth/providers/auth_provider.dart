@@ -94,6 +94,19 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     state = const AsyncData(null);
   }
 
+  /// Permanently deletes the account and all its data on the server, then
+  /// clears the local session exactly like logout.
+  Future<void> deleteAccount() async {
+    final token = state.valueOrNull?.accessToken;
+    if (token == null) throw Exception('Not authenticated');
+    await _authDio.delete(
+      '/user/account',
+      options: Options(headers: {'Authorization': 'Bearer $token'}),
+    );
+    await _clearSession();
+    state = const AsyncData(null);
+  }
+
   /// Called by the ApiClient interceptor on 401. Returns null if refresh fails
   /// (in which case the session has been cleared and user will be redirected).
   Future<AuthState?> refreshSession(String refreshToken) async {

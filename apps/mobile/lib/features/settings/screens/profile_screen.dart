@@ -67,9 +67,34 @@ class ProfileScreen extends ConsumerWidget {
                 color: AppColors.error,
                 onTap: isLoading ? null : () => _confirmLogout(context, ref),
               ),
+              _TileData(
+                icon: Icons.delete_forever_rounded,
+                label: 'Delete Account',
+                color: AppColors.error,
+                onTap: isLoading ? null : () => _confirmDelete(context, ref),
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _DeleteAccountDialog(
+        onConfirmed: () async {
+          try {
+            await ref.read(authProvider.notifier).deleteAccount();
+          } catch (e) {
+            if (ctx.mounted) {
+              ScaffoldMessenger.of(ctx).showSnackBar(
+                SnackBar(content: Text('Failed to delete account: $e')),
+              );
+            }
+          }
+        },
       ),
     );
   }
@@ -274,6 +299,93 @@ class _SettingsCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Delete account confirmation dialog ───────────────────────────────────────
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog({required this.onConfirmed});
+  final Future<void> Function() onConfirmed;
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  final _ctrl = TextEditingController();
+  bool _loading = false;
+  bool get _canConfirm => _ctrl.text.trim() == 'DELETE';
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+          SizedBox(width: 8),
+          Text('Delete Account'),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'This will permanently delete your account and all your data — '
+            'workouts, food logs, progress, everything. This cannot be undone.',
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Type DELETE to confirm',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(
+              hintText: 'DELETE',
+              isDense: true,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _loading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+          onPressed: (_canConfirm && !_loading)
+              ? () async {
+                  setState(() => _loading = true);
+                  Navigator.of(context).pop();
+                  await widget.onConfirmed();
+                }
+              : null,
+          child: _loading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Delete Forever'),
+        ),
+      ],
     );
   }
 }
