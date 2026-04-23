@@ -15,9 +15,8 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref));
 class ApiClient {
   ApiClient(Ref ref) {
     // dotenv overrides AppConstants (useful for local .env files during dev).
-    // AppConstants provides the compile-time default (localhost in debug,
-    // Railway URL in release), which itself can be overridden via
-    // --dart-define=FLUTTER_API_URL=<url> at build time.
+    // AppConstants provides the compile-time default (GCP Cloud Run URL),
+    // which itself can be overridden via --dart-define=FLUTTER_API_URL=<url>.
     final baseUrl =
         '${dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl}/api/v1';
     _dio = Dio(

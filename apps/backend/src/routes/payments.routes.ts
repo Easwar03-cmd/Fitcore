@@ -11,7 +11,7 @@ const PRICE_IDS: Record<string, string | undefined> = {
   coach: config.STRIPE_COACH_PRICE_ID,
 };
 
-const BASE_URL = 'https://fitcore-production-c558.up.railway.app';
+const BASE_URL = 'https://zenfit-api-122167595419.us-central1.run.app';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
