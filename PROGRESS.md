@@ -1,6 +1,106 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-04-23 (session 32)
+**Duration:** ~2 hours
+**What was built:**
+
+### GCP Cloud Run deployment (infrastructure migration from Railway)
+
+**GCP resources provisioned**
+- Cloud Run service `zenfit-api` — `us-central1`, 0–20 instances, auto-scale, WebSocket support
+- Cloud SQL PostgreSQL 15 — `zenfit-db`, `db-f1-micro`, 10 GB SSD, daily backups at 03:00
+- Upstash Redis — free tier, replaces Railway Redis (no VPC required, connects via URL)
+- Artifact Registry — `us-central1-docker.pkg.dev/.../zenfit/zenfit-api`
+- Secret Manager — 12 secrets (DATABASE_URL, JWT keys, Stripe, Gemini, Cloudinary, Firebase, USDA)
+- Cloud Build trigger — auto-deploys on every push to `main` via `cloudbuild.yaml`
+
+**New files**
+- `cloudbuild.yaml` — 4-step pipeline: docker build → push SHA tag → push latest tag → gcloud run deploy
+- `.dockerignore` — excludes mobile app, node_modules, env files from build context
+- `gcp-setup.sh` — one-time provisioning script (for reference/re-use)
+
+**Fixes made during deployment**
+- `apps/backend/package.json` — corrected `start` script path to `dist/apps/backend/src/index.js` (was `dist/index.js`, wrong due to tsconfig `rootDir: ../..`)
+- Cloud SQL DATABASE_URL format: needed `@localhost/dbname?host=/cloudsql/CONNECTION_NAME` not `@/dbname?host=...` (Prisma rejects empty host)
+- Cloud Build max-instances capped at 20 (free-tier quota limit is 20 CPUs per region)
+- Cloud Build trigger uses Compute SA (`122167595419-compute@...`), not Cloud Build SA — granted `artifactregistry.writer`, `run.admin`, `iam.serviceAccountUser` to that SA
+
+**Railway remnants removed**
+- `apps/backend/src/routes/payments.routes.ts` — hardcoded `BASE_URL` was Railway URL; updated to GCP URL (affected Stripe checkout success/cancel redirects)
+- `apps/mobile/lib/constants/app_constants.dart` — compile-time fallback `defaultValue` was Railway URL; updated to GCP URL
+- `apps/mobile/lib/core/api/api_client.dart` — stale comment updated
+
+**Data migration**
+- Exported all data from local PostgreSQL 18 (`fitcore` db) via `pg_dump --data-only`
+- Imported into Cloud SQL — all 11 users (incl. `easwarnani098@gmail.com`), food logs, workout logs, body stats, goals, subscriptions migrated
+- Two tables missing from GCP schema (`MoodLog`, `WearableConnection`) — import errors for those rows only, all core tables clean
+- Flutter mobile `.env` and `app_constants.dart` fallback updated to GCP URL so debug builds connect to production
+
+**Decisions made**
+- Chose Upstash Redis over GCP Memorystore — free tier available, no VPC connector needed, simpler for solo dev; switch to Memorystore only if Redis latency becomes a bottleneck at scale
+- Cloud SQL public IP authorized temporarily for data import, revoked immediately after
+- Max instances set to 20 (free-tier quota); request quota increase before launch if traffic warrants it
+
+**Known issues**
+- `MoodLog` and `WearableConnection` tables don't exist in GCP schema — these appear to be in local DB only (not in Prisma migrations). If these features are needed, add a migration
+- Gemini API key in `.env` is still a placeholder — only matters for local backend dev; production uses Secret Manager
+- Stripe keys in `.env` are test keys — fine for now, swap for live keys before App Store launch
+
+---
+
+## Previous session
+**Date:** 2026-04-23 (session 31)
+**Duration:** ~1.5 hours
+**What was built:**
+
+### AI Exercise Form Monitor (Phase 3 — fully on-device)
+
+**New packages**
+- `google_mlkit_pose_detection: ^0.13.0` — on-device BlazePose landmark detection (33 body points)
+- `camera: ^0.11.0` — live camera feed with `startImageStream` for per-frame processing
+
+**New files**
+- `features/workout/models/pose_feedback.dart` — `PoseFeedback` model with `good / warn / error` level enum
+- `features/workout/services/pose_analyzer.dart` — static angle-based form rules for 9 exercises; `kMonitorableExercises` and `kMonitorableNames` constants
+- `features/workout/widgets/pose_overlay_painter.dart` — `CustomPainter` that draws the skeleton (lines + dots) coloured green/amber based on feedback level; handles image-to-screen coordinate transform accounting for rotation and front-camera mirror
+- `features/workout/widgets/form_feedback_card.dart` — animated floating card at screen bottom; green checkmark for good form, amber with cue text for corrections; shows rep count
+- `features/workout/providers/exercise_monitor_provider.dart` — `StateNotifier` (`exerciseMonitorProvider`, autoDispose); owns `PoseDetector`; receives ready `InputImage` from screen; runs detection, calls `PoseAnalyzer`, manages rep counter and state
+- `features/workout/screens/exercise_monitor_screen.dart` — `ConsumerStatefulWidget`; owns `CameraController`; handles camera init (front-camera default), image format selection, per-frame rotation computation, 250 ms throttle; exercise chip selector; camera switch button
+
+**Modified files (additive only — no existing logic touched)**
+- `pubspec.yaml` — two new packages
+- `constants/app_routes.dart` — `exerciseMonitor = '/workout/monitor'`
+- `router/app_router.dart` — `GoRoute` for `/workout/monitor`
+- `features/workout/screens/workout_screen.dart` — "AI Form Monitor" card (green, `Icons.visibility_rounded`)
+
+**Supported exercises and checks**
+| Exercise | What is checked |
+|---|---|
+| Squat | Knee angle + torso lean (>50° = "Keep chest up") |
+| Lunge | Front knee angle + torso lean (>20° = "Keep torso upright") |
+| Push-Up | Shoulder–hip–ankle body line (<155° = "Keep body straight") |
+| Plank | Shoulder–hip–ankle body line (<160° = "Lower/Raise your hips") |
+| Deadlift / Romanian DL | Ear–shoulder–hip back angle (<150° = "Keep back straight") |
+| Overhead Press | Elbow extension at top (<140° = "Extend arms fully"); torso arch |
+| Bicep Curl | Elbow drift vs shoulder width (>60% = "Keep elbows close to sides") |
+| Pull-Up | Body vertical lean + elbow angle at top |
+
+**Decisions made**
+- Image conversion (CameraImage → InputImage) lives in the screen, not the provider — the screen owns the camera controller and device orientation, both needed for correct rotation maths; the provider receives a ready `InputImage` and stays focused on detection + state
+- Android must use `ImageFormatGroup.nv21`; iOS uses `bgra8888` — these are the only two formats ML Kit accepts; YUV_420_888 (the default) is silently rejected, which was the root cause of the initial "always Great form / no skeleton" bug
+- Rotation on Android = `(sensorOrientation + deviceOrientationDeg) % 360` for front camera, `(sensorOrientation - deviceOrientationDeg + 360) % 360` for back — raw sensor orientation alone was the second bug
+- Rep counter: increments when transitioning from ≥5 consecutive good-form frames back to a correction frame (one full range of motion ≈ one rep)
+- No subscription gate — feature is free to all tiers; it runs fully on-device with zero API cost
+
+**Known issues**
+- Detection quality degrades in low light or against a cluttered background (ML Kit limitation)
+- Skeleton overlay alignment can be slightly off on devices with unusual sensor orientations — cosmetic only, feedback logic is unaffected
+- Exercises performed at an angle to the camera (e.g. side-on deadlift) will have lower landmark confidence and may produce less accurate cues
+
+---
+
+## Previous session
 **Date:** 2026-04-22 (session 30)
 **Duration:** ~2 hours
 **What was built:**
@@ -1276,6 +1376,7 @@ R8 minification was stripping classes referenced by ML Kit text recognition (non
 ## Session history
 | Date | Built | Phase |
 |---|---|---|
+| 2026-04-23 (s31) | AI exercise form monitor — on-device ML Kit pose detection, 9 exercises, green skeleton overlay, rep counter, NV21 format + rotation bug fixed | 3 ✅ |
 | 2026-04-14 (s14) | Nav restructure: 5-tab bottom nav, Social → AppBar, avatar → ProfileScreen, card-grouped settings UI | 1 polish |
 | 2026-04-13 (s13) | Push notifications Android shipped: Gradle fixes, Firebase wired, prisma migration, graceful Redis fallback, iOS AppDelegate+Info.plist prepped | 2 ✅ |
 | 2026-04-13 (s12) | Push notifications full implementation: FCM token reg, local scheduled notifications, BullMQ weekly summary job, notification prefs screen | 2 |

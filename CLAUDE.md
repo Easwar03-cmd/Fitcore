@@ -353,7 +353,7 @@ model Friendship {
 Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress, `[x]` done.
 
 ### Phase 1 — MVP Core
-- [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle); Railway production deployment live at https://fitcore-production-c558.up.railway.app; GitHub Actions CD on push to main
+- [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle); **GCP Cloud Run production deployment live at https://zenfit-api-122167595419.us-central1.run.app**; Cloud Build CI/CD on push to main; Cloud SQL PostgreSQL 15 (zenfit-db, us-central1); Upstash Redis; 12 secrets in Secret Manager
 - [x] Auth screens (signup, login, forgot password)
 - [x] Onboarding flow (goal selection, body stats, activity level)
 - [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout); PopScope in MainShell: back on any non-Home tab goes to /home, back on Home exits app
@@ -389,6 +389,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Home workout page — 40 bodyweight/calisthenics exercises in kHomeExerciseLibrary; HomeWorkoutListScreen at /workout/home; category + difficulty filter chips; SetInputMode (repsOnly / durationOnly / repsAndWeight) on SetLogger; no weight input for bodyweight exercises
 - [x] Recovery score (HRV + sleep + training load) — HRV (SDNN) fetched from HealthKit/Google Fit; formula: sleepScore×0.4 + hrComponent×0.3 + trainingLoad×0.3; HRV preferred over RHR when available (10–100ms → 0–100); falls back to resting HR; Wellness screen card renamed "Recovery Score"; 4-pill breakdown: Sleep · HRV · HR · Load
 - [x] Deload week detection — pure algorithmic (no Gemini); 4-week set count analysis via getFourWeekWorkoutSummary; flags ≥3 consecutive weeks ≥40 sets or 4-week avg >60 sets; GET /ai/deload-check; DeloadBannerCard on WorkoutScreen (amber warning / green OK)
+- [x] AI exercise form monitor — on-device real-time pose detection (google_mlkit_pose_detection ^0.13.0 + camera ^0.11.0); 9 supported exercises (squat, lunge, push-up, plank, deadlift, romanian deadlift, overhead press, bicep curl, pull-up); per-exercise joint-angle rules in PoseAnalyzer; green skeleton overlay = correct form, amber = correction cue text; simple rep counter via good-form streak detection; front/back camera toggle; NV21 on Android + correct (sensorOrientation ± deviceOrientation) % 360 rotation; no backend or API calls — fully on-device; entry point is "AI Form Monitor" card on WorkoutScreen → `/workout/monitor`
 
 ### Phase 4 — Social & Monetization
 - [ ] User search + friend system
