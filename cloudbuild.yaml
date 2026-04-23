@@ -1,0 +1,60 @@
+steps:
+  # ── 1. Build the Docker image ────────────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: build
+    args:
+      - build
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$COMMIT_SHA'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:latest'
+      - '-f'
+      - 'apps/backend/Dockerfile'
+      - '.'
+
+  # ── 2. Push the image to Artifact Registry ───────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push
+    waitFor: ['build']
+    args:
+      - push
+      - '--all-tags'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE'
+
+  # ── 3. Deploy to Cloud Run ───────────────────────────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy
+    waitFor: ['push']
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '$_SERVICE'
+      - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=3000'
+      - '--min-instances=0'
+      - '--max-instances=100'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--concurrency=80'
+      - '--timeout=60s'
+      - '--set-env-vars=NODE_ENV=production'
+      - '--set-secrets=DATABASE_URL=ZENFIT_DATABASE_URL:latest,REDIS_URL=ZENFIT_REDIS_URL:latest,JWT_SECRET=ZENFIT_JWT_SECRET:latest,JWT_REFRESH_SECRET=ZENFIT_JWT_REFRESH_SECRET:latest,GEMINI_API_KEY=ZENFIT_GEMINI_API_KEY:latest,STRIPE_SECRET_KEY=ZENFIT_STRIPE_SECRET_KEY:latest,STRIPE_WEBHOOK_SECRET=ZENFIT_STRIPE_WEBHOOK_SECRET:latest,STRIPE_PRO_PRICE_ID=ZENFIT_STRIPE_PRO_PRICE_ID:latest,STRIPE_COACH_PRICE_ID=ZENFIT_STRIPE_COACH_PRICE_ID:latest,CLOUDINARY_URL=ZENFIT_CLOUDINARY_URL:latest,USDA_API_KEY=ZENFIT_USDA_API_KEY:latest,FIREBASE_SERVICE_ACCOUNT=ZENFIT_FIREBASE_SERVICE_ACCOUNT:latest'
+      - '--add-cloudsql-instances=$PROJECT_ID:$_REGION:$_DB_INSTANCE'
+
+substitutions:
+  _REGION: us-central1
+  _REPO: zenfit
+  _SERVICE: zenfit-api
+  _DB_INSTANCE: zenfit-db
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:$COMMIT_SHA'
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO/$_SERVICE:latest'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
