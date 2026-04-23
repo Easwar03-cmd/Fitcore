@@ -97,6 +97,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 _Feature('Food photo logging', false),
                 _Feature('Advanced analytics', false),
                 _Feature('Full wearable sync', false),
+                _Feature('AI workout recommendations', false),
+                _Feature('AI Form Monitor', false),
               ],
             ).animate().fadeIn(delay: 150.ms, duration: 300.ms).slideY(begin: 0.04, end: 0),
 
@@ -118,6 +120,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 _Feature('Food photo logging', true),
                 _Feature('Advanced analytics', true),
                 _Feature('Full wearable sync', true),
+                _Feature('AI workout recommendations', false),
+                _Feature('AI Form Monitor', false),
                 _Feature('Coach marketplace', false),
               ],
               cta: currentTier == 'pro'
@@ -150,6 +154,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               isCurrent: currentTier == 'coach',
               features: const [
                 _Feature('Everything in Pro', true),
+                _Feature('AI workout recommendations', true),
+                _Feature('AI Form Monitor (live pose)', true),
                 _Feature('Coach marketplace access', true),
                 _Feature('Priority support', true),
               ],

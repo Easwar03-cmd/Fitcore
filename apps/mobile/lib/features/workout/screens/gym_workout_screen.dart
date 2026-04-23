@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../models/exercise.dart';
 import '../providers/workout_provider.dart';
 import '../providers/workout_recommendation_provider.dart';
+import '../widgets/locked_feature_card.dart';
 import '../widgets/recommendation_card.dart';
 
 class GymWorkoutScreen extends ConsumerWidget {
@@ -15,6 +17,11 @@ class GymWorkoutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recAsync =
         ref.watch(workoutRecommendationProvider(WorkoutType.gym));
+    final canUseAiFeatures = ref
+            .watch(subscriptionProvider)
+            .valueOrNull
+            ?.canUseAiWorkoutFeatures ??
+        false;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Gym Workout')),
@@ -24,39 +31,44 @@ class GymWorkoutScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── AI recommendation ──────────────────────────────────────────
-            recAsync.when(
-              data: (rec) => rec != null
-                  ? Column(children: [
-                      RecommendationCard(
-                        recommendation: rec,
-                        onRefresh: () => ref
-                            .read(workoutRecommendationProvider(WorkoutType.gym)
-                                .notifier)
+            if (!canUseAiFeatures)
+              const LockedFeatureCard(featureName: 'AI Workout Recommendations')
+            else
+              recAsync.when(
+                data: (rec) => rec != null
+                    ? Column(children: [
+                        RecommendationCard(
+                          recommendation: rec,
+                          onRefresh: () => ref
+                              .read(
+                                  workoutRecommendationProvider(WorkoutType.gym)
+                                      .notifier)
+                              .generate(),
+                        ),
+                        const SizedBox(height: 16),
+                      ])
+                    : _GenerateButton(
+                        label: 'Get AI Gym Recommendation',
+                        subtitle:
+                            'Personalised gym workout based on your training history',
+                        onTap: () => ref
+                            .read(
+                                workoutRecommendationProvider(WorkoutType.gym)
+                                    .notifier)
                             .generate(),
                       ),
-                      const SizedBox(height: 16),
-                    ])
-                  : _GenerateButton(
-                      label: 'Get AI Gym Recommendation',
-                      subtitle:
-                          'Personalised gym workout based on your training history',
-                      onTap: () => ref
-                          .read(workoutRecommendationProvider(WorkoutType.gym)
-                              .notifier)
-                          .generate(),
-                    ),
-              loading: () => const _LoadingCard(
-                  label: 'Analysing your gym training history…'),
-              error: (_, __) => _GenerateButton(
-                label: 'Retry AI Recommendation',
-                subtitle: 'Could not load — tap to try again',
-                onTap: () => ref
-                    .read(workoutRecommendationProvider(WorkoutType.gym)
-                        .notifier)
-                    .generate(),
-                isError: true,
+                loading: () => const _LoadingCard(
+                    label: 'Analysing your gym training history…'),
+                error: (_, __) => _GenerateButton(
+                  label: 'Retry AI Recommendation',
+                  subtitle: 'Could not load — tap to try again',
+                  onTap: () => ref
+                      .read(workoutRecommendationProvider(WorkoutType.gym)
+                          .notifier)
+                      .generate(),
+                  isError: true,
+                ),
               ),
-            ),
 
             // ── Browse & start ─────────────────────────────────────────────
             _ActionCard(

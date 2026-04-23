@@ -21,4 +21,7 @@ class SubscriptionInfo {
   bool get isPro => tier == 'pro' && isActive;
   bool get isCoach => tier == 'coach' && isActive;
   bool get isPaid => isPro || isCoach;
+
+  // Coach-exclusive AI features
+  bool get canUseAiWorkoutFeatures => isCoach;
 }

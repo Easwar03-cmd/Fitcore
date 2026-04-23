@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../providers/deload_check_provider.dart';
 import '../providers/workout_provider.dart';
 import '../widgets/deload_banner_card.dart';
@@ -14,6 +15,11 @@ class WorkoutScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(workoutSessionProvider);
     final deloadAsync = ref.watch(deloadCheckProvider);
+    final canUseAiFeatures = ref
+        .watch(subscriptionProvider)
+        .valueOrNull
+        ?.canUseAiWorkoutFeatures ??
+        false;
 
     return Scaffold(
       appBar: AppBar(
@@ -82,10 +88,13 @@ class WorkoutScreen extends ConsumerWidget {
             _WorkoutTypeCard(
               icon: Icons.visibility_rounded,
               title: 'AI Form Monitor',
-              subtitle:
-                  'Live camera pose detection — green means perfect form.',
+              subtitle: 'Live camera pose detection — green means perfect form.',
               color: const Color(0xFF059669),
-              onTap: () => context.push(AppRoutes.exerciseMonitor),
+              isLocked: !canUseAiFeatures,
+              onTap: canUseAiFeatures
+                  ? () => context.push(AppRoutes.exerciseMonitor)
+                  : () => context.push(AppRoutes.paywall,
+                        extra: 'AI Form Monitor'),
             ),
           ],
         ),
@@ -126,6 +135,7 @@ class _WorkoutTypeCard extends StatelessWidget {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.isLocked = false,
   });
 
   final IconData icon;
@@ -133,10 +143,15 @@ class _WorkoutTypeCard extends StatelessWidget {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
+  final bool isLocked;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final effectiveColor = isLocked
+        ? theme.colorScheme.onSurface.withValues(alpha: 0.3)
+        : color;
+
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -147,26 +162,61 @@ class _WorkoutTypeCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 26,
-                backgroundColor: color.withValues(alpha: 0.15),
-                child: Icon(icon, color: color, size: 28),
+                backgroundColor: effectiveColor.withValues(alpha: 0.15),
+                child: Icon(icon, color: effectiveColor, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Text(title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isLocked
+                                    ? theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.4)
+                                    : null)),
+                        if (isLocked) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B35)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Coach',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFFF6B35)),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                     const SizedBox(height: 4),
                     Text(subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant)),
+                            color: isLocked
+                                ? theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.3)
+                                : theme.colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios_rounded,
-                  size: 16, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                isLocked ? Icons.lock_rounded : Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: isLocked
+                    ? const Color(0xFFFF6B35)
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

@@ -278,10 +278,12 @@ class _FeatureSummary extends StatelessWidget {
         ? [
             'Unlimited AI coach',
             'AI meal plans (weekly)',
-            if (sub.isCoach) 'Coach marketplace access',
             'Food photo logging',
             'Advanced analytics',
             'Full wearable sync',
+            if (sub.isCoach) 'AI workout recommendations',
+            if (sub.isCoach) 'AI Form Monitor (live pose)',
+            if (sub.isCoach) 'Coach marketplace access',
           ]
         : ['Calorie & macro tracking', 'Workout logging', 'AI coach (5/day)'];
 

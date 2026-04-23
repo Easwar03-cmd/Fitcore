@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../models/exercise.dart';
 import '../models/home_exercise.dart';
 import '../providers/workout_provider.dart';
 import '../providers/workout_recommendation_provider.dart';
+import '../widgets/locked_feature_card.dart';
 import '../widgets/recommendation_card.dart';
 
 class HomeWorkoutListScreen extends ConsumerStatefulWidget {
@@ -363,6 +365,19 @@ class _HomeRecommendationSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canUseAiFeatures = ref
+            .watch(subscriptionProvider)
+            .valueOrNull
+            ?.canUseAiWorkoutFeatures ??
+        false;
+
+    if (!canUseAiFeatures) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: LockedFeatureCard(featureName: 'AI Workout Recommendations'),
+      );
+    }
+
     final recAsync =
         ref.watch(workoutRecommendationProvider(WorkoutType.home));
     final theme = Theme.of(context);
