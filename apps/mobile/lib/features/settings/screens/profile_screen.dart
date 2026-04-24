@@ -49,6 +49,11 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => context.push(AppRoutes.wearableIntegrations),
               ),
               _TileData(
+                icon: Icons.storefront_rounded,
+                label: 'Coach Marketplace',
+                onTap: () => context.push(AppRoutes.marketplace),
+              ),
+              _TileData(
                 icon: Icons.workspace_premium_rounded,
                 label: 'Subscription',
                 onTap: () => context.push(AppRoutes.subscription),
