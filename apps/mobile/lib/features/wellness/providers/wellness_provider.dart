@@ -58,6 +58,44 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
     }
   }
 
+  Future<bool> syncSleepToBackend() async {
+    final current = state.valueOrNull;
+    if (current == null || current.sleepMinutes == 0) return false;
+
+    state = AsyncData(current.copyWithSyncState(isSyncingSleep: true));
+
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final sleepDate =
+        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-'
+        '${yesterday.day.toString().padLeft(2, '0')}';
+
+    final payload = <String, dynamic>{
+      'sleepDate': sleepDate,
+      'sleepMinutes': current.sleepMinutes,
+      'sleepScore': current.sleepScore,
+      if (current.sleepStages != null)
+        'deepMinutes': current.sleepStages!.deepMinutes,
+      if (current.sleepStages != null)
+        'lightMinutes': current.sleepStages!.lightMinutes,
+      if (current.sleepStages != null)
+        'remMinutes': current.sleepStages!.remMinutes,
+    };
+
+    try {
+      await ref.read(apiClientProvider).dio.post('/wellness/sleep', data: payload);
+      state = AsyncData(
+          state.valueOrNull?.copyWithSyncState(isSyncingSleep: false) ??
+              current.copyWithSyncState(isSyncingSleep: false));
+      return true;
+    } on DioException catch (e, st) {
+      _log.e('Failed to sync sleep data', error: e, stackTrace: st);
+      state = AsyncData(
+          state.valueOrNull?.copyWithSyncState(isSyncingSleep: false) ??
+              current.copyWithSyncState(isSyncingSleep: false));
+      return false;
+    }
+  }
+
   Future<void> refresh() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(_loadState);
@@ -162,6 +200,8 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
 
   /// readiness = sleepScore×0.4 + hrComponent×0.3 + trainingLoadScore×0.3
   /// hrComponent: HRV (10–100 ms → 0–100) if available, else RHR fallback.
+  /// When a component has no data, 50 is used as a neutral fallback so the
+  /// score doesn't collapse to a fixed artefact (e.g. always 45 with no data).
   static int _computeReadiness({
     required int sleepScore,
     required int? restingHr,
@@ -179,10 +219,13 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
               .clamp(0.0, 100.0)
           : 50.0;
     }
+    // Use 50 as neutral when no sleep data is available so a missing health
+    // source doesn't drag the score to a constant artefact value.
+    final sleepComponent = sleepScore > 0 ? sleepScore.toDouble() : 50.0;
     // High training load yesterday → lower readiness today.
     final trainingScore =
         100.0 - (yesterdayCalsBurned / 5.0).clamp(0.0, 90.0);
-    return (sleepScore * 0.4 + hrComponent * 0.3 + trainingScore * 0.3)
+    return (sleepComponent * 0.4 + hrComponent * 0.3 + trainingScore * 0.3)
         .round()
         .clamp(0, 100);
   }

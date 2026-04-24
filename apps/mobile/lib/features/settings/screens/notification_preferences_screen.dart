@@ -66,6 +66,26 @@ class _PrefsBody extends ConsumerWidget {
         const Divider(height: 1),
         const _SectionHeader('Nutrition Reminders'),
         SwitchListTile(
+          secondary: const Icon(Icons.free_breakfast_rounded),
+          title: const Text('Breakfast reminder'),
+          subtitle: const Text('Daily at 8:00 AM — log your breakfast'),
+          value: prefs.breakfastReminderEnabled,
+          onChanged: (val) => _update(
+            ref,
+            prefs.copyWith(breakfastReminderEnabled: val),
+          ),
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.lunch_dining_rounded),
+          title: const Text('Lunch reminder'),
+          subtitle: const Text('Daily at 1:00 PM — log your lunch'),
+          value: prefs.lunchReminderEnabled,
+          onChanged: (val) => _update(
+            ref,
+            prefs.copyWith(lunchReminderEnabled: val),
+          ),
+        ),
+        SwitchListTile(
           secondary: const Icon(Icons.restaurant_menu_rounded),
           title: const Text('Dinner log reminder'),
           subtitle: const Text('Fires at 8 pm if no dinner is logged'),
@@ -119,6 +139,8 @@ class _PrefsBody extends ConsumerWidget {
         hour: p.workoutReminderHour,
         minute: p.workoutReminderMinute,
       ),
+      svc.scheduleBreakfastReminder(enabled: p.breakfastReminderEnabled),
+      svc.scheduleLunchReminder(enabled: p.lunchReminderEnabled),
       svc.scheduleFoodLogReminder(enabled: p.foodLogReminderEnabled),
       svc.scheduleStreakWarning(enabled: p.streakWarningEnabled),
     ]);

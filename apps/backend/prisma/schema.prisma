@@ -32,6 +32,7 @@ model User {
   friendships         Friendship[] @relation("UserFriendships")
   subscription        Subscription?
   moodLogs            MoodLog[]
+  sleepLogs           SleepLog[]
   wearableConnections WearableConnection[]
 }
 
@@ -146,6 +147,22 @@ model MoodLog {
   loggedAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model SleepLog {
+  id           String   @id @default(cuid())
+  userId       String
+  sleepDate    DateTime // midnight of the night being recorded
+  sleepMinutes Int
+  deepMinutes  Int?
+  lightMinutes Int?
+  remMinutes   Int?
+  sleepScore   Int      // 0-100
+  syncedAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, sleepDate])
 }
 
 model WearableConnection {

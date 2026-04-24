@@ -37,6 +37,18 @@ class WellnessScreen extends ConsumerWidget {
               ref.read(wellnessProvider.notifier).logMood(score),
           onRefresh: () async =>
               ref.read(wellnessProvider.notifier).refresh(),
+          onSyncSleep: () async {
+            final ok =
+                await ref.read(wellnessProvider.notifier).syncSleepToBackend();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(ok
+                    ? 'Sleep data synced to cloud'
+                    : 'Sync failed — check your connection'),
+                duration: const Duration(seconds: 3),
+              ));
+            }
+          },
         ),
       ),
     );
@@ -50,11 +62,13 @@ class _WellnessDashboard extends StatelessWidget {
     required this.wellness,
     required this.onLogMood,
     required this.onRefresh,
+    required this.onSyncSleep,
   });
 
   final WellnessState wellness;
   final void Function(int score) onLogMood;
   final Future<void> Function() onRefresh;
+  final VoidCallback onSyncSleep;
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +112,8 @@ class _WellnessDashboard extends StatelessWidget {
               sleepScore: wellness.sleepScore,
               sleepTrend: wellness.sleepTrend,
               stages: wellness.sleepStages,
+              onSync: onSyncSleep,
+              isSyncing: wellness.isSyncingSleep,
             ),
           )
               .animate()

@@ -24,6 +24,33 @@ export const wellnessRepository = {
     });
   },
 
+  // ── Sleep ────────────────────────────────────────────────────────────────────
+
+  /** Upsert a sleep record for a given night (one row per userId + sleepDate). */
+  logSleepData: (
+    userId: string,
+    data: {
+      sleepDate: Date;
+      sleepMinutes: number;
+      deepMinutes?: number;
+      lightMinutes?: number;
+      remMinutes?: number;
+      sleepScore: number;
+    },
+  ) =>
+    prisma.sleepLog.upsert({
+      where: { userId_sleepDate: { userId, sleepDate: data.sleepDate } },
+      create: { userId, ...data },
+      update: {
+        sleepMinutes: data.sleepMinutes,
+        deepMinutes: data.deepMinutes ?? null,
+        lightMinutes: data.lightMinutes ?? null,
+        remMinutes: data.remMinutes ?? null,
+        sleepScore: data.sleepScore,
+        syncedAt: new Date(),
+      },
+    }),
+
   // ── Training load ────────────────────────────────────────────────────────────
 
   /** Sum of caloriesBurned across all workout logs that started yesterday. */

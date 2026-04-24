@@ -38,6 +38,7 @@ class WellnessState {
     required this.readinessScore,
     required this.readinessLabel,
     required this.readinessLevel,
+    this.isSyncingSleep = false,
   });
 
   // ── Sleep ────────────────────────────────────────────────────────────────────
@@ -79,7 +80,15 @@ class WellnessState {
 
   final ReadinessLevel readinessLevel;
 
+  // ── Sync state ───────────────────────────────────────────────────────────────
+  /// True while the sleep data upload to the backend is in-flight.
+  final bool isSyncingSleep;
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  /// True when at least one health metric was successfully read from the device.
+  bool get hasHealthData =>
+      sleepMinutes > 0 || restingHr != null || hrv != null;
 
   String get sleepFormatted {
     final h = sleepMinutes ~/ 60;
@@ -125,5 +134,23 @@ class WellnessState {
         readinessScore: readinessScore,
         readinessLabel: readinessLabel,
         readinessLevel: readinessLevel,
+        isSyncingSleep: isSyncingSleep,
+      );
+
+  WellnessState copyWithSyncState({required bool isSyncingSleep}) =>
+      WellnessState(
+        sleepMinutes: sleepMinutes,
+        sleepStages: sleepStages,
+        sleepScore: sleepScore,
+        sleepTrend: sleepTrend,
+        restingHr: restingHr,
+        hrTrend: hrTrend,
+        hrv: hrv,
+        todayMood: todayMood,
+        moodHistory: moodHistory,
+        readinessScore: readinessScore,
+        readinessLabel: readinessLabel,
+        readinessLevel: readinessLevel,
+        isSyncingSleep: isSyncingSleep,
       );
 }

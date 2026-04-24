@@ -8,7 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 /// Sleep summary card: last-night duration, stages bar, 7-day trend bar chart,
-/// and a sleep score badge.
+/// sleep score badge, and an optional cloud-sync button.
 class SleepCard extends StatelessWidget {
   const SleepCard({
     super.key,
@@ -16,12 +16,16 @@ class SleepCard extends StatelessWidget {
     required this.sleepScore,
     required this.sleepTrend,
     this.stages,
+    this.onSync,
+    this.isSyncing = false,
   });
 
   final int sleepMinutes;
   final int sleepScore;
   final List<int> sleepTrend;
   final SleepStages? stages;
+  final VoidCallback? onSync;
+  final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +48,31 @@ class SleepCard extends StatelessWidget {
                       .copyWith(color: Theme.of(context).colorScheme.onSurface)),
             ),
             _ScoreBadge(score: sleepScore, color: AppColors.info),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: isSyncing
+                  ? const Padding(
+                      padding: EdgeInsets.all(6),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.info),
+                    )
+                  : IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 20,
+                      tooltip: sleepMinutes > 0
+                          ? 'Sync sleep to cloud'
+                          : 'No sleep data to sync',
+                      onPressed: sleepMinutes > 0 ? onSync : null,
+                      icon: Icon(
+                        Icons.cloud_upload_outlined,
+                        color: sleepMinutes > 0
+                            ? AppColors.info
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
