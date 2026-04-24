@@ -11,7 +11,6 @@ import { socialRoutes } from './routes/social.routes';
 import { wellnessRoutes } from './routes/wellness.routes';
 import { integrationsRoutes } from './routes/integrations.routes';
 import { paymentsRoutes } from './routes/payments.routes';
-import { marketplaceRoutes } from './routes/marketplace.routes';
 import {
   scheduleWeeklySummaryJob,
   startWeeklySummaryWorker,
@@ -106,7 +105,6 @@ async function bootstrap() {
   await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
   await server.register(integrationsRoutes, { prefix: '/api/v1/integrations' });
   await server.register(paymentsRoutes, { prefix: '/api/v1/payments' });
-  await server.register(marketplaceRoutes, { prefix: '/api/v1/marketplace' });
 
   server.get('/health', async () => ({ status: 'ok', timestamp: Date.now() }));
 

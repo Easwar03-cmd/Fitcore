@@ -121,8 +121,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 _Feature('Advanced analytics', true),
                 _Feature('Full wearable sync', true),
                 _Feature('AI workout recommendations', false),
-                _Feature('AI Form Monitor', false),
-                _Feature('Coach marketplace', false),
+                _Feature('AI Form Monitor (Beta)', false),
               ],
               cta: currentTier == 'pro'
                   ? null
@@ -155,8 +154,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               features: const [
                 _Feature('Everything in Pro', true),
                 _Feature('AI workout recommendations', true),
-                _Feature('AI Form Monitor (live pose)', true),
-                _Feature('Coach marketplace access', true),
+                _Feature('AI Form Monitor (Beta)', true),
                 _Feature('Priority support', true),
               ],
               cta: currentTier == 'coach'

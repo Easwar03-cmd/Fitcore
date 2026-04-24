@@ -28,9 +28,6 @@ import '../features/social/screens/friend_search_screen.dart';
 import '../features/social/screens/leaderboard_screen.dart';
 import '../features/social/screens/social_screen.dart';
 import '../features/wellness/screens/wellness_screen.dart';
-import '../features/marketplace/screens/coach_marketplace_screen.dart';
-import '../features/marketplace/screens/coach_profile_screen.dart';
-import '../features/marketplace/models/coach_listing.dart';
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_monitor_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
@@ -241,18 +238,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'paywall',
         builder: (context, state) => PaywallScreen(
           highlightFeature: state.extra as String?,
-        ),
-      ),
-      GoRoute(
-        path: AppRoutes.marketplace,
-        name: 'marketplace',
-        builder: (context, state) => const CoachMarketplaceScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.coachProfile,
-        name: 'coach-profile',
-        builder: (context, state) => CoachProfileScreen(
-          coach: state.extra as CoachListing,
         ),
       ),
     ],

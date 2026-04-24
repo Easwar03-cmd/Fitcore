@@ -47,8 +47,4 @@ abstract final class AppRoutes {
   static const wearableIntegrations = '/profile/wearables';
   static const subscription = '/profile/subscription';
   static const paywall = '/paywall';
-
-  // Coach marketplace
-  static const marketplace = '/marketplace';
-  static const coachProfile = '/marketplace/coach';
 }

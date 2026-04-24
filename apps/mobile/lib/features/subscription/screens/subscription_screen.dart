@@ -282,8 +282,7 @@ class _FeatureSummary extends StatelessWidget {
             'Advanced analytics',
             'Full wearable sync',
             if (sub.isCoach) 'AI workout recommendations',
-            if (sub.isCoach) 'AI Form Monitor (live pose)',
-            if (sub.isCoach) 'Coach marketplace access',
+            if (sub.isCoach) 'AI Form Monitor (Beta)',
           ]
         : ['Calorie & macro tracking', 'Workout logging', 'AI coach (5/day)'];
 

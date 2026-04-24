@@ -34,8 +34,8 @@ model User {
   moodLogs            MoodLog[]
   sleepLogs           SleepLog[]
   wearableConnections WearableConnection[]
-  coachRequests       CoachSessionRequest[] @relation("UserCoachRequests")
 }
+
 
 model UserProfile {
   id             String  @id @default(cuid())
@@ -164,37 +164,6 @@ model SleepLog {
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, sleepDate])
-}
-
-// ── Coach Marketplace ─────────────────────────────────────────────────────────
-
-model CoachProfile {
-  id              String   @id @default(cuid())
-  displayName     String
-  bio             String
-  specializations String   // comma-separated: strength | cardio | weight_loss | nutrition | mobility
-  hourlyRateUsd   Int
-  yearsExp        Int
-  certifications  String?  // comma-separated certification names
-  avatarUrl       String?
-  rating          Float    @default(0.0)
-  reviewCount     Int      @default(0)
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-
-  sessionRequests CoachSessionRequest[]
-}
-
-model CoachSessionRequest {
-  id          String   @id @default(cuid())
-  userId      String
-  coachId     String
-  message     String
-  status      String   @default("pending") // pending | accepted | declined
-  requestedAt DateTime @default(now())
-
-  user  User         @relation("UserCoachRequests", fields: [userId], references: [id])
-  coach CoachProfile @relation(fields: [coachId], references: [id])
 }
 
 model WearableConnection {

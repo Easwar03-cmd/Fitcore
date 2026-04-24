@@ -37,8 +37,6 @@ async function main() {
   ]);
 
   // Wipe existing seed data (order matters for FK constraints)
-  await prisma.coachSessionRequest.deleteMany();
-  await prisma.coachProfile.deleteMany();
   await prisma.exerciseSet.deleteMany();
   await prisma.workoutLog.deleteMany();
   await prisma.foodLog.deleteMany();
@@ -523,63 +521,6 @@ async function main() {
         durationSec: 1680,
         distanceM: 5000,
         rpe: 6,
-      },
-    ],
-  });
-
-  // ─── Coach Marketplace ────────────────────────────────────────────────────
-
-  await prisma.coachProfile.createMany({
-    data: [
-      {
-        displayName: 'Jordan Miles',
-        bio: 'Former competitive powerlifter with 10 years of coaching experience. I specialise in building raw strength through progressive overload and evidence-based programming. Whether you\'re a complete beginner or an intermediate lifter looking to break plateaus, I\'ll design a programme that fits your schedule and goals.',
-        specializations: 'strength,nutrition',
-        hourlyRateUsd: 75,
-        yearsExp: 10,
-        certifications: 'NSCA-CSCS,NASM-CPT',
-        rating: 4.9,
-        reviewCount: 142,
-      },
-      {
-        displayName: 'Priya Nair',
-        bio: 'ISSA-certified personal trainer and registered dietitian. I take a holistic approach to weight loss — sustainable nutrition habits combined with strength training so you keep the weight off for life. No crash diets, no six-days-a-week schedules. Just smart, consistent progress.',
-        specializations: 'weight_loss,nutrition',
-        hourlyRateUsd: 65,
-        yearsExp: 7,
-        certifications: 'ISSA-CPT,Registered Dietitian (RD)',
-        rating: 4.8,
-        reviewCount: 98,
-      },
-      {
-        displayName: 'Carlos Rivera',
-        bio: 'Endurance sports coach and former marathon runner (2:47 PB). I coach athletes of all levels for running, cycling, and general cardio conditioning. Heart-rate-based training, VO2 max development, and race-day preparation are my specialties.',
-        specializations: 'cardio',
-        hourlyRateUsd: 60,
-        yearsExp: 8,
-        certifications: 'USATF Level 2,TrainingPeaks Certified Coach',
-        rating: 4.7,
-        reviewCount: 74,
-      },
-      {
-        displayName: 'Mei Lin',
-        bio: 'Mobility and corrective exercise specialist helping desk workers, athletes recovering from injury, and anyone who feels "stiff" move better and stay pain-free. I blend yoga, FRC (Functional Range Conditioning), and kettlebell flows to build strength through full range of motion.',
-        specializations: 'mobility,strength',
-        hourlyRateUsd: 55,
-        yearsExp: 5,
-        certifications: 'FRC Mobility Specialist,RYT-200',
-        rating: 4.6,
-        reviewCount: 51,
-      },
-      {
-        displayName: 'Ryan Okafor',
-        bio: 'Online strength and hypertrophy coach helping naturals optimise muscle growth. I\'ve helped 200+ clients add lean mass without unnecessary fat gain using individualised volume landmarks, RPE tracking, and strategic deload periods. Science-based, no-nonsense programming.',
-        specializations: 'strength,nutrition',
-        hourlyRateUsd: 80,
-        yearsExp: 6,
-        certifications: 'NASM-CPT,Precision Nutrition Level 1',
-        rating: 4.8,
-        reviewCount: 87,
       },
     ],
   });
