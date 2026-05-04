@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../constants/app_routes.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
 import '../features/coach/screens/coach_screen.dart';
 import '../features/home/screens/home_screen.dart';
@@ -42,11 +43,18 @@ import 'router_notifier.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = RouterNotifier(ref);
   return GoRouter(
-    initialLocation: AppRoutes.login,
+    initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     refreshListenable: notifier,
     redirect: notifier.redirect,
     routes: [
+      // ── Splash ──────────────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.splash,
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+
       // ── Auth ────────────────────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,

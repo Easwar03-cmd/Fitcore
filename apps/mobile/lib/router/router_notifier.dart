@@ -23,15 +23,20 @@ class RouterNotifier extends ChangeNotifier {
 
   String? redirect(BuildContext context, GoRouterState state) {
     final authAsync = _ref.read(authProvider);
+    final loc = state.matchedLocation;
 
-    // While restoring session on startup, don't redirect yet.
-    if (authAsync.isLoading) return null;
+    // While restoring session, stay on splash; redirect anything else there.
+    if (authAsync.isLoading) {
+      return loc == AppRoutes.splash ? null : AppRoutes.splash;
+    }
+
+    // Once loaded, leave splash immediately (fall through to normal logic).
 
     final authState = authAsync.valueOrNull;
     final isAuthenticated = authState != null;
-    final loc = state.matchedLocation;
 
-    final isAuthRoute = loc == AppRoutes.login ||
+    final isAuthRoute = loc == AppRoutes.splash ||
+        loc == AppRoutes.login ||
         loc == AppRoutes.signup ||
         loc == AppRoutes.forgotPassword;
     final isOnboardingRoute = _onboardingRoutes.contains(loc);
