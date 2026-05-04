@@ -27,7 +27,20 @@ const server = Fastify({
 
 async function bootstrap() {
   // ── Security plugins ────────────────────────────────────────────────────────
-  await server.register(import('@fastify/cors'), { origin: true });
+  const allowedOrigins = [
+    'https://zenfit-api-122167595419.us-central1.run.app',
+    ...(config.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://127.0.0.1:3000'] : []),
+  ];
+  await server.register(import('@fastify/cors'), {
+    origin: (origin, cb) => {
+      // Mobile app requests have no Origin header — always allow.
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error('Not allowed by CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   await server.register(import('@fastify/helmet'), { global: true });
 
@@ -106,7 +119,7 @@ async function bootstrap() {
   await server.register(integrationsRoutes, { prefix: '/api/v1/integrations' });
   await server.register(paymentsRoutes, { prefix: '/api/v1/payments' });
 
-  server.get('/health', async () => ({ status: 'ok', timestamp: Date.now() }));
+  server.get('/health', async () => ({ status: 'ok' }));
 
   server.get('/payment/success', async (_req, reply) => {
     return reply.type('text/html').send(

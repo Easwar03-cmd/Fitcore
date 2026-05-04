@@ -1,7 +1,10 @@
 import { GoogleGenerativeAI, GoogleGenerativeAIFetchError, SchemaType, type Schema } from '@google/generative-ai';
 import IORedis from 'ioredis';
+import pino from 'pino';
 import { config } from '../utils/config';
 import { aiRepository } from '../repositories/ai.repository';
+
+const log = pino({ level: config.NODE_ENV === 'production' ? 'warn' : 'info' });
 
 // ─── Gemini request queue ─────────────────────────────────────────────────────
 // Gemini free-tier: 15 RPM = 1 request every 4 seconds.
@@ -106,7 +109,7 @@ function getRedis(): IORedis {
     _redis.on('error', (err: Error) => {
       if (_warnedOnce) return;
       _warnedOnce = true;
-      console.warn('[ai-service] Redis unavailable — rate limiting skipped:', err.message);
+      log.warn({ err: err.message }, 'Redis unavailable — rate limiting skipped');
     });
   }
   return _redis;
@@ -705,7 +708,7 @@ export async function sendCoachMessage(
     parts: [{ text: m.content }],
   }));
 
-  console.log(`[coach] queuing Gemini call — model=${GEMINI_MODEL} turns=${contents.length} userId=${userId}`);
+  log.info({ model: GEMINI_MODEL, turns: contents.length }, 'Queuing Gemini coach call');
 
   try {
     const result = await geminiQueue.enqueue(() =>
@@ -718,10 +721,9 @@ export async function sendCoachMessage(
       }, GEMINI_CHAT_RETRY_DELAYS_MS),
     );
     const text = result.response.text();
-    console.log(`[coach] Gemini replied — ${text.length} chars`);
     return text;
   } catch (err) {
-    console.error('[coach] Gemini call failed:', err instanceof Error ? err.message : err);
+    log.error({ err: err instanceof Error ? err.message : String(err) }, 'Gemini coach call failed');
     throw err;
   }
 }

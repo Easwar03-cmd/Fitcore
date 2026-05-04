@@ -21,6 +21,13 @@ const envSchema = z.object({
   // Firebase Admin SDK — required for server-sent push notifications.
   // Set to the full service account JSON as a single-line string.
   FIREBASE_SERVICE_ACCOUNT: z.string().optional(),
+  // Google Play Billing — required for Android subscription verification.
+  // GOOGLE_PLAY_PACKAGE_NAME: the app's applicationId (e.g. com.zenfit.app).
+  // GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: full JSON key file contents as a single-line string.
+  // Grant the service account "View financial data" in Google Play Console → Setup → API access.
+  GOOGLE_PLAY_PACKAGE_NAME: z.string().optional(),
+  GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
+
   // SMTP email — all optional; if unset the app falls back to logging the reset code.
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),

@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { GoogleAuth } from 'google-auth-library';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { config } from '../utils/config';
@@ -34,6 +35,53 @@ function tierFromPriceId(priceId: string): 'pro' | 'coach' | 'free' {
   if (priceId === config.STRIPE_PRO_PRICE_ID) return 'pro';
   if (priceId === config.STRIPE_COACH_PRICE_ID) return 'coach';
   return 'free';
+}
+
+// ─── Google Play helpers ──────────────────────────────────────────────────────
+
+const GOOGLE_PLAY_PRODUCT_TIERS: Record<string, 'pro' | 'coach'> = {
+  zenfit_pro_monthly: 'pro',
+  zenfit_coach_monthly: 'coach',
+};
+
+interface GooglePlaySubscriptionResponse {
+  expiryTimeMillis?: string;
+  cancelReason?: number;
+  paymentState?: number;
+  autoRenewing?: boolean;
+  kind?: string;
+}
+
+async function verifyGooglePlayPurchase(
+  packageName: string,
+  subscriptionId: string,
+  purchaseToken: string,
+): Promise<GooglePlaySubscriptionResponse> {
+  const serviceAccountJson = config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
+  if (!serviceAccountJson) throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not configured');
+
+  const auth = new GoogleAuth({
+    credentials: JSON.parse(serviceAccountJson),
+    scopes: ['https://www.googleapis.com/auth/androidpublisher'],
+  });
+  const client = await auth.getClient();
+  const tokenResponse = await client.getAccessToken();
+  const accessToken = tokenResponse.token;
+
+  const url =
+    `https://androidpublisher.googleapis.com/androidpublisher/v3/applications` +
+    `/${packageName}/purchases/subscriptions/${subscriptionId}/tokens/${purchaseToken}`;
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Google Play API error ${res.status}: ${body}`);
+  }
+
+  return res.json() as Promise<GooglePlaySubscriptionResponse>;
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -130,6 +178,80 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       request.log.error({ err }, '[Stripe] portal error');
       return reply.status(502).send({ success: false, error: { code: 'STRIPE_ERROR', message: 'Failed to create portal session' } });
     }
+  });
+
+  // ── POST /api/v1/payments/google-play/verify ─────────────────────────────────
+  // Called by the Flutter app immediately after a successful Google Play purchase.
+  // Verifies the purchase token with the Google Play Developer API and updates
+  // the user's subscription tier in the database.
+  fastify.post('/google-play/verify', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
+    }
+
+    if (!config.GOOGLE_PLAY_PACKAGE_NAME || !config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+      return reply.status(503).send({
+        success: false,
+        error: { code: 'NOT_CONFIGURED', message: 'Google Play verification not configured on server' },
+      });
+    }
+
+    const { userId } = request.user;
+    const parsed = z.object({
+      purchaseToken: z.string().min(1),
+      productId: z.enum(['zenfit_pro_monthly', 'zenfit_coach_monthly']),
+    }).safeParse(request.body);
+
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'purchaseToken and productId are required' },
+      });
+    }
+
+    const { purchaseToken, productId } = parsed.data;
+
+    let purchaseData: GooglePlaySubscriptionResponse;
+    try {
+      purchaseData = await verifyGooglePlayPurchase(
+        config.GOOGLE_PLAY_PACKAGE_NAME,
+        productId,
+        purchaseToken,
+      );
+    } catch (err) {
+      request.log.error({ err }, '[Google Play] verification error');
+      return reply.status(502).send({
+        success: false,
+        error: { code: 'GOOGLE_PLAY_ERROR', message: 'Could not verify purchase with Google Play' },
+      });
+    }
+
+    // paymentState 1 = payment received, 2 = free trial. Anything else is invalid.
+    const isValid =
+      purchaseData.expiryTimeMillis != null &&
+      (purchaseData.paymentState === 1 || purchaseData.paymentState === 2) &&
+      purchaseData.cancelReason === undefined;
+
+    if (!isValid) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'INVALID_PURCHASE', message: 'Purchase is not active or has been cancelled' },
+      });
+    }
+
+    const tier = GOOGLE_PLAY_PRODUCT_TIERS[productId] ?? 'free';
+    const validUntil = new Date(parseInt(purchaseData.expiryTimeMillis!, 10));
+
+    await prisma.subscription.upsert({
+      where: { userId },
+      create: { userId, tier, validUntil },
+      update: { tier, validUntil },
+    });
+
+    request.log.info(`[Google Play] user ${userId} activated ${tier} until ${validUntil.toISOString()}`);
+    return reply.send({ success: true, data: { tier, validUntil: validUntil.toISOString() } });
   });
 
   // ── POST /api/v1/payments/webhook ────────────────────────────────────────────

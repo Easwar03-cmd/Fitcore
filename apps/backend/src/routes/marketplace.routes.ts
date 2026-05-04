@@ -13,7 +13,8 @@ async function requireCoachTier(
     : any,
 ): Promise<boolean> {
   const sub = await prisma.subscription.findUnique({ where: { userId } });
-  if (!sub || sub.tier !== 'coach' || (sub.validUntil && sub.validUntil < new Date())) {
+  const isExpired = sub?.validUntil ? sub.validUntil < new Date() : false;
+  if (!sub || sub.tier !== 'coach' || isExpired) {
     reply.status(403).send({
       success: false,
       error: {

@@ -7,9 +7,11 @@ import {
   analyzeFoodPhoto,
   getWorkoutRecommendation,
   getDeloadCheck,
+  checkCoachRateLimit,
   type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
+import { config } from '../utils/config';
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -40,19 +42,16 @@ const chatRequestSchema = z.object({
 // ─── Shared error handler ─────────────────────────────────────────────────────
 
 function handleAiError(err: unknown, request: { log: { error: (...args: unknown[]) => void } }) {
+  const isProd = config.NODE_ENV === 'production';
   if (err instanceof GoogleGenerativeAIFetchError) {
     request.log.error('[Gemini]', err.status, err.statusText, err.message);
     if (err.status === 429) {
-      return { status: 503, code: 'AI_RATE_LIMITED', message: 'Gemini API rate limit hit. Please wait 60 seconds and try again.' };
+      return { status: 503, code: 'AI_RATE_LIMITED', message: 'AI service is temporarily busy. Please try again in a moment.' };
     }
-    const msg = err.message ?? `Gemini API error (${err.status})`;
-    return { status: 502, code: 'AI_ERROR', message: msg };
+    return { status: 502, code: 'AI_ERROR', message: isProd ? 'AI service error' : (err.message ?? `Gemini API error (${err.status})`) };
   }
   request.log.error('[AI]', err instanceof Error ? err.message : err);
-  if (err instanceof Error) {
-    return { status: 500, code: 'INTERNAL_ERROR', message: err.message };
-  }
-  return { status: 500, code: 'INTERNAL_ERROR', message: 'Failed to get coach response' };
+  return { status: 500, code: 'INTERNAL_ERROR', message: isProd ? 'Failed to get coach response' : (err instanceof Error ? err.message : 'Unknown error') };
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -69,6 +68,17 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    const userId = request.user.userId;
+
+    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
+    const rateLimitResult = await checkCoachRateLimit(userId, subscription?.tier ?? null);
+    if (!rateLimitResult.allowed) {
+      return reply.status(429).send({
+        success: false,
+        error: { code: 'RATE_LIMITED', message: 'Daily AI coach limit reached. Upgrade to Pro for unlimited access.' },
+      });
+    }
+
     const parsed = coachRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -78,8 +88,8 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
-      const responseText = await sendCoachMessage(request.user.userId, parsed.data.messages as ChatMessage[]);
-      return reply.send({ success: true, data: { message: responseText } });
+      const responseText = await sendCoachMessage(userId, parsed.data.messages as ChatMessage[]);
+      return reply.send({ success: true, data: { message: responseText, remaining: rateLimitResult.remaining } });
     } catch (err) {
       const { status, code, message } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message } });
@@ -99,6 +109,15 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const userId = request.user.userId;
 
+    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
+    const rateLimitResult = await checkCoachRateLimit(userId, subscription?.tier ?? null);
+    if (!rateLimitResult.allowed) {
+      return reply.status(429).send({
+        success: false,
+        error: { code: 'RATE_LIMITED', message: 'Daily AI coach limit reached. Upgrade to Pro for unlimited access.' },
+      });
+    }
+
     const parsed = chatRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({
@@ -116,7 +135,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
       ];
 
       const replyText = await sendCoachMessage(userId, messages);
-      return reply.send({ success: true, data: { reply: replyText } });
+      return reply.send({ success: true, data: { reply: replyText, remaining: rateLimitResult.remaining } });
     } catch (err) {
       const { status, code, message: msg } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message: msg } });
@@ -136,8 +155,9 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const userId = request.user.userId;
 
-    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
-    if ((subscription?.tier ?? 'free') === 'free') {
+    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true, validUntil: true } });
+    const hasActivePaidSub = subscription && subscription.tier !== 'free' && (!subscription.validUntil || subscription.validUntil > new Date());
+    if (!hasActivePaidSub) {
       return reply.status(403).send({
         success: false,
         error: { code: 'UPGRADE_REQUIRED', message: 'Food photo logging is available on Pro and Coach plans. Upgrade to unlock.' },
@@ -221,11 +241,11 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
     const subscription = await prisma.subscription.findUnique({
       where: { userId },
-      select: { tier: true },
+      select: { tier: true, validUntil: true },
     });
-    const tier = subscription?.tier ?? 'free';
+    const hasActivePaidSub = subscription && subscription.tier !== 'free' && (!subscription.validUntil || subscription.validUntil > new Date());
 
-    if (tier === 'free') {
+    if (!hasActivePaidSub) {
       return reply.status(403).send({
         success: false,
         error: {

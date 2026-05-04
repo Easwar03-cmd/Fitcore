@@ -271,7 +271,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.send({ success: true, data: { message: 'If that email exists, a reset code was generated.' } });
     }
 
-    const code = randomBytes(3).toString('hex').toUpperCase(); // 6-char hex code
+    const code = randomBytes(5).toString('hex').toUpperCase(); // 10-char hex code (~1 trillion combinations)
     const redis = getRedis();
     if (redis) {
       await redis.set(`pwd_reset:${code}`, user.id, 'EX', RESET_TTL);
