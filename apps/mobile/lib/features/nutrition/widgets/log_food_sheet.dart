@@ -216,15 +216,28 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
               Expanded(
                 child: SegmentedButton<String>(
                   segments: _unitMap.keys
-                      .map((u) => ButtonSegment(value: u, label: Text(u)))
+                      .map((u) => ButtonSegment(
+                            value: u,
+                            label: Text(
+                              u,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ))
                       .toList(),
                   selected: {_unit},
                   onSelectionChanged: (s) => setState(() {
                     _unit = s.first;
                     _chipServingG = null;
                   }),
-                  style: const ButtonStyle(
+                  style: ButtonStyle(
                     visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 8),
+                    ),
                   ),
                 ),
               ),
