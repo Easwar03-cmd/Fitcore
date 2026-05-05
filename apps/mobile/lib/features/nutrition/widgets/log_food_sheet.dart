@@ -119,16 +119,20 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final maxHeight = MediaQuery.of(context).size.height * 0.9;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Handle
           Center(
             child: Container(
@@ -287,6 +291,8 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
             ),
           ),
         ],
+          ),
+        ),
       ),
     );
   }
