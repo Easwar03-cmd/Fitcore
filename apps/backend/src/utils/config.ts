@@ -28,6 +28,9 @@ const envSchema = z.object({
   GOOGLE_PLAY_PACKAGE_NAME: z.string().optional(),
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
 
+  // Set to 'true' to grant all authenticated users Pro tier during beta.
+  BETA_MODE: z.string().optional(),
+
   // SMTP email — all optional; if unset the app falls back to logging the reset code.
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),

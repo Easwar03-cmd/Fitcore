@@ -96,6 +96,14 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { userId } = request.user;
+
+    if (config.BETA_MODE === 'true') {
+      return reply.send({
+        success: true,
+        data: { tier: 'pro', validUntil: null, stripeId: null },
+      });
+    }
+
     const sub = await prisma.subscription.findUnique({ where: { userId } });
 
     return reply.send({
