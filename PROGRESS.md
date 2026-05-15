@@ -1,6 +1,30 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-05-15 (session 35)
+**Duration:** ~0.5 hours
+**What was built:**
+
+### Launch prep — version bump, iOS permissions, Privacy Policy
+
+- **Version bumped** — `pubspec.yaml` updated from `1.0.0-beta.1+1` → `1.0.0+1`
+- **iOS permission strings added** — `Info.plist` now includes all four missing keys required for App Store approval: `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription`. Without these the app is auto-rejected during App Review.
+- **`indian_foods.json` audit** — confirmed already deleted from disk in a prior session; only a stale inline comment remained in `indian_food_service.dart` (no code change needed).
+- **Breakfast/lunch notification toggles audit** — confirmed already fully implemented (provider, prefs keys, UI, schedule wiring). The known issue in session 34 was resolved before this session.
+- **Privacy Policy created** — `docs/privacy-policy.html` covers: account & health data collection, Apple Health / Google Fit data table, AI processing via Gemini, AdMob consent, Firebase/Sentry/Amplitude, Google Cloud infrastructure, GDPR/CCPA rights, data retention (30-day deletion), data security (TLS + AES-256 + Keychain/Keystore). Hosted via GitHub Pages at `https://Easwar03-cmd.github.io/[repo]/privacy-policy.html`.
+
+**Decisions made:**
+- Stripe backend code is kept intact for future use; Google Play Billing is the active payment path for launch.
+- `docs/` folder serves GitHub Pages — no extra hosting cost; URL to give both stores: `https://Easwar03-cmd.github.io/[repo]/privacy-policy.html` (replace `[repo]` with the actual repo name after enabling Pages in Settings → Pages → Branch: main, Folder: /docs).
+
+**Known issues / next steps:**
+- Enable GitHub Pages in the repo settings (Settings → Pages → main branch, /docs folder) to make the privacy policy URL live.
+- Create a `privacy@revivefit.app` and `support@revivefit.app` email address (or redirect to your personal email) before going live.
+- HealthKit entitlement must be enabled in Xcode under Signing & Capabilities → HealthKit.
+- App Store / Play Store screenshots still need to be created.
+- Play Store Data Safety form needs to be filled out (mirrors the privacy policy content).
+
+## Previous session
 **Date:** 2026-04-24 (session 33)
 **Duration:** ~3 hours
 **What was built:**

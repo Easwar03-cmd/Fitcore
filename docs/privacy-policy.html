@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Revive</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fff;
+      padding: 0 16px;
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 48px 0 80px; }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { color: #555; font-size: 0.9rem; margin-bottom: 40px; }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 36px 0 10px;
+      padding-top: 8px;
+      border-top: 1px solid #e8e8e8;
+    }
+    h3 { font-size: 1rem; font-weight: 600; margin: 20px 0 6px; }
+    p { margin-bottom: 12px; }
+    ul { margin: 8px 0 12px 20px; }
+    ul li { margin-bottom: 6px; }
+    a { color: #6C63FF; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      background: #f0eeff;
+      color: #6C63FF;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 0.9rem; }
+    th { background: #f5f5f5; text-align: left; padding: 8px 12px; }
+    td { padding: 8px 12px; border-top: 1px solid #e8e8e8; vertical-align: top; }
+    .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #e8e8e8; font-size: 0.85rem; color: #777; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Privacy Policy</h1>
+  <p class="subtitle">Revive Fitness App &nbsp;·&nbsp; Last updated: 15 May 2026 &nbsp;·&nbsp; Effective: 15 May 2026</p>
+
+  <p>
+    Revive ("we", "our", or "us") is a fitness application available on Android and iOS.
+    This Privacy Policy explains what personal information we collect when you use Revive,
+    why we collect it, how we use and protect it, and your rights over it.
+    Please read it carefully before using the app.
+  </p>
+  <p>
+    By creating an account or using any part of Revive, you agree to this Privacy Policy.
+    If you do not agree, do not use the app.
+  </p>
+
+  <!-- 1 -->
+  <h2>1. Information We Collect</h2>
+
+  <h3>1.1 Information You Provide Directly</h3>
+  <ul>
+    <li><strong>Account details</strong> — name, email address, password (stored as a one-way hash).</li>
+    <li><strong>Body stats</strong> — date of birth, biological sex, height, current and target weight, body fat percentage, BMI.</li>
+    <li><strong>Fitness goals</strong> — goal type (lose weight, build muscle, maintain, endurance) and activity level.</li>
+    <li><strong>Food logs</strong> — meals and snacks you add, including food name, serving size, and macro-nutrient breakdown.</li>
+    <li><strong>Workout logs</strong> — exercises performed, sets, reps, weight lifted, duration, GPS route, and perceived effort.</li>
+    <li><strong>Mood &amp; wellness entries</strong> — optional daily mood rating (1–5 emoji scale).</li>
+    <li><strong>Profile photo</strong> — if you choose to add one.</li>
+    <li><strong>Support messages</strong> — if you contact us by email.</li>
+  </ul>
+
+  <h3>1.2 Information Collected Automatically</h3>
+  <ul>
+    <li><strong>Device identifiers</strong> — Firebase installation ID, advertising ID (used for ad personalisation if consent is given).</li>
+    <li><strong>Usage analytics</strong> — screens viewed, features used, session length, button taps (via Firebase Analytics and Amplitude). No individual food or workout content is sent to analytics providers.</li>
+    <li><strong>Crash reports</strong> — stack traces, device model, OS version, and app version collected by Firebase Crashlytics and Sentry when the app crashes. These reports do not contain health data.</li>
+    <li><strong>Push notification token</strong> — a Firebase Cloud Messaging token generated on first launch, used only to deliver reminders you have opted into.</li>
+  </ul>
+
+  <h3>1.3 Information From Your Device Hardware</h3>
+  <ul>
+    <li><strong>Camera</strong> — used to scan food barcodes, photograph meals for AI nutritional analysis, and stream live video for the AI Exercise Form Monitor. Camera frames are processed on-device and are <em>never</em> stored or transmitted.</li>
+    <li><strong>Photo library</strong> — accessed only when you explicitly choose a photo to log a meal. The selected image is sent to Google Gemini for nutritional analysis and then discarded; it is not stored on our servers.</li>
+    <li><strong>Location</strong> — collected only during an active outdoor workout session when you tap "Start GPS workout". GPS coordinates are used to draw your route and calculate distance/pace. Raw coordinate streams are discarded after the session is saved; only the aggregate route polyline and distance are stored.</li>
+    <li><strong>Step count</strong> — read from your device's built-in pedometer (Android: Google Fit platform; iOS: CoreMotion/HealthKit) to populate the steps tile on your dashboard.</li>
+  </ul>
+
+  <h3>1.4 Health Platform Data (Apple Health / Google Fit)</h3>
+  <p>
+    With your explicit permission, Revive reads and/or writes the following data categories
+    through Apple HealthKit (iOS) and the Google Health platform (Android):
+  </p>
+  <table>
+    <thead>
+      <tr><th>Data type</th><th>Direction</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Steps</td><td>Read</td><td>Dashboard step counter</td></tr>
+      <tr><td>Heart rate</td><td>Read</td><td>Recovery score &amp; wellness screen</td></tr>
+      <tr><td>Resting heart rate</td><td>Read</td><td>Recovery score</td></tr>
+      <tr><td>Heart rate variability (HRV)</td><td>Read</td><td>Recovery score</td></tr>
+      <tr><td>Sleep analysis</td><td>Read</td><td>Sleep card &amp; 7-day trend</td></tr>
+      <tr><td>Body weight</td><td>Read</td><td>Weight trend chart</td></tr>
+      <tr><td>Active energy burned</td><td>Write</td><td>Record calories burned during workouts</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Health platform data is processed locally on your device and synced to our servers only to
+    power your personal dashboard. It is <strong>never</strong> used for advertising, sold, or
+    shared with third parties for their independent use.
+    You can revoke Health permissions at any time in your device Settings.
+  </p>
+
+  <!-- 2 -->
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li>Provide and personalise the Revive service (calorie targets, workout recommendations, AI coach responses).</li>
+    <li>Send push notifications you have opted into (workout reminders, streak warnings, weekly summaries).</li>
+    <li>Power AI features via Google Gemini API — your fitness context (goals, recent logs, body stats) is sent to Gemini to generate meal plans, workout suggestions, and coach replies. Gemini processes this data under <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li>Display relevant ads via Google AdMob. Ad personalisation requires your consent (shown on first launch). You may opt out at any time in Settings → Privacy.</li>
+    <li>Monitor app stability via Firebase Crashlytics and Sentry.</li>
+    <li>Understand feature usage in aggregate via Firebase Analytics and Amplitude to improve the app.</li>
+    <li>Process subscription payments via Google Play Billing.</li>
+    <li>Respond to your support requests.</li>
+    <li>Comply with legal obligations.</li>
+  </ul>
+
+  <!-- 3 -->
+  <h2>3. Legal Bases for Processing (EEA / UK Users)</h2>
+  <table>
+    <thead>
+      <tr><th>Processing activity</th><th>Legal basis</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Providing the core app service</td><td>Contract (Article 6(1)(b) GDPR)</td></tr>
+      <tr><td>Health data processing</td><td>Explicit consent (Article 9(2)(a) GDPR)</td></tr>
+      <tr><td>Analytics &amp; crash reports</td><td>Legitimate interests (app stability &amp; improvement)</td></tr>
+      <tr><td>Personalised advertising</td><td>Consent (IAB TCF v2.2)</td></tr>
+      <tr><td>Legal obligations</td><td>Legal obligation (Article 6(1)(c) GDPR)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 4 -->
+  <h2>4. Data Sharing and Third Parties</h2>
+  <p>We do not sell your personal data. We share data only as described below:</p>
+  <table>
+    <thead>
+      <tr><th>Third party</th><th>Data shared</th><th>Purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Google Gemini API</td><td>Fitness context (goals, recent logs, body stats); meal photos (transient)</td><td>AI coach, meal plans, food photo analysis</td></tr>
+      <tr><td>Google Firebase</td><td>FCM token; crash stack traces; anonymised analytics events</td><td>Push notifications, crash reporting, analytics</td></tr>
+      <tr><td>Google AdMob</td><td>Advertising ID (with consent); approximate location</td><td>Contextual / personalised ads</td></tr>
+      <tr><td>Amplitude</td><td>Anonymised usage events (no PII, no health data)</td><td>Product analytics</td></tr>
+      <tr><td>Sentry</td><td>Crash stack traces, device/OS version</td><td>Error monitoring</td></tr>
+      <tr><td>Google Cloud Platform</td><td>All account and fitness data (encrypted at rest)</td><td>Backend infrastructure (Cloud Run, Cloud SQL, Cloud Storage)</td></tr>
+      <tr><td>Open Food Facts / USDA</td><td>Search query text only</td><td>Food database lookup</td></tr>
+      <tr><td>Law enforcement / courts</td><td>As required by applicable law</td><td>Legal compliance</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 5 -->
+  <h2>5. Data Retention</h2>
+  <ul>
+    <li>Your account data and fitness logs are retained for as long as your account is active.</li>
+    <li>If you delete your account, all personal data is permanently deleted within <strong>30 days</strong>, except where retention is required by law.</li>
+    <li>Anonymised, aggregated analytics data may be retained indefinitely (it cannot be linked back to you).</li>
+    <li>Crash report data is retained for 90 days by Firebase Crashlytics and Sentry.</li>
+  </ul>
+
+  <!-- 6 -->
+  <h2>6. Data Security</h2>
+  <ul>
+    <li>All data in transit is encrypted via TLS 1.2+.</li>
+    <li>All data at rest on our servers (Google Cloud SQL) is encrypted using AES-256.</li>
+    <li>Authentication tokens are stored in your device's secure enclave (iOS Keychain / Android Keystore) via <code>flutter_secure_storage</code>.</li>
+    <li>We use short-lived JWT access tokens (15 minutes) and long-lived refresh tokens (30 days) to minimise exposure if a token is compromised.</li>
+    <li>No payment card data is stored on our servers. All payment processing is handled by Google Play Billing.</li>
+  </ul>
+
+  <!-- 7 -->
+  <h2>7. Children's Privacy</h2>
+  <p>
+    Revive is not directed at children under the age of 13 (or 16 in the EEA).
+    We do not knowingly collect personal data from children.
+    If you believe a child has provided us with personal data, please contact us and we will
+    delete it promptly.
+  </p>
+
+  <!-- 8 -->
+  <h2>8. Your Rights</h2>
+  <p>Depending on where you live, you may have the right to:</p>
+  <ul>
+    <li><strong>Access</strong> — request a copy of all personal data we hold about you.</li>
+    <li><strong>Rectification</strong> — correct inaccurate or incomplete data.</li>
+    <li><strong>Erasure ("right to be forgotten")</strong> — request deletion of your account and all associated data. You can initiate this from the app at Settings → Profile → Delete Account, or by emailing us.</li>
+    <li><strong>Portability</strong> — receive your data in a machine-readable format (JSON export available on request).</li>
+    <li><strong>Restriction / Objection</strong> — object to or restrict certain types of processing.</li>
+    <li><strong>Withdraw consent</strong> — withdraw any consent you have given (e.g., for personalised ads or health data) at any time without affecting the lawfulness of prior processing.</li>
+    <li><strong>Lodge a complaint</strong> — with your local data protection authority (e.g., ICO in the UK, your national DPA in the EU).</li>
+  </ul>
+  <p>To exercise any of these rights, email us at <a href="mailto:privacy@revivefit.app">privacy@revivefit.app</a>. We will respond within 30 days.</p>
+
+  <!-- 9 -->
+  <h2>9. California Residents (CCPA / CPRA)</h2>
+  <p>
+    California residents have the right to know what personal information we collect, to delete it,
+    to opt out of its "sale" (we do not sell personal information), and to non-discrimination for
+    exercising these rights. To submit a request, email <a href="mailto:privacy@revivefit.app">privacy@revivefit.app</a>.
+  </p>
+
+  <!-- 10 -->
+  <h2>10. International Data Transfers</h2>
+  <p>
+    Our servers are hosted in the United States (Google Cloud, us-central1 region).
+    If you are located outside the US, your data is transferred to and processed in the US.
+    For EEA/UK users, these transfers are made under the EU–US Data Privacy Framework and
+    Standard Contractual Clauses (SCCs) where applicable.
+  </p>
+
+  <!-- 11 -->
+  <h2>11. Changes to This Policy</h2>
+  <p>
+    We may update this Privacy Policy from time to time. When we make material changes, we will
+    notify you via an in-app banner or push notification at least 7 days before the changes take
+    effect, and update the "Last updated" date at the top of this page.
+    Continued use of the app after the effective date constitutes your acceptance of the revised policy.
+  </p>
+
+  <!-- 12 -->
+  <h2>12. Contact Us</h2>
+  <p>If you have any questions about this Privacy Policy or your data, please contact us:</p>
+  <ul>
+    <li><strong>Email:</strong> <a href="mailto:privacy@revivefit.app">privacy@revivefit.app</a></li>
+    <li><strong>Support:</strong> <a href="mailto:support@revivefit.app">support@revivefit.app</a></li>
+  </ul>
+
+  <div class="footer">
+    <p>© 2026 Revive. All rights reserved.</p>
+    <p style="margin-top:4px;">
+      <a href="terms.html">Terms of Service</a>
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
