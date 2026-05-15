@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import 'app.dart';
+import 'core/services/consent_service.dart';
 import 'core/services/notification_service.dart';
 
 Future<void> main() async {
@@ -39,6 +40,11 @@ Future<void> main() async {
   // Analytics: disable data collection in debug builds.
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(kReleaseMode);
 
+  // Fetch UMP consent status from Google servers before initialising AdMob.
+  // No UI shown here — the consent form is shown from ReviveApp.initState
+  // once a BuildContext is available. MobileAds will serve non-personalised
+  // ads until the user responds to the form (EEA/UK only).
+  await ConsentService.requestUpdate();
   await MobileAds.instance.initialize();
 
   // Set up local notification channels and FCM background handler.

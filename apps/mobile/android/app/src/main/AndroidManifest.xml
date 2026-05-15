@@ -5,8 +5,12 @@
     <!-- Required for Google Play Billing (in_app_purchase plugin) -->
     <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- Gallery access for food photo logging (Android 13+) -->
+    <!-- Gallery access: API 33+ uses READ_MEDIA_IMAGES; API 26-32 uses READ_EXTERNAL_STORAGE -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+    <!-- Step counting via Google Fit fallback on Android 10-13 (Health Connect covers Android 14+) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 

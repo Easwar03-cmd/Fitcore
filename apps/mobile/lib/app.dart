@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/services/consent_service.dart';
 import 'core/services/sync_queue_service.dart' show syncServiceProvider;
 import 'core/services/sync_status_provider.dart';
 import 'core/theme/app_theme.dart';
@@ -25,6 +26,13 @@ class _ReviveAppState extends ConsumerState<ReviveApp> {
     ref.read(syncStatusProvider.notifier).refreshCount().then((_) {
       // Flush any items that are due immediately (e.g. from last session).
       service.flush();
+    });
+
+    // Show the AdMob UMP consent form on the first frame where we have a
+    // BuildContext. No-op outside EEA/UK; EEA users see the form once on
+    // first launch, then only when consent expires or changes are required.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ConsentService.showFormIfRequired(context);
     });
   }
 
