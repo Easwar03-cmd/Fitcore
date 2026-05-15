@@ -1,4 +1,4 @@
-# CLAUDE.md — Zenfit Fitness App
+# CLAUDE.md — Revive Fitness App
 
 > This file is Claude Code's memory for this project. Read it fully at the start of every session before writing any code. Update PROGRESS.md after every session.
 
@@ -6,7 +6,7 @@
 
 ## Project overview
 
-**App name:** Zenfit
+**App name:** Revive
 **Type:** Cross-platform mobile fitness app (iOS + Android)
 **Solo developer:** Yes — one person building this with Claude Code assistance
 **Goal:** A comprehensive fitness app covering calorie tracking, workout logging, AI coaching, wearable integration, mental wellness, and social features.

@@ -1,37 +1,78 @@
-<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="60%" r="55%">
-      <stop offset="0%" stop-color="#0D3828"/>
-      <stop offset="100%" stop-color="#020F0A"/>
-    </radialGradient>
-    <linearGradient id="flameGrad" x1="0.5" y1="1" x2="0.5" y2="0">
-      <stop offset="0%" stop-color="#0D7A52"/>
-      <stop offset="45%" stop-color="#1D9E75"/>
-      <stop offset="78%" stop-color="#25C48A"/>
-      <stop offset="100%" stop-color="#6EE7BC"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5E7E"/>
+      <stop offset="30%" stop-color="#FF8A4C"/>
+      <stop offset="62%" stop-color="#A66BFF"/>
+      <stop offset="100%" stop-color="#3B6BFF"/>
     </linearGradient>
-    <linearGradient id="innerGrad" x1="0.5" y1="1" x2="0.5" y2="0">
-      <stop offset="0%" stop-color="#0A2E1E"/>
-      <stop offset="50%" stop-color="#0D4A30"/>
-      <stop offset="100%" stop-color="#0F5C3A"/>
+
+    <radialGradient id="highlight" cx="25%" cy="20%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="zFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFF0DC"/>
     </linearGradient>
-    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#B8FDE0"/>
-      <stop offset="40%" stop-color="#7EEDC8"/>
-      <stop offset="100%" stop-color="#25C48A" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="baseGlow" cx="50%" cy="30%" r="60%">
-      <stop offset="0%" stop-color="#1D9E75" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#1D9E75" stop-opacity="0"/>
-    </radialGradient>
+
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE066" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#FF6B9D" stop-opacity="0.45"/>
+    </linearGradient>
+
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14"/>
+      <feOffset dx="0" dy="10"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="orbBlur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="55"/>
+    </filter>
+
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230"/>
+    </clipPath>
   </defs>
-  <rect width="200" height="200" fill="url(#bgGlow)"/>
-  <ellipse cx="100" cy="158" rx="44" ry="8" fill="url(#baseGlow)"/>
-  <path d="M100 28 C100 28, 124 52, 132 76 C140 100, 138 118, 130 132 C122 146, 112 154, 100 156 C88 154, 78 146, 70 132 C62 118, 60 100, 68 76 C76 52, 100 28, 100 28Z" fill="url(#flameGrad)"/>
-  <path d="M100 50 C100 50, 116 68, 121 86 C126 104, 124 116, 118 126 C112 136, 107 141, 100 142 C93 141, 88 136, 82 126 C76 116, 74 104, 79 86 C84 68, 100 50, 100 50Z" fill="url(#innerGrad)"/>
-  <path d="M100 62 C100 62, 110 74, 113 86 C116 98, 114 107, 110 114 C107 120, 104 123, 100 124 C96 123, 93 120, 90 114 C86 107, 84 98, 87 86 C90 74, 100 62, 100 62Z" fill="#25C48A" opacity="0.18"/>
-  <ellipse cx="100" cy="108" rx="14" ry="18" fill="url(#coreGlow)" opacity="0.9"/>
-  <path d="M100 96 C96 100, 95 104, 96 108 C97 113, 100 116, 100 116 C100 116, 103 113, 104 108 C105 104, 104 100, 100 96Z" fill="#D4FFF0" opacity="0.85"/>
-  <ellipse cx="100" cy="155" rx="32" ry="5" fill="#1D9E75" opacity="0.12"/>
-  <ellipse cx="100" cy="157" rx="22" ry="3" fill="#25C48A" opacity="0.08"/>
+
+  <g clip-path="url(#squircle)">
+    <!-- Base gradient -->
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+
+    <!-- Color depth orbs -->
+    <circle cx="880" cy="160" r="190" fill="#FFD93D" opacity="0.55" filter="url(#orbBlur)"/>
+    <circle cx="140" cy="880" r="240" fill="#FF4D8F" opacity="0.55" filter="url(#orbBlur)"/>
+    <circle cx="920" cy="920" r="180" fill="#3B6BFF" opacity="0.65" filter="url(#orbBlur)"/>
+    <circle cx="100" cy="200" r="140" fill="#FF8A4C" opacity="0.45" filter="url(#orbBlur)"/>
+
+    <!-- Top-left highlight -->
+    <rect width="1024" height="1024" fill="url(#highlight)"/>
+
+    <!-- Pulse rings -->
+    <circle cx="512" cy="512" r="420" fill="none" stroke="url(#ringGrad)" stroke-width="4" opacity="0.55"/>
+    <circle cx="512" cy="512" r="370" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.3" stroke-dasharray="2 10"/>
+
+    <!-- Z letterform -->
+    <path d="M 760 412 L 760 296 L 264 296 L 264 412 L 541.54 412 L 301.04 612 L 264 612 L 264 728 L 760 728 L 760 612 L 482.46 612 L 722.96 412 Z"
+          fill="url(#zFill)"
+          stroke="url(#zFill)"
+          stroke-width="40"
+          stroke-linejoin="round"
+          stroke-linecap="round"
+          filter="url(#softShadow)"/>
+
+    <!-- Accent dot -->
+    <circle cx="820" cy="240" r="52" fill="none" stroke="#FFE066" stroke-width="2" opacity="0.35"/>
+    <circle cx="820" cy="240" r="34" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/>
+    <circle cx="820" cy="240" r="22" fill="#FFE066"/>
+    <circle cx="813" cy="232" r="7" fill="#FFFFFF" opacity="0.7"/>
+  </g>
 </svg>
