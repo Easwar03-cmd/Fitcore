@@ -7,14 +7,14 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'router/app_router.dart';
 
-class ZenfitApp extends ConsumerStatefulWidget {
-  const ZenfitApp({super.key});
+class ReviveApp extends ConsumerStatefulWidget {
+  const ReviveApp({super.key});
 
   @override
-  ConsumerState<ZenfitApp> createState() => _ZenfitAppState();
+  ConsumerState<ReviveApp> createState() => _ReviveAppState();
 }
 
-class _ZenfitAppState extends ConsumerState<ZenfitApp> {
+class _ReviveAppState extends ConsumerState<ReviveApp> {
   @override
   void initState() {
     super.initState();
@@ -33,7 +33,7 @@ class _ZenfitAppState extends ConsumerState<ZenfitApp> {
     final router = ref.watch(appRouterProvider);
 final themeMode = ref.watch(effectiveThemeModeProvider);
     return MaterialApp.router(
-      title: 'Zenfit',
+      title: 'Revive',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

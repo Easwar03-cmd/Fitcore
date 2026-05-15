@@ -23,3 +23,12 @@ class PoseFeedback {
     message: 'Great form!',
   );
 }
+
+/// AI-generated coaching tips from Gemini, overlaid on top of the
+/// rule-based ML Kit feedback for richer real-time coaching.
+class GeminiFormFeedback {
+  const GeminiFormFeedback({required this.tips, required this.encouragement});
+
+  final List<String> tips;
+  final String encouragement;
+}

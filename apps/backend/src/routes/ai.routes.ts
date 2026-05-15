@@ -5,6 +5,7 @@ import {
   sendCoachMessage,
   generateMealPlan,
   analyzeFoodPhoto,
+  analyzeExerciseForm,
   getWorkoutRecommendation,
   getDeloadCheck,
   checkCoachRateLimit,
@@ -220,6 +221,50 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       const recommendation = await getWorkoutRecommendation(userId, type);
       return reply.send({ success: true, data: recommendation });
+    } catch (err) {
+      const { status, code, message } = handleAiError(err, request);
+      return reply.status(status).send({ success: false, error: { code, message } });
+    }
+  });
+
+  // POST /api/v1/ai/form-analysis  (all tiers — real-time AI coaching cues)
+  const formAnalysisBodySchema = z.object({
+    exerciseName: z.string().min(1).max(100),
+    currentFeedback: z.string().min(1).max(200),
+    feedbackLevel: z.enum(['none', 'good', 'warn', 'error']),
+    primaryAngleDeg: z.number().nullable().optional(),
+    repCount: z.number().int().min(0),
+  });
+
+  fastify.post('/form-analysis', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const parsed = formAnalysisBodySchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten() },
+      });
+    }
+
+    const { exerciseName, currentFeedback, feedbackLevel, primaryAngleDeg, repCount } = parsed.data;
+
+    try {
+      const analysis = await analyzeExerciseForm(
+        exerciseName,
+        currentFeedback,
+        feedbackLevel,
+        primaryAngleDeg ?? null,
+        repCount,
+      );
+      return reply.send({ success: true, data: analysis });
     } catch (err) {
       const { status, code, message } = handleAiError(err, request);
       return reply.status(status).send({ success: false, error: { code, message } });

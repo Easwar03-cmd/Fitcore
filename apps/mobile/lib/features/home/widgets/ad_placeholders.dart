@@ -1,8 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:logger/logger.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../subscription/providers/subscription_provider.dart';
 import '../providers/ad_providers.dart';
+
+final _log = Logger();
 
 // ── Shared components ─────────────────────────────────────────────────────────
 
@@ -53,72 +57,88 @@ class _CloseButton extends StatelessWidget {
   }
 }
 
-// ── Banner ad placeholder ─────────────────────────────────────────────────────
+// ── Banner ad ─────────────────────────────────────────────────────────────────
 
-/// Banner ad placeholder — sits between the AppBar and the CalorieRing.
-///
-/// Visual: rounded container (h=60, borderRadius=12) with a subtle gradient,
-/// centred icon + "Advertisement" label, "Ad" pill badge top-left, X top-right.
-///
-/// TODO(admob): Replace this widget with AdWidget from the google_mobile_ads
-/// package before launch. Create a BannerAd with AdSize.banner, call load(),
-/// and dispose in the parent's dispose(). Keep the SizedBox height at 60.
-class AdBannerPlaceholder extends ConsumerWidget {
+/// Live 320×50 AdMob banner — sits between the AppBar and the CalorieRing.
+/// Hidden for paid subscribers. Dismissible for the session via the X button.
+/// Shows a slim shimmer skeleton while the ad is loading.
+class AdBannerPlaceholder extends ConsumerStatefulWidget {
   const AdBannerPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdBannerPlaceholder> createState() =>
+      _AdBannerPlaceholderState();
+}
+
+class _AdBannerPlaceholderState extends ConsumerState<AdBannerPlaceholder> {
+  static const _adUnitId = 'ca-app-pub-3352385278044542/3534344490';
+
+  BannerAd? _ad;
+  bool _adLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    final ad = BannerAd(
+      adUnitId: _adUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          if (mounted) setState(() => _adLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          _log.w('Banner ad failed to load: ${error.message}');
+          ad.dispose();
+        },
+      ),
+    );
+    ad.load();
+    _ad = ad;
+  }
+
+  @override
+  void dispose() {
+    _ad?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dismissed = ref.watch(adBannerDismissedProvider);
     if (dismissed) return const SizedBox.shrink();
+
+    // No ads for paying subscribers.
+    final isPaid =
+        ref.watch(subscriptionProvider).valueOrNull?.isPaid ?? false;
+    if (isPaid) return const SizedBox.shrink();
+
+    // AdSize.banner is 320×50. We sit it in a 60px-tall container so there is
+    // breathing room for the badge and close button without clipping the ad.
+    final adW = _ad?.size.width.toDouble() ?? AdSize.banner.width.toDouble();
+    final adH = _ad?.size.height.toDouble() ?? AdSize.banner.height.toDouble();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: SizedBox(
         height: 60,
         child: Stack(
+          alignment: Alignment.center,
           children: [
-            // Ad container
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
-                    Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(180),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(40),
-                ),
+            // Skeleton shown while loading; replaced by AdWidget once ready.
+            if (!_adLoaded) Positioned.fill(child: _BannerSkeleton()),
+            if (_adLoaded && _ad != null)
+              SizedBox(
+                width: adW,
+                height: adH,
+                child: AdWidget(ad: _ad!),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.image_outlined,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Advertisement',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
             // "Ad" badge — top-left
-            const Positioned(
-              top: 6,
-              left: 8,
-              child: _AdBadge(),
-            ),
+            const Positioned(top: 4, left: 4, child: _AdBadge()),
             // Close button — top-right
             Positioned(
               top: 0,
@@ -135,75 +155,120 @@ class AdBannerPlaceholder extends ConsumerWidget {
   }
 }
 
-// ── Popup ad placeholder ──────────────────────────────────────────────────────
+class _BannerSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(30),
+        ),
+      ),
+    );
+  }
+}
 
-/// Floating popup ad placeholder — rendered via Stack + Positioned at
-/// bottom-left of the home screen. Appears after a 2-second delay on cold
-/// start, controlled by the caller.
-///
-/// Visual: rounded card (w=180, h=100), shadow, "Ad" badge top-left, X top-right.
-///
-/// TODO(admob): Replace this widget with AdWidget from the google_mobile_ads
-/// package before launch. Create a BannerAd with a custom 180×100 AdSize,
-/// call load(), and dispose in the parent's dispose(). Keep the SizedBox
-/// dimensions to avoid layout shifts.
-class AdPopupPlaceholder extends ConsumerWidget {
+// ── Popup ad ──────────────────────────────────────────────────────────────────
+
+/// Live 180×100 AdMob banner — floats bottom-left of the home screen.
+/// Appears after a 2-second delay on cold start (controlled by HomeScreen).
+/// Hidden for paid subscribers. Dismissible for the session via the X button.
+class AdPopupPlaceholder extends ConsumerStatefulWidget {
   const AdPopupPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdPopupPlaceholder> createState() => _AdPopupPlaceholderState();
+}
+
+class _AdPopupPlaceholderState extends ConsumerState<AdPopupPlaceholder> {
+  static const _adUnitId = 'ca-app-pub-3352385278044542/3099230221';
+  static const _adSize = AdSize(width: 180, height: 100);
+
+  BannerAd? _ad;
+  bool _adLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAd();
+  }
+
+  void _loadAd() {
+    final ad = BannerAd(
+      adUnitId: _adUnitId,
+      size: _adSize,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          if (mounted) setState(() => _adLoaded = true);
+        },
+        onAdFailedToLoad: (ad, error) {
+          _log.w('Popup ad failed to load: ${error.message}');
+          ad.dispose();
+        },
+      ),
+    );
+    ad.load();
+    _ad = ad;
+  }
+
+  @override
+  void dispose() {
+    _ad?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dismissed = ref.watch(adPopupDismissedProvider);
     if (dismissed) return const SizedBox.shrink();
+
+    // No ads for paying subscribers.
+    final isPaid =
+        ref.watch(subscriptionProvider).valueOrNull?.isPaid ?? false;
+    if (isPaid) return const SizedBox.shrink();
 
     return SizedBox(
       width: 180,
       height: 100,
       child: Stack(
         children: [
-          // Ad container
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(40),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(60),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.image_outlined,
-                    size: 22,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Advertisement',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
+          // Drop shadow behind the ad card.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(60),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
             ),
           ),
+          // Skeleton while loading; replaced by AdWidget once ready.
+          if (!_adLoaded)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _BannerSkeleton(),
+              ),
+            ),
+          if (_adLoaded && _ad != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: _adSize.width.toDouble(),
+                height: _adSize.height.toDouble(),
+                child: AdWidget(ad: _ad!),
+              ),
+            ),
           // "Ad" badge — top-left
-          const Positioned(
-            top: 6,
-            left: 8,
-            child: _AdBadge(),
-          ),
+          const Positioned(top: 4, left: 4, child: _AdBadge()),
           // Close button — top-right
           Positioned(
             top: 0,

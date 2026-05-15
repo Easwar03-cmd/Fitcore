@@ -4,10 +4,16 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- AdMob App ID -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3352385278044542~7274884197</string>
+	<!-- Delay app measurement to let the consent dialog show first if needed -->
+	<key>GADDelayAppMeasurementInit</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Fitcore</string>
+	<string>Revive</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +21,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>fitcore</string>
+	<string>Revive</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -54,9 +60,9 @@
 		<string>remote-notification</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>FitCore uses your location to track your outdoor workout route and calculate distance.</string>
+	<string>Revive uses your location to track your outdoor workout route and calculate distance.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>FitCore uses your location to track your outdoor workout route and calculate distance.</string>
+	<string>Revive uses your location to track your outdoor workout route and calculate distance.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

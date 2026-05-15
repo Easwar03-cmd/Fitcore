@@ -7,6 +7,22 @@ import '../providers/coach_provider.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/coach_input_bar.dart';
 
+// ── Chat item types ───────────────────────────────────────────────────────────
+
+sealed class _ChatItem {}
+
+class _MessageItem extends _ChatItem {
+  _MessageItem(this.message);
+  final ChatMessage message;
+}
+
+class _DateLabel extends _ChatItem {
+  _DateLabel(this.date);
+  final DateTime date;
+}
+
+// ── Screen ────────────────────────────────────────────────────────────────────
+
 class CoachScreen extends ConsumerStatefulWidget {
   const CoachScreen({super.key});
 
@@ -81,8 +97,6 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     }
   }
 
-  /// Expands coach messages that contain double-newline separators into
-  /// individual display entries so each paragraph appears as its own bubble.
   List<ChatMessage> _expandForDisplay(List<ChatMessage> messages) {
     final result = <ChatMessage>[];
     for (final msg in messages) {
@@ -109,10 +123,25 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     return result;
   }
 
+  List<_ChatItem> _buildItems(List<ChatMessage> messages) {
+    final items = <_ChatItem>[];
+    for (var i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final isNewDay = i == 0 ||
+          !_isSameDay(messages[i - 1].timestamp, msg.timestamp);
+      if (isNewDay) items.add(_DateLabel(msg.timestamp));
+      items.add(_MessageItem(msg));
+    }
+    return items;
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(coachNotifierProvider);
-    final display = _expandForDisplay(messages);
+    final display = _buildItems(_expandForDisplay(messages));
     final hasRealHistory = messages.any((m) => !m.isLocal);
 
     return Scaffold(
@@ -133,7 +162,7 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            const Text('Zenfit Coach'),
+            const Text('Revive Coach'),
           ],
         ),
         actions: [
@@ -159,9 +188,13 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
                     child: TypingIndicator(),
                   );
                 }
-                final msgIndex =
+                final itemIndex =
                     display.length - 1 - (index - (_isLoading ? 1 : 0));
-                return ChatBubble(message: display[msgIndex]);
+                final item = display[itemIndex];
+                return switch (item) {
+                  _MessageItem(:final message) => ChatBubble(message: message),
+                  _DateLabel(:final date) => _DateSeparator(date: date),
+                };
               },
             ),
           ),
@@ -172,6 +205,50 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
             onSend: _send,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Date separator widget ─────────────────────────────────────────────────────
+
+class _DateSeparator extends StatelessWidget {
+  const _DateSeparator({required this.date});
+  final DateTime date;
+
+  String _label() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final d = DateTime(date.year, date.month, date.day);
+    if (d == today) return 'Today';
+    if (d == yesterday) return 'Yesterday';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _label(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+        ),
       ),
     );
   }

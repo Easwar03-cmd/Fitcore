@@ -11,36 +11,78 @@ class ChatBubble extends StatelessWidget {
 
   bool get _isUser => message.role == MessageRole.user;
 
+  String _formatTime(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final bubble = ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.72,
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: _isUser ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: _isUser
-                ? const Radius.circular(18)
-                : const Radius.circular(4),
-            bottomRight: _isUser
-                ? const Radius.circular(4)
-                : const Radius.circular(18),
+    final timeStr = _formatTime(message.timestamp);
+    final timeColor = _isUser
+        ? Colors.white.withValues(alpha: 0.65)
+        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.65);
+
+    final maxBubbleWidth = MediaQuery.of(context).size.width * 0.72;
+
+    final bubble = IntrinsicWidth(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+          decoration: BoxDecoration(
+            color: _isUser
+                ? AppColors.primary
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: _isUser
+                  ? const Radius.circular(18)
+                  : const Radius.circular(4),
+              bottomRight: _isUser
+                  ? const Radius.circular(4)
+                  : const Radius.circular(18),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _isUser
+                    ? Text(
+                        message.text,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                              height: 1.4,
+                            ),
+                      )
+                    : _CoachMessageBody(text: message.text),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    timeStr,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 11,
+                          color: timeColor,
+                          height: 1,
+                        ),
+                  ),
+                  if (_isUser) ...[
+                    const SizedBox(width: 3),
+                    Icon(Icons.done_all_rounded, size: 14, color: timeColor),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
-        child: _isUser
-            ? Text(
-                message.text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white,
-                      height: 1.4,
-                    ),
-              )
-            : _CoachMessageBody(text: message.text),
       ),
     );
 

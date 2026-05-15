@@ -33,7 +33,8 @@ async function bootstrap() {
   ];
   await server.register(import('@fastify/cors'), {
     origin: (origin, cb) => {
-      // Mobile app requests have no Origin header — always allow.
+      // Mobile app (Flutter/Dio) sends no Origin header — intentionally allowed.
+      // CORS is browser-only enforcement; JWT auth is the actual access control.
       if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
       cb(new Error('Not allowed by CORS'), false);

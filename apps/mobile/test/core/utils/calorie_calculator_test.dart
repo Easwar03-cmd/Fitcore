@@ -1,4 +1,4 @@
-import 'package:zenfit/core/utils/calorie_calculator.dart';
+import 'package:revive/core/utils/calorie_calculator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

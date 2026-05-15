@@ -5,11 +5,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/workout_log.dart';
 import '../providers/workout_history_provider.dart';
 
-class WorkoutHistoryScreen extends ConsumerWidget {
+class WorkoutHistoryScreen extends ConsumerStatefulWidget {
   const WorkoutHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkoutHistoryScreen> createState() =>
+      _WorkoutHistoryScreenState();
+}
+
+class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refresh();
+      // Retry at +2 s and +5 s to catch workouts whose background POST
+      // hasn't landed on the server yet when the screen first mounts.
+      Future.delayed(const Duration(seconds: 2), () { if (mounted) _refresh(); });
+      Future.delayed(const Duration(seconds: 5), () { if (mounted) _refresh(); });
+    });
+  }
+
+  void _refresh() => ref.read(workoutHistoryProvider.notifier).refresh();
+
+  @override
+  Widget build(BuildContext context) {
     final historyAsync = ref.watch(workoutHistoryProvider);
 
     return Scaffold(

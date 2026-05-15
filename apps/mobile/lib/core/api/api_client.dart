@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
 import '../../constants/app_constants.dart';
+import '../../features/auth/models/auth_state.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import 'token_store.dart';
 
@@ -17,8 +20,12 @@ class ApiClient {
     // dotenv overrides AppConstants (useful for local .env files during dev).
     // AppConstants provides the compile-time default (GCP Cloud Run URL),
     // which itself can be overridden via --dart-define=FLUTTER_API_URL=<url>.
-    final baseUrl =
-        '${dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl}/api/v1';
+    final rawUrl = dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl;
+    assert(
+      !const bool.fromEnvironment('dart.vm.product') || rawUrl.startsWith('https://'),
+      'API URL must use HTTPS in production builds',
+    );
+    final baseUrl = '$rawUrl/api/v1';
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -43,7 +50,10 @@ class _AuthInterceptor extends Interceptor {
   final Ref _ref;
   final String _baseUrl;
   static const _storage = FlutterSecureStorage();
-  bool _isRefreshing = false;
+
+  // Completer-based mutex: concurrent 401 responses queue here instead of all
+  // triggering independent refresh calls, which would burn the refresh token.
+  Completer<AuthState?>? _refreshCompleter;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -59,22 +69,42 @@ class _AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode != 401 || _isRefreshing) {
+    if (err.response?.statusCode != 401) {
       handler.next(err);
       return;
     }
 
-    _isRefreshing = true;
+    // A refresh is already in flight — wait for it instead of starting another.
+    if (_refreshCompleter != null) {
+      final newState = await _refreshCompleter!.future;
+      if (newState == null) {
+        handler.next(err);
+        return;
+      }
+      final opts = err.requestOptions
+        ..headers['Authorization'] = 'Bearer ${newState.accessToken}';
+      final retryDio = Dio(BaseOptions(baseUrl: _baseUrl));
+      try {
+        handler.resolve(await retryDio.fetch(opts));
+      } catch (e) {
+        handler.next(err);
+      }
+      return;
+    }
+
+    _refreshCompleter = Completer<AuthState?>();
     try {
       final rt = await _storage.read(key: 'refresh_token');
       if (rt == null) {
         _ref.read(authProvider.notifier).logout();
+        _refreshCompleter!.complete(null);
         handler.next(err);
         return;
       }
 
       final newState =
           await _ref.read(authProvider.notifier).refreshSession(rt);
+      _refreshCompleter!.complete(newState);
 
       if (newState == null) {
         handler.next(err);
@@ -89,9 +119,10 @@ class _AuthInterceptor extends Interceptor {
       handler.resolve(retryRes);
     } catch (e) {
       _log.e('Token refresh failed in interceptor', error: e);
+      _refreshCompleter?.complete(null);
       handler.next(err);
     } finally {
-      _isRefreshing = false;
+      _refreshCompleter = null;
     }
   }
 }

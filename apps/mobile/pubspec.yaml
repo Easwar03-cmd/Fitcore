@@ -1,7 +1,7 @@
-name: zenfit
-description: Zenfit — cross-platform fitness app (iOS + Android)
+name: revive
+description: Revive — cross-platform fitness app (iOS + Android)
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0-beta.1+1
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -49,9 +49,11 @@ dependencies:
   # Apple Health + Google Fit
   health: ^12.0.0
 
-  # Push notifications
+  # Firebase (push, crash reporting, analytics)
   firebase_core: ^3.3.0
   firebase_messaging: ^15.1.0
+  firebase_crashlytics: ^4.1.0
+  firebase_analytics: ^11.3.0
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
   flutter_timezone: ^5.0.0
@@ -62,9 +64,6 @@ dependencies:
 
   # Logging
   logger: ^2.4.0
-
-  # Error monitoring
-  sentry_flutter: ^8.4.0
 
   # Env vars
   flutter_dotenv: ^5.1.0
@@ -85,8 +84,17 @@ dependencies:
   google_mlkit_pose_detection: ^0.13.0
   camera: ^0.11.0
 
+  # In-app purchases — Google Play Billing on Android (iOS uses Stripe web checkout)
+  in_app_purchase: ^3.2.0
+
   # URL launcher (OAuth wearable connect flows)
   url_launcher: ^6.3.0
+
+  # Ads
+  google_mobile_ads: ^5.1.0
+
+  # Locale-aware currency formatting
+  intl: ^0.20.0
 
   # UUID generation
   uuid: ^4.4.0
@@ -111,8 +119,9 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icons/zenfit_icon.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#020F0A"
-  adaptive_icon_foreground: "assets/icons/zenfit_icon.png"
+  adaptive_icon_background: "assets/icons/adaptive_background.png"
+  adaptive_icon_foreground: "assets/icons/adaptive_foreground.png"
+  remove_alpha_ios: true
 
 flutter:
   uses-material-design: true

@@ -1,9 +1,9 @@
-# FitCore ProGuard / R8 rules
+# Zenfit ProGuard / R8 rules
 # ── Flutter ───────────────────────────────────────────────────────────────────
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
-# ── Flutter Play Store deferred components (not used by FitCore) ──────────────
+# ── Flutter Play Store deferred components (not used by Zenfit) ──────────────
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 -dontwarn com.google.android.play.core.splitinstall.SplitInstallException
 -dontwarn com.google.android.play.core.splitinstall.SplitInstallManager

@@ -111,15 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    final userInitial = ref
-            .watch(authProvider)
-            .valueOrNull
-            ?.user
-            .name
-            .isNotEmpty ==
-        true
-        ? ref.watch(authProvider).valueOrNull!.user.name[0].toUpperCase()
-        : '?';
+    final userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
 
     return Scaffold(
       appBar: AppBar(
@@ -146,13 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           style: AppTextStyles.titleLarge
               .copyWith(color: Theme.of(context).colorScheme.onSurface),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.people_outline),
-            tooltip: 'Social',
-            onPressed: () => context.push(AppRoutes.social),
-          ),
-        ],
+        actions: const [],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.coach),
@@ -292,12 +278,13 @@ class _HealthPermissionsDialog extends StatelessWidget {
           ),
         ],
       ),
-      content: Column(
+      content: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Zenfit would like to read and write:',
+            'Revive would like to read and write:',
             style: TextStyle(fontSize: 14),
           ),
           SizedBox(height: 14),
@@ -317,6 +304,7 @@ class _HealthPermissionsDialog extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
+      ),
       ),
       actions: [
         TextButton(

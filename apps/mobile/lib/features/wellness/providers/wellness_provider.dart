@@ -69,16 +69,16 @@ class WellnessNotifier extends AsyncNotifier<WellnessState> {
         '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-'
         '${yesterday.day.toString().padLeft(2, '0')}';
 
+    final stages = current.sleepStages;
     final payload = <String, dynamic>{
       'sleepDate': sleepDate,
       'sleepMinutes': current.sleepMinutes,
       'sleepScore': current.sleepScore,
-      if (current.sleepStages != null)
-        'deepMinutes': current.sleepStages!.deepMinutes,
-      if (current.sleepStages != null)
-        'lightMinutes': current.sleepStages!.lightMinutes,
-      if (current.sleepStages != null)
-        'remMinutes': current.sleepStages!.remMinutes,
+      if (stages != null) ...{
+        'deepMinutes': stages.deepMinutes,
+        'lightMinutes': stages.lightMinutes,
+        'remMinutes': stages.remMinutes,
+      },
     };
 
     try {

@@ -2,6 +2,8 @@
 
     <!-- ── Standard permissions ──────────────────────────────────────────────── -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Required for Google Play Billing (in_app_purchase plugin) -->
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <!-- Gallery access for food photo logging (Android 13+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
@@ -34,9 +36,10 @@
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
 
     <application
-        android:label="Zenfit"
+        android:label="Revive"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="true">
 
         <activity
             android:name=".MainActivity"
@@ -96,7 +99,12 @@
         <!-- ── FCM default notification channel (Android 8+) ──────────────── -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="zenfit_default"/>
+            android:value="revive_default"/>
+
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3352385278044542~7274884197"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../constants/app_routes.dart';
+import '../providers/interstitial_ad_provider.dart';
 import '../providers/workout_provider.dart';
 
 class WorkoutSummaryScreen extends ConsumerWidget {
@@ -20,6 +21,9 @@ class WorkoutSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Pre-warm the interstitial so the ad has time to load before Done is tapped.
+    ref.watch(interstitialAdProvider);
+
     final summary = ref.watch(workoutSessionProvider).summary;
     final theme = Theme.of(context);
 
@@ -151,7 +155,11 @@ class WorkoutSummaryScreen extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () {
                   ref.read(workoutSessionProvider.notifier).resetSession();
-                  context.go(AppRoutes.workout);
+                  // Show interstitial for free users; navigate after it closes.
+                  ref.read(interstitialAdProvider.notifier).showIfReady(
+                    context,
+                    () => context.go(AppRoutes.workout),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -305,7 +313,7 @@ class _RouteMap extends StatelessWidget {
             // ── OpenStreetMap tile layer ────────────────────────────────
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.zenfit.app',
+              userAgentPackageName: 'com.revive.app',
             ),
 
             // ── Route polyline ──────────────────────────────────────────

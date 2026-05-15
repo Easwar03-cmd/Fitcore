@@ -189,12 +189,14 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
       routePoints: routePoints,
     );
 
-    state = state.copyWith(isSubmitting: true);
+    // Set the summary immediately so the UI can navigate without waiting for
+    // the network. The POST and HealthKit write run in the background.
+    state = state.copyWith(summary: summary);
 
     final workoutPayload = <String, dynamic>{
       'name': workoutName,
-      'startedAt': start.toIso8601String(),
-      'finishedAt': now.toIso8601String(),
+      'startedAt': start.toUtc().toIso8601String(),
+      'finishedAt': now.toUtc().toIso8601String(),
       'durationMin': durationMin,
       'caloriesBurned': caloriesBurned,
       if (outdoorDistanceKm > 0.05)
@@ -212,29 +214,7 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
           .toList(),
     };
 
-    try {
-      await ref
-          .read(apiClientProvider)
-          .dio
-          .post('/workout/logs', data: workoutPayload);
-      ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
-      // Refresh history + progress tabs so they reflect the new workout.
-      ref.invalidate(workoutHistoryProvider);
-      ref.invalidate(progressProvider);
-    } on DioException catch (e) {
-      if (e.response == null) {
-        await ref
-            .read(syncServiceProvider)
-            .enqueue('/workout/logs', workoutPayload);
-        // Still credit the calories locally — the log will sync when online.
-        ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
-        _log.w('Workout log queued for sync (offline)');
-      } else {
-        _log.e('Failed to POST workout log (server error)', error: e);
-      }
-    } catch (e, st) {
-      _log.e('Failed to POST workout log', error: e, stackTrace: st);
-    }
+    unawaited(_postWorkout(workoutPayload, caloriesBurned));
 
     unawaited(
       ref.read(healthServiceProvider).writeWorkout(
@@ -245,7 +225,6 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
       ),
     );
 
-    state = state.copyWith(isSubmitting: false, summary: summary);
     return summary;
   }
 
@@ -268,5 +247,29 @@ class WorkoutSessionNotifier extends Notifier<WorkoutSessionState> {
         state = state.copyWith(restSecondsLeft: secs - 1);
       }
     });
+  }
+
+  Future<void> _postWorkout(
+    Map<String, dynamic> payload,
+    int caloriesBurned,
+  ) async {
+    try {
+      await ref.read(apiClientProvider).dio.post('/workout/logs', data: payload);
+      ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
+      // Use refresh() instead of invalidate() — explicitly triggers AsyncLoading
+      // → AsyncData transition so any active listener is guaranteed to rebuild.
+      unawaited(ref.read(workoutHistoryProvider.notifier).refresh());
+      ref.invalidate(progressProvider);
+    } on DioException catch (e) {
+      if (e.response == null) {
+        await ref.read(syncServiceProvider).enqueue('/workout/logs', payload);
+        ref.read(homeProvider.notifier).addBurnedCalories(caloriesBurned);
+        _log.w('Workout log queued for sync (offline)');
+      } else {
+        _log.e('Failed to POST workout log (server error)', error: e);
+      }
+    } catch (e, st) {
+      _log.e('Failed to POST workout log', error: e, stackTrace: st);
+    }
   }
 }

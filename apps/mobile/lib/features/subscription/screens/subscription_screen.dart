@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../core/services/iap_service.dart';
 import '../models/subscription_info.dart';
 import '../providers/subscription_provider.dart';
 
@@ -31,7 +34,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     super.dispose();
   }
 
-  // Refresh subscription when user returns from Stripe portal.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -39,14 +41,25 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     }
   }
 
-  Future<void> _openPortal() async {
+  // Opens the appropriate subscription management UI for the current platform.
+  Future<void> _openManageBilling(SubscriptionInfo sub) async {
     setState(() => _openingPortal = true);
     try {
-      final url =
-          await ref.read(subscriptionProvider.notifier).createPortalUrl();
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
+      if (Platform.isAndroid) {
+        final productId =
+            sub.isCoach ? kIapProductCoach : kIapProductPro;
+        final uri = Uri.parse(
+          'https://play.google.com/store/account/subscriptions'
+          '?sku=$productId&package=com.revive.app',
+        );
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        final url =
+            await ref.read(subscriptionProvider.notifier).createPortalUrl();
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -69,8 +82,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     return Scaffold(
       appBar: AppBar(title: const Text('Subscription')),
       body: subAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -103,12 +115,10 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
               const SizedBox(height: 8),
             ],
 
-            // Feature summary for current tier
             _FeatureSummary(sub: sub),
             const SizedBox(height: 28),
 
             if (!sub.isPaid) ...[
-              // Free user — show upgrade CTA
               FilledButton.icon(
                 icon: const Icon(Icons.workspace_premium_rounded),
                 label: const Text('Upgrade to Pro'),
@@ -127,7 +137,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                 onPressed: () => context.push(AppRoutes.paywall),
               ),
             ] else ...[
-              // Paid user — manage billing
               FilledButton.icon(
                 icon: _openingPortal
                     ? const SizedBox(
@@ -136,11 +145,15 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.open_in_new_rounded),
-                label: const Text('Manage billing'),
+                    : Icon(Platform.isAndroid
+                        ? Icons.shop_rounded
+                        : Icons.open_in_new_rounded),
+                label: Text(Platform.isAndroid
+                    ? 'Manage on Google Play'
+                    : 'Manage billing'),
                 style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14)),
-                onPressed: _openingPortal ? null : _openPortal,
+                onPressed: _openingPortal ? null : () => _openManageBilling(sub),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
@@ -152,7 +165,9 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Update payment method or cancel via "Manage billing". Switch tiers from the plans screen.',
+                Platform.isAndroid
+                    ? 'To cancel or update payment method, tap "Manage on Google Play".'
+                    : 'Update payment method or cancel via "Manage billing". Switch tiers from the plans screen.',
                 style: tt.bodySmall
                     ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5)),
                 textAlign: TextAlign.center,
@@ -256,8 +271,7 @@ class _InfoRow extends StatelessWidget {
                 ?.copyWith(color: cs.onSurface.withValues(alpha: 0.6))),
         const Spacer(),
         Text(value,
-            style:
-                tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -276,6 +290,7 @@ class _FeatureSummary extends StatelessWidget {
 
     final features = sub.isPaid
         ? [
+            'Ad-free experience',
             'Unlimited AI coach',
             'AI meal plans (weekly)',
             'Food photo logging',
@@ -284,7 +299,7 @@ class _FeatureSummary extends StatelessWidget {
             if (sub.isCoach) 'AI workout recommendations',
             if (sub.isCoach) 'AI Form Monitor (Beta)',
           ]
-        : ['Calorie & macro tracking', 'Workout logging', 'AI coach (5/day)'];
+        : ['Calorie & macro tracking', 'Workout logging', 'AI coach (5/day)', 'Contains ads'];
 
     return Container(
       padding: const EdgeInsets.all(16),

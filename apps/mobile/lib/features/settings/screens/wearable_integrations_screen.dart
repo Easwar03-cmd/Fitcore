@@ -13,7 +13,7 @@ import '../providers/wearable_provider.dart';
 //  1. Register your app on the provider's developer portal.
 //  2. Set the environment variable below in your backend .env.
 //  3. Replace the placeholder URL with the real OAuth authorisation URL.
-//  4. Configure the deep-link redirect URI (zenfit://oauth/callback) in
+//  4. Configure the deep-link redirect URI (revive://oauth/callback) in
 //     AndroidManifest.xml (intent-filter) and iOS Info.plist (CFBundleURLTypes).
 //
 // The mobile app opens the OAuth URL in the browser. The provider redirects
@@ -25,7 +25,7 @@ const _kOAuthUrls = <String, String>{
       'https://www.fitbit.com/oauth2/authorize'
       '?response_type=code'
       '&client_id=YOUR_FITBIT_CLIENT_ID'
-      '&redirect_uri=zenfit%3A%2F%2Foauth%2Fcallback'
+      '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
       '&scope=activity+heartrate+sleep+weight'
       '&expires_in=604800',
   'garmin':
@@ -35,13 +35,13 @@ const _kOAuthUrls = <String, String>{
       'https://api.prod.whoop.com/oauth/oauth2/auth'
       '?response_type=code'
       '&client_id=YOUR_WHOOP_CLIENT_ID'
-      '&redirect_uri=zenfit%3A%2F%2Foauth%2Fcallback'
+      '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
       '&scope=read%3Abody_measurement+read%3Acycles+read%3Asleep',
   'oura':
       'https://cloud.ouraring.com/oauth/authorize'
       '?response_type=code'
       '&client_id=YOUR_OURA_CLIENT_ID'
-      '&redirect_uri=zenfit%3A%2F%2Foauth%2Fcallback'
+      '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
       '&scope=personal+daily+heartrate+workout+session',
 };
 

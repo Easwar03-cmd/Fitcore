@@ -16,7 +16,6 @@ final subscriptionProvider =
 class SubscriptionNotifier extends AsyncNotifier<SubscriptionInfo> {
   @override
   Future<SubscriptionInfo> build() async {
-    // Rebuild whenever the logged-in user changes.
     final auth = ref.watch(authProvider).valueOrNull;
     if (auth == null) return SubscriptionInfo.free;
 
@@ -31,23 +30,41 @@ class SubscriptionNotifier extends AsyncNotifier<SubscriptionInfo> {
     }
   }
 
-  // Returns the Stripe checkout URL for the given tier ('pro' or 'coach').
-  Future<String> createCheckoutUrl(String tier) async {
-    final res = await ref
-        .read(apiClientProvider)
-        .dio
-        .post('/payments/checkout', data: {'tier': tier});
+  /// Sends a Google Play purchase token to the backend for server-side
+  /// verification. On success, re-fetches the subscription so the UI updates.
+  Future<void> verifyGooglePlayPurchase({
+    required String purchaseToken,
+    required String productId,
+  }) async {
+    await ref.read(apiClientProvider).dio.post(
+      '/payments/google-play/verify',
+      data: {'purchaseToken': purchaseToken, 'productId': productId},
+    );
+    ref.invalidateSelf();
+    await future;
+  }
+
+  /// Returns the Stripe checkout URL for the given tier ('pro' or 'coach').
+  /// Passes the device locale so Stripe presents the checkout in the user's
+  /// language and local currency (requires Adaptive Pricing enabled in Stripe).
+  Future<String> createCheckoutUrl(String tier, {String? locale}) async {
+    final res = await ref.read(apiClientProvider).dio.post(
+      '/payments/checkout',
+      data: {
+        'tier': tier,
+        if (locale != null) 'locale': locale,
+      },
+    );
     return res.data['data']['url'] as String;
   }
 
-  // Returns the Stripe billing portal URL.
+  /// Returns the Stripe billing portal URL. Used on iOS.
   Future<String> createPortalUrl() async {
     final res =
         await ref.read(apiClientProvider).dio.post('/payments/portal');
     return res.data['data']['url'] as String;
   }
 
-  // Re-fetch subscription status (call after returning from browser payment flow).
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;

@@ -148,7 +148,7 @@ class SyncService {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 /// Non-autoDispose so the service persists for the full app lifetime.
-/// Initialise it once with [ref.read] from [ZenfitApp.initState].
+/// Initialise it once with [ref.read] from [ReviveApp.initState].
 final syncServiceProvider = Provider<SyncService>((ref) {
   final service = SyncService(ref);
   ref.onDispose(service.dispose);

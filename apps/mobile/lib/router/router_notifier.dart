@@ -30,13 +30,16 @@ class RouterNotifier extends ChangeNotifier {
       return loc == AppRoutes.splash ? null : AppRoutes.splash;
     }
 
-    // Once loaded, leave splash immediately (fall through to normal logic).
-
     final authState = authAsync.valueOrNull;
     final isAuthenticated = authState != null;
 
-    final isAuthRoute = loc == AppRoutes.splash ||
-        loc == AppRoutes.login ||
+    // Splash has no purpose once auth is resolved — always redirect away.
+    if (loc == AppRoutes.splash) {
+      if (!isAuthenticated) return AppRoutes.login;
+      return authState.user.hasProfile ? AppRoutes.home : AppRoutes.goalSelection;
+    }
+
+    final isAuthRoute = loc == AppRoutes.login ||
         loc == AppRoutes.signup ||
         loc == AppRoutes.forgotPassword;
     final isOnboardingRoute = _onboardingRoutes.contains(loc);

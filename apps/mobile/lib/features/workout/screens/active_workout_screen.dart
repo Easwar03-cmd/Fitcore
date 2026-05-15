@@ -10,6 +10,7 @@ import '../models/workout_session_state.dart';
 import '../providers/workout_provider.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/set_logger.dart';
+import '../widgets/workout_timer_widget.dart';
 
 SetInputMode _inputModeFor(Exercise exercise) {
   if (exercise.timedOnly) return SetInputMode.durationOnly;
@@ -26,33 +27,73 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 }
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
-  Timer? _elapsedTimer;
-  Duration _elapsed = Duration.zero;
-  bool _finishing = false;
+  Timer? _countdownTimer;
+  int? _timerRemainingSeconds; // null = no timer set
+  bool _timerPaused = false;
 
   @override
-  void initState() {
-    super.initState();
-    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final startedAt = ref.read(workoutSessionProvider).startedAt;
-      if (startedAt != null && mounted) {
-        setState(() => _elapsed = DateTime.now().difference(startedAt));
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _openTimerPicker() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => WorkoutTimerPickerSheet(onSelect: _startTimer),
+    );
+  }
+
+  void _startTimer(Duration duration) {
+    _countdownTimer?.cancel();
+    setState(() {
+      _timerRemainingSeconds = duration.inSeconds;
+      _timerPaused = false;
+    });
+    _runCountdownTick();
+  }
+
+  void _runCountdownTick() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final r = _timerRemainingSeconds;
+      if (r != null && r > 0) {
+        setState(() => _timerRemainingSeconds = r - 1);
+      } else {
+        _countdownTimer?.cancel();
+        setState(() {
+          _timerRemainingSeconds = null;
+          _timerPaused = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Workout timer finished!'),
+            duration: Duration(seconds: 4),
+          ),
+        );
       }
     });
   }
 
-  @override
-  void dispose() {
-    _elapsedTimer?.cancel();
-    super.dispose();
+  void _pauseTimer() {
+    _countdownTimer?.cancel();
+    setState(() => _timerPaused = true);
   }
 
-  String get _elapsedLabel {
-    final h = _elapsed.inHours;
-    final m = _elapsed.inMinutes % 60;
-    final s = _elapsed.inSeconds % 60;
-    if (h > 0) return '${h}h ${m}m';
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  void _resumeTimer() {
+    setState(() => _timerPaused = false);
+    _runCountdownTick();
+  }
+
+  void _stopTimer() {
+    _countdownTimer?.cancel();
+    setState(() {
+      _timerRemainingSeconds = null;
+      _timerPaused = false;
+    });
   }
 
   Future<void> _switchExercise() async {
@@ -84,11 +125,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       );
       return;
     }
-    setState(() => _finishing = true);
-    await ref.read(workoutSessionProvider.notifier).finishWorkout();
+    // finishWorkout() sets the summary in state and fires the POST in the
+    // background, so navigation is immediate — no spinner needed.
+    ref.read(workoutSessionProvider.notifier).finishWorkout();
     if (!mounted) return;
     context.push(AppRoutes.workoutSummary);
-    setState(() => _finishing = false);
   }
 
   Future<void> _confirmCancel() async {
@@ -123,14 +164,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_elapsedLabel),
+        title: const Text('Workout'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: _confirmCancel,
         ),
         actions: [
-          if (_finishing || session.isSubmitting)
+          if (session.isSubmitting)
             const Padding(
               padding: EdgeInsets.only(right: 16),
               child: Center(
@@ -164,6 +205,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                       ),
               onSkipRest: () =>
                   ref.read(workoutSessionProvider.notifier).skipRest(),
+              timerRemainingSeconds: _timerRemainingSeconds,
+              timerPaused: _timerPaused,
+              onTimerOpen: _openTimerPicker,
+              onTimerPause: _pauseTimer,
+              onTimerResume: _resumeTimer,
+              onTimerStop: _stopTimer,
             ),
     );
   }
@@ -178,6 +225,12 @@ class _WorkoutBody extends StatelessWidget {
     required this.onToggleOutdoor,
     required this.onLogSet,
     required this.onSkipRest,
+    required this.timerRemainingSeconds,
+    required this.timerPaused,
+    required this.onTimerOpen,
+    required this.onTimerPause,
+    required this.onTimerResume,
+    required this.onTimerStop,
   });
 
   final WorkoutSessionState session;
@@ -185,6 +238,12 @@ class _WorkoutBody extends StatelessWidget {
   final VoidCallback onToggleOutdoor;
   final void Function(int? reps, double? weightKg, int? durationSec) onLogSet;
   final VoidCallback onSkipRest;
+  final int? timerRemainingSeconds;
+  final bool timerPaused;
+  final VoidCallback onTimerOpen;
+  final VoidCallback onTimerPause;
+  final VoidCallback onTimerResume;
+  final VoidCallback onTimerStop;
 
   @override
   Widget build(BuildContext context) {
@@ -197,6 +256,17 @@ class _WorkoutBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Workout timer ────────────────────────────────────────────────
+          WorkoutTimerWidget(
+            remainingSeconds: timerRemainingSeconds,
+            isPaused: timerPaused,
+            onSetTimer: onTimerOpen,
+            onPause: onTimerPause,
+            onResume: onTimerResume,
+            onStop: onTimerStop,
+          ),
+          const SizedBox(height: 12),
+
           // ── Current exercise card ────────────────────────────────────────
           Card(
             child: Padding(

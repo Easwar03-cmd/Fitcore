@@ -19,9 +19,9 @@ const _kSyncFailedBaseId = 20; // 20–29 reserved for sync-failure alerts
 
 // ─── Android notification channel IDs ────────────────────────────────────────
 
-const _kDefaultChannelId = 'zenfit_default';
-const _kDefaultChannelName = 'Zenfit Notifications';
-const _kRemindersChannelId = 'zenfit_reminders';
+const _kDefaultChannelId = 'revive_default';
+const _kDefaultChannelName = 'Revive Notifications';
+const _kRemindersChannelId = 'revive_reminders';
 const _kRemindersChannelName = 'Daily Reminders';
 
 // ─── Top-level FCM background handler (must be top-level function) ────────────
@@ -329,7 +329,7 @@ class NotificationService {
       notifId,
       'Data may not be saved',
       'A record could not be synced after several attempts. '
-          'Check your connection and open Zenfit to retry.',
+          'Check your connection and open Revive to retry.',
       const NotificationDetails(
         android: AndroidNotificationDetails(
           _kDefaultChannelId,

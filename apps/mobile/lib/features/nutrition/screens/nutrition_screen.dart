@@ -25,11 +25,6 @@ class NutritionScreen extends ConsumerWidget {
         title: const Text('Nutrition'),
         actions: [
           IconButton(
-            tooltip: 'Meal Plan',
-            icon: const Icon(Icons.restaurant_menu_outlined),
-            onPressed: () => context.push(AppRoutes.mealPlan),
-          ),
-          IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => context.push(AppRoutes.foodSearch),
           ),
@@ -39,12 +34,27 @@ class NutritionScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'food_photo_fab',
-        onPressed: () => context.push(AppRoutes.foodPhoto),
-        backgroundColor: AppColors.primary,
-        tooltip: 'Log food by photo',
-        child: const Icon(Icons.camera_alt),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'meal_plan_fab',
+            onPressed: () => context.push(AppRoutes.mealPlan),
+            backgroundColor: AppColors.primary,
+            tooltip: 'Meal Plan',
+            mini: true,
+            child: const Icon(Icons.restaurant_menu_outlined),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'food_photo_fab',
+            onPressed: () => context.push(AppRoutes.foodPhoto),
+            backgroundColor: AppColors.primary,
+            tooltip: 'Log food by photo',
+            child: const Icon(Icons.camera_alt),
+          ),
+        ],
       ),
       body: logsState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -67,7 +77,7 @@ class NutritionScreen extends ConsumerWidget {
                             .where((l) => l.mealType == meal)
                             .toList(),
                       )),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 100),
                 ]),
               ),
             ],

@@ -91,24 +91,21 @@ export const workoutRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ── Stubs (Phase 2+) ─────────────────────────────────────────────────────
 
-  fastify.patch('/logs/:id', async (_request, reply) =>
-    reply.status(501).send({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' },
-    }),
-  );
+  const UNAUTHORIZED = { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } };
+  const NOT_IMPLEMENTED = { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' } };
 
+  fastify.patch('/logs/:id', async (request, reply) => {
+    try { await request.jwtVerify(); } catch { return reply.status(401).send(UNAUTHORIZED); }
+    return reply.status(501).send(NOT_IMPLEMENTED);
+  });
+
+  // Public — exercise library does not require auth.
   fastify.get('/exercises', async (_request, reply) =>
-    reply.status(501).send({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' },
-    }),
+    reply.status(501).send(NOT_IMPLEMENTED),
   );
 
-  fastify.get('/templates', async (_request, reply) =>
-    reply.status(501).send({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' },
-    }),
-  );
+  fastify.get('/templates', async (request, reply) => {
+    try { await request.jwtVerify(); } catch { return reply.status(401).send(UNAUTHORIZED); }
+    return reply.status(501).send(NOT_IMPLEMENTED);
+  });
 };

@@ -3,8 +3,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:zenfit/app.dart';
-import 'package:zenfit/core/db/app_database.dart';
+import 'package:revive/app.dart';
+import 'package:revive/core/db/app_database.dart';
 
 void main() {
   testWidgets('App boots without crashing', (WidgetTester tester) async {
@@ -17,7 +17,7 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWithValue(inMemoryDb),
         ],
-        child: const ZenfitApp(),
+        child: const ReviveApp(),
       ),
     );
 

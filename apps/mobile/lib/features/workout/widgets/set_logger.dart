@@ -71,8 +71,11 @@ class _SetLoggerState extends State<SetLogger> {
   void _submit() {
     switch (widget.inputMode) {
       case SetInputMode.repsAndWeight:
-        final reps = int.tryParse(_repsCtrl.text.trim());
-        final weight = double.tryParse(_weightCtrl.text.trim());
+        final repsRaw = int.tryParse(_repsCtrl.text.trim());
+        final weightRaw = double.tryParse(_weightCtrl.text.trim());
+        // Treat 0 as unset — backend schema requires positive values.
+        final reps = (repsRaw != null && repsRaw > 0) ? repsRaw : null;
+        final weight = (weightRaw != null && weightRaw > 0) ? weightRaw : null;
         if (reps == null && weight == null) {
           _showSnack('Enter reps or weight to log a set.');
           return;

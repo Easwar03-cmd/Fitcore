@@ -685,6 +685,76 @@ export async function getDeloadCheck(userId: string): Promise<DeloadCheck> {
   };
 }
 
+// ─── Exercise form analysis ───────────────────────────────────────────────────
+
+export interface ExerciseFormAnalysis {
+  tips: string[];
+  encouragement: string;
+}
+
+const FORM_ANALYSIS_SYSTEM_PROMPT =
+  'You are an expert personal trainer and certified strength & conditioning coach. ' +
+  'Analyze joint angle data from pose detection and give targeted, safe coaching cues. ' +
+  'Be direct and specific. Under 20 words per tip. Safety first.';
+
+export async function analyzeExerciseForm(
+  exerciseName: string,
+  currentFeedback: string,
+  feedbackLevel: string,
+  primaryAngleDeg: number | null,
+  repCount: number,
+): Promise<ExerciseFormAnalysis> {
+  const angleDesc = primaryAngleDeg != null
+    ? `Primary joint angle: ${Math.round(primaryAngleDeg)}°. `
+    : '';
+
+  const prompt =
+    `Exercise: ${exerciseName}\n` +
+    `Form alert: "${currentFeedback}" (severity: ${feedbackLevel})\n` +
+    `${angleDesc}Reps completed: ${repCount}\n\n` +
+    `Give 1-2 targeted coaching tips to fix the form issue and one short motivating phrase (under 10 words).`;
+
+  const responseSchema: Schema = {
+    type: SchemaType.OBJECT,
+    properties: {
+      tips: {
+        type: SchemaType.ARRAY,
+        items: { type: SchemaType.STRING },
+        description: '1-2 specific actionable coaching tips, each under 20 words',
+      },
+      encouragement: {
+        type: SchemaType.STRING,
+        description: 'Short motivating phrase under 10 words',
+      },
+    },
+    required: ['tips', 'encouragement'],
+  };
+
+  const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({
+    model: GEMINI_MODEL,
+    systemInstruction: FORM_ANALYSIS_SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema,
+      temperature: 0.3,
+      maxOutputTokens: 150,
+    },
+  });
+
+  return geminiQueue.enqueue(() =>
+    withGeminiRetry(() =>
+      model.generateContent(prompt).then((result) => {
+        const data = JSON.parse(result.response.text()) as ExerciseFormAnalysis;
+        return {
+          tips: Array.isArray(data.tips) ? data.tips.slice(0, 2).map(String) : [],
+          encouragement: typeof data.encouragement === 'string' ? data.encouragement : 'Keep it up!',
+        };
+      }),
+    ),
+  );
+}
+
 // ─── Gemini API call ──────────────────────────────────────────────────────────
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };

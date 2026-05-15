@@ -18,7 +18,7 @@ class OpenFoodFactsService {
         baseUrl: 'https://world.openfoodfacts.org',
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 20),
-        headers: {'User-Agent': 'Zenfit/1.0 (flutter)', 'Accept': 'application/json'},
+        headers: {'User-Agent': 'Revive/1.0 (flutter)', 'Accept': 'application/json'},
       ),
     );
     _usdaDio = Dio(

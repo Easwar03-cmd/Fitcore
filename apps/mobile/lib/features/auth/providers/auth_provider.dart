@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:logger/logger.dart';
 
 import '../../../constants/app_constants.dart';
 import '../../../core/api/token_store.dart';
@@ -11,6 +12,7 @@ import '../models/auth_state.dart';
 
 const _kRefreshTokenKey = 'refresh_token';
 const _storage = FlutterSecureStorage();
+final _log = Logger();
 
 class AuthNotifier extends AsyncNotifier<AuthState?> {
   late final Dio _authDio;
@@ -128,24 +130,42 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
   // ── Private helpers ────────────────────────────────────────────────────────
 
   Future<AuthState?> _tryRestoreSession() async {
-    final rt = await _storage.read(key: _kRefreshTokenKey);
-    if (rt == null) return null;
     try {
+      final rt = await _storage
+          .read(key: _kRefreshTokenKey)
+          .timeout(const Duration(seconds: 5));
+      if (rt == null) return null;
       final res = await _authDio.post(
         '/auth/refresh',
         data: {'refreshToken': rt},
+        options: Options(
+          sendTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 12),
+        ),
       );
       return _storeTokens(res.data['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      // Only clear the stored token on an auth rejection (401/403).
+      // Network errors / timeouts leave it intact so next launch can retry.
+      final status = e.response?.statusCode;
+      if (status == 401 || status == 403) {
+        await _storage.delete(key: _kRefreshTokenKey);
+      }
+      return null;
     } catch (_) {
-      await _storage.delete(key: _kRefreshTokenKey);
       return null;
     }
   }
 
   Future<AuthState> _storeTokens(Map<String, dynamic> data) async {
-    final accessToken = data['accessToken'] as String;
-    final refreshToken = data['refreshToken'] as String;
-    final user = UserDto.fromJson(data['user'] as Map<String, dynamic>);
+    final accessToken = data['accessToken'] as String? ??
+        (throw Exception('Server response missing accessToken'));
+    final refreshToken = data['refreshToken'] as String? ??
+        (throw Exception('Server response missing refreshToken'));
+    final user = UserDto.fromJson(
+      data['user'] as Map<String, dynamic>? ??
+          (throw Exception('Server response missing user')),
+    );
     await _storage.write(key: _kRefreshTokenKey, value: refreshToken);
     ref.read(accessTokenProvider.notifier).state = accessToken;
 
@@ -154,7 +174,7 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
         dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl;
     NotificationService.instance
         .registerFcmToken(accessToken, apiBaseUrl)
-        .ignore();
+        .catchError((Object e) => _log.w('FCM token registration failed', error: e));
 
     return AuthState(user: user, accessToken: accessToken);
   }
@@ -165,7 +185,9 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     if (token != null) {
       final apiBaseUrl =
           dotenv.env['FLUTTER_API_URL'] ?? AppConstants.apiBaseUrl;
-      NotificationService.instance.clearFcmToken(token, apiBaseUrl).ignore();
+      NotificationService.instance
+          .clearFcmToken(token, apiBaseUrl)
+          .catchError((Object e) => _log.w('FCM token clear failed', error: e));
     }
     await _storage.delete(key: _kRefreshTokenKey);
     ref.read(accessTokenProvider.notifier).state = null;

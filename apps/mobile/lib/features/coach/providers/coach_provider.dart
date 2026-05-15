@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/api/api_client.dart';
@@ -28,6 +28,8 @@ class CoachUnavailableException implements Exception {
 
 @riverpod
 class CoachNotifier extends _$CoachNotifier {
+  static const _storage = FlutterSecureStorage();
+
   String _historyKey(String userId) => 'coach_history_$userId';
 
   @override
@@ -47,8 +49,7 @@ class CoachNotifier extends _$CoachNotifier {
     final firstName = auth.user.name.split(' ').first;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_historyKey(userId));
+      final raw = await _storage.read(key: _historyKey(userId));
       if (raw == null) {
         _injectGreeting(firstName);
         return;
@@ -86,10 +87,9 @@ class CoachNotifier extends _$CoachNotifier {
       final toSave = messages.length > 100
           ? messages.sublist(messages.length - 100)
           : messages;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        _historyKey(userId),
-        jsonEncode(toSave.map((m) => m.toStorageJson()).toList()),
+      await _storage.write(
+        key: _historyKey(userId),
+        value: jsonEncode(toSave.map((m) => m.toStorageJson()).toList()),
       );
     } catch (e) {
       _log.w('Failed to save coach history to prefs', error: e);
@@ -99,8 +99,7 @@ class CoachNotifier extends _$CoachNotifier {
   Future<void> clearHistory() async {
     final auth = ref.read(authProvider).valueOrNull;
     if (auth != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_historyKey(auth.user.id));
+      await _storage.delete(key: _historyKey(auth.user.id));
       _injectGreeting(auth.user.name.split(' ').first);
     } else {
       state = const [];

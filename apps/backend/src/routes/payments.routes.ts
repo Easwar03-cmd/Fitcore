@@ -125,7 +125,10 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { userId } = request.user;
-    const parsed = z.object({ tier: z.enum(['pro', 'coach']) }).safeParse(request.body);
+    const parsed = z.object({
+      tier: z.enum(['pro', 'coach']),
+      locale: z.string().max(10).optional(),
+    }).safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ success: false, error: { code: 'VALIDATION_ERROR', message: 'tier must be pro or coach' } });
     }
@@ -152,6 +155,10 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
         cancel_url: `${BASE_URL}/payment/cancel`,
         metadata: { userId, tier: parsed.data.tier },
         subscription_data: { metadata: { userId } },
+        // Localise the Stripe-hosted checkout page to the user's language/region.
+        // With Adaptive Pricing enabled in the Stripe dashboard, Stripe will also
+        // present the price in the customer's local currency automatically.
+        locale: (parsed.data.locale as Stripe.Checkout.SessionCreateParams.Locale | undefined) ?? 'auto',
       });
 
       return reply.send({ success: true, data: { url: session.url } });
