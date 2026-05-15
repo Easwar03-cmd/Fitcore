@@ -1,6 +1,49 @@
 # Zenfit — Build Progress
 
 ## Last session
+**Date:** 2026-05-15 (session 36)
+**Duration:** ~2 hours
+**What was built:**
+
+### Android launch prep — full audit + fixes
+
+**Android manifest permissions**
+- Added `READ_EXTERNAL_STORAGE` (maxSdkVersion=32) — `image_picker` needs this on Android 8–12 where `READ_MEDIA_IMAGES` (API 33+) is absent
+- Added `ACTIVITY_RECOGNITION` — required for Google Fit step counting fallback on Android 10–13 (Health Connect only exists on Android 14+)
+
+**AdMob UMP GDPR consent flow**
+- New `lib/core/services/consent_service.dart` — wraps Google UMP SDK
+- `ConsentService.requestUpdate()` called in `main()` before `MobileAds.instance.initialize()` — fetches consent status from Google servers (no UI, no context needed)
+- `ConsentService.showFormIfRequired(context)` called from `ReviveApp.initState` via `addPostFrameCallback` — shows the consent form to EEA/UK users on first launch; no-op for users outside EEA (`ConsentStatus.notRequired`)
+- Without this, serving personalised ads to EEA users without consent is a GDPR violation that can trigger Play Store removal
+
+**Database migrations — MoodLog + WearableConnection**
+- Both tables were defined in `schema.prisma` and referenced by repositories (`wellnessRepository.logMood`, `integrationsRepository.getStatus`) but had never been migrated to Cloud SQL
+- Any user opening the Wellness screen (mood logger) or Wearable Integrations screen would have caused a `P2021 table does not exist` crash in production
+- Created `prisma/migrations/20260515000000_add_mood_log_wearable_connection/migration.sql`
+- Cloud Run CMD already runs `prisma migrate deploy` on startup — tables will be created automatically on the next Cloud Build deploy (triggered by this push)
+
+**Previously completed this session (session 35):**
+- Version bump `1.0.0-beta.1+1` → `1.0.0+1`
+- 4 missing iOS permission strings added to `Info.plist` (camera, photo library, HealthKit read/write)
+- `docs/privacy-policy.html` — full GDPR/CCPA privacy policy for GitHub Pages
+- `docs/terms.html` — Terms of Service
+- `docs/play-store-data-safety.md` — pre-filled Play Console Data Safety form answers
+- `docs/store-listing.md` — copy-paste store listing for Play Console + App Store Connect
+
+**Decisions made:**
+- Google Play Billing (`in_app_purchase` plugin) is the active payment path for launch; Stripe backend code kept intact for future iOS/web use
+- Stripe backend code confirmed present and will not be removed
+- Migration deploy via `prisma migrate deploy` in Dockerfile CMD is the correct pattern — no manual Cloud SQL steps needed
+
+**Known issues / next steps:**
+- Enable GitHub Pages (repo Settings → Pages → main, /docs) to make Privacy Policy URL live
+- Create `support@revivefit.app` and `privacy@revivefit.app` email addresses
+- Google Play Console: once developer account verified — create app, fill Data Safety form, content rating, add subscriptions (`revive_pro_monthly`, `revive_coach_monthly`)
+- Run `flutter build appbundle --release` locally to catch any ProGuard/compile errors before submitting
+- Play Store screenshots (6 minimum) still need to be created
+
+## Previous session
 **Date:** 2026-05-15 (session 35)
 **Duration:** ~0.5 hours
 **What was built:**
