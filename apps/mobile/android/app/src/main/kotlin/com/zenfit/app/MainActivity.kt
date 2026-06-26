@@ -1,4 +1,4 @@
-package com.revive.app
+package com.revivefit.app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

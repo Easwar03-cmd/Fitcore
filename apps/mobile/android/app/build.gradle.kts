@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.revive.app"
+    namespace = "com.revivefit.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -41,7 +41,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.revive.app"
+        applicationId = "com.revivefit.app"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

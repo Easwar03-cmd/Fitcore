@@ -50,7 +50,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
             sub.isCoach ? kIapProductCoach : kIapProductPro;
         final uri = Uri.parse(
           'https://play.google.com/store/account/subscriptions'
-          '?sku=$productId&package=com.revive.app',
+          '?sku=$productId&package=com.revivefit.app',
         );
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {

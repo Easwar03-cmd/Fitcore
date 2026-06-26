@@ -313,7 +313,7 @@ class _RouteMap extends StatelessWidget {
             // ── OpenStreetMap tile layer ────────────────────────────────
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.revive.app',
+              userAgentPackageName: 'com.revivefit.app',
             ),
 
             // ── Route polyline ──────────────────────────────────────────
