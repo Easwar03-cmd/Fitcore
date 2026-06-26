@@ -9,6 +9,25 @@
       "client_info": {
         "mobilesdk_app_id": "1:866853384721:android:8526cda7ca062f97d5f7b0",
         "android_client_info": {
+          "package_name": "com.revive.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACL8gC4ldKl7fJW5HpL9Mh7NiJ4REfctU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866853384721:android:9b25c321d12152aed5f7b0",
+        "android_client_info": {
           "package_name": "com.revivefit.app"
         }
       },
