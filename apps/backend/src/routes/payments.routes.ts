@@ -12,7 +12,7 @@ const PRICE_IDS: Record<string, string | undefined> = {
   coach: config.STRIPE_COACH_PRICE_ID,
 };
 
-const BASE_URL = 'https://zenfit-api-122167595419.us-central1.run.app';
+const BASE_URL = config.PUBLIC_BASE_URL;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,10 +39,12 @@ function tierFromPriceId(priceId: string): 'pro' | 'coach' | 'free' {
 
 // ─── Google Play helpers ──────────────────────────────────────────────────────
 
-const GOOGLE_PLAY_PRODUCT_TIERS: Record<string, 'pro' | 'coach'> = {
-  zenfit_pro_monthly: 'pro',
-  zenfit_coach_monthly: 'coach',
-};
+// Must match the subscription product IDs in Play Console and iap_service.dart.
+const GOOGLE_PLAY_PRODUCT_TIERS = {
+  revive_pro_monthly: 'pro',
+  revive_coach_monthly: 'coach',
+} as const satisfies Record<string, 'pro' | 'coach'>;
+type GooglePlayProductId = keyof typeof GOOGLE_PLAY_PRODUCT_TIERS;
 
 interface GooglePlaySubscriptionResponse {
   expiryTimeMillis?: string;
@@ -104,12 +106,39 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    let sub = await prisma.subscription.findUnique({ where: { userId } });
+
+    // No Play webhook is wired up, so renewals are picked up here: when a Play
+    // subscription looks expired, ask Google for the current expiry first.
+    if (sub?.googlePlayToken && sub.validUntil && sub.validUntil <= new Date()) {
+      const productId = (Object.keys(GOOGLE_PLAY_PRODUCT_TIERS) as GooglePlayProductId[])
+        .find((id) => GOOGLE_PLAY_PRODUCT_TIERS[id] === sub?.tier);
+      if (productId && config.GOOGLE_PLAY_PACKAGE_NAME && config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+        try {
+          const data = await verifyGooglePlayPurchase(
+            config.GOOGLE_PLAY_PACKAGE_NAME,
+            productId,
+            sub.googlePlayToken,
+          );
+          const expiryMs = Number(data.expiryTimeMillis);
+          if (Number.isFinite(expiryMs) && expiryMs > sub.validUntil.getTime()) {
+            sub = await prisma.subscription.update({
+              where: { userId },
+              data: { validUntil: new Date(expiryMs) },
+            });
+          }
+        } catch (err) {
+          request.log.error({ err }, '[Google Play] renewal check failed');
+        }
+      }
+    }
+
+    const expired = sub?.validUntil != null && sub.validUntil <= new Date();
 
     return reply.send({
       success: true,
       data: {
-        tier: sub?.tier ?? 'free',
+        tier: expired ? 'free' : (sub?.tier ?? 'free'),
         validUntil: sub?.validUntil?.toISOString() ?? null,
         stripeId: sub?.stripeId ?? null,
       },
@@ -216,7 +245,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
     const { userId } = request.user;
     const parsed = z.object({
       purchaseToken: z.string().min(1),
-      productId: z.enum(['zenfit_pro_monthly', 'zenfit_coach_monthly']),
+      productId: z.enum(['revive_pro_monthly', 'revive_coach_monthly']),
     }).safeParse(request.body);
 
     if (!parsed.success) {
@@ -243,26 +272,41 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
-    // paymentState 1 = payment received, 2 = free trial. Anything else is invalid.
+    // paymentState 1 = payment received, 2 = free trial. A set cancelReason only
+    // means auto-renew is off — the user keeps access until expiry, so the
+    // expiry time is what decides validity.
+    const expiryMs = Number(purchaseData.expiryTimeMillis);
     const isValid =
-      purchaseData.expiryTimeMillis != null &&
-      (purchaseData.paymentState === 1 || purchaseData.paymentState === 2) &&
-      purchaseData.cancelReason === undefined;
+      Number.isFinite(expiryMs) &&
+      expiryMs > Date.now() &&
+      (purchaseData.paymentState === 1 || purchaseData.paymentState === 2);
 
     if (!isValid) {
       return reply.status(400).send({
         success: false,
-        error: { code: 'INVALID_PURCHASE', message: 'Purchase is not active or has been cancelled' },
+        error: { code: 'INVALID_PURCHASE', message: 'Purchase is not active or has expired' },
       });
     }
 
-    const tier = GOOGLE_PLAY_PRODUCT_TIERS[productId] ?? 'free';
-    const validUntil = new Date(parseInt(purchaseData.expiryTimeMillis!, 10));
+    // One purchase unlocks one account — reject tokens already bound elsewhere.
+    const tokenOwner = await prisma.subscription.findUnique({
+      where: { googlePlayToken: purchaseToken },
+      select: { userId: true },
+    });
+    if (tokenOwner && tokenOwner.userId !== userId) {
+      return reply.status(409).send({
+        success: false,
+        error: { code: 'PURCHASE_IN_USE', message: 'This purchase is linked to another account' },
+      });
+    }
+
+    const tier = GOOGLE_PLAY_PRODUCT_TIERS[productId];
+    const validUntil = new Date(expiryMs);
 
     await prisma.subscription.upsert({
       where: { userId },
-      create: { userId, tier, validUntil },
-      update: { tier, validUntil },
+      create: { userId, tier, validUntil, googlePlayToken: purchaseToken },
+      update: { tier, validUntil, googlePlayToken: purchaseToken },
     });
 
     request.log.info(`[Google Play] user ${userId} activated ${tier} until ${validUntil.toISOString()}`);

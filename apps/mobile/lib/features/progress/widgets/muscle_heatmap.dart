@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 
 /// Front-view body silhouette with muscle groups coloured by weekly set volume.
 /// Back muscles (back, hamstrings, glutes) appear as labelled chips to the side

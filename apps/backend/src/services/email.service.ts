@@ -13,7 +13,7 @@ const transporter = smtpConfigured
     })
   : null;
 
-const from = config.SMTP_FROM ?? 'Zenfit <no-reply@zenfit.app>';
+const from = config.SMTP_FROM ?? 'Revive <no-reply@revivefit.app>';
 
 export async function sendPasswordResetEmail(
   to: string,
@@ -27,11 +27,11 @@ export async function sendPasswordResetEmail(
   await transporter.sendMail({
     from,
     to,
-    subject: 'Your Zenfit password reset code',
-    text: `Your Zenfit password reset code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request a password reset, you can ignore this email.`,
+    subject: 'Your Revive password reset code',
+    text: `Your Revive password reset code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not request a password reset, you can ignore this email.`,
     html: `
       <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
-        <h2 style="color:#4CAF50;margin-bottom:4px">Zenfit</h2>
+        <h2 style="color:#4CAF50;margin-bottom:4px">Revive</h2>
         <p style="color:#555;margin-bottom:32px">Your fitness journey, your way.</p>
         <h3 style="margin-bottom:8px">Password Reset Code</h3>
         <p style="color:#333">Use the code below to reset your password. It expires in <strong>15 minutes</strong>.</p>

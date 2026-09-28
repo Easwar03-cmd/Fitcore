@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -283,22 +283,22 @@ class _HealthPermissionsDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Revive would like to read and write:',
             style: TextStyle(fontSize: 14),
           ),
-          SizedBox(height: 14),
-          _PermissionRow(Icons.directions_walk_rounded, 'Steps',
+          const SizedBox(height: 14),
+          const _PermissionRow(Icons.directions_walk_rounded, 'Steps',
               'Auto-fill your daily step count'),
-          _PermissionRow(Icons.favorite_border_rounded, 'Heart Rate',
+          const _PermissionRow(Icons.favorite_border_rounded, 'Heart Rate',
               'Show resting HR on your dashboard'),
-          _PermissionRow(Icons.bedtime_outlined, 'Sleep',
+          const _PermissionRow(Icons.bedtime_outlined, 'Sleep',
               'Track sleep duration and stages'),
-          _PermissionRow(Icons.monitor_weight_outlined, 'Weight',
+          const _PermissionRow(Icons.monitor_weight_outlined, 'Weight',
               'Read body weight from your health app'),
-          _PermissionRow(Icons.fitness_center_rounded, 'Workouts',
+          const _PermissionRow(Icons.fitness_center_rounded, 'Workouts',
               'Write completed sessions back to your health app'),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             'You can change these permissions any time in your device settings.',
             style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),

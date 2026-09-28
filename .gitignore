@@ -10,3 +10,6 @@ build/
 *.hprof
 coverage/
 .turbo/
+.env.production
+*.jks
+reset_pg.sql

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -265,7 +265,7 @@ class _RecentWorkoutTile extends StatelessWidget {
             ),
           ),
           if (log.caloriesBurned != null) ...[
-            Icon(Icons.local_fire_department_outlined,
+            const Icon(Icons.local_fire_department_outlined,
                 size: 14, color: AppColors.warning),
             const SizedBox(width: 2),
             Text(

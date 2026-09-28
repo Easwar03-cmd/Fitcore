@@ -1,6 +1,41 @@
-# Zenfit — Build Progress
+# Revive — Build Progress
 
 ## Last session
+**Date:** 2026-09-28 (session 37)
+**What was built:** Full A–Z audit after a ~4-month break + launch-blocker fixes
+
+**Health check results**
+- Flutter 3.41.3 / Dart 3.11.1: `flutter analyze` 37 issues → 0; 14/14 tests pass; signed release AAB builds (targetSdk 36)
+- Backend: `tsc` clean; boots locally and serves `/health`
+- **Production API down:** GCP billing is disabled on the project (Cloud Run log: "billing is disabled for this project")
+
+**Fixes**
+- **Account takeover:** `/auth/forgot-password` returned the reset code in the response when SMTP was unset (true in prod). Now 503 in production. Password reset also revokes refresh tokens.
+- **Rate-limit bypass:** limiter keyed on client-controlled first `X-Forwarded-For`; now `trustProxy` 1 hop + `request.ip`
+- **Refresh token compare** now constant-time
+- **Google Play verification:** product IDs `zenfit_*` → `revive_*` (every purchase would have failed); cancelled-auto-renew users keep access until expiry; expiry checked against now; purchase token bound to one account (new `googlePlayToken` column + migration `20260928000000_add_google_play_token`); `/payments/subscription` returns `free` once `validUntil` passes
+- **Account deletion:** now also deletes MoodLog, SleepLog, WearableConnection and reverse friendships (previously FK-failed for those users)
+- **Cloud Build:** now passes `GOOGLE_PLAY_PACKAGE_NAME`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, SMTP config (none were deployed before)
+- **Dependencies:** `yarn upgrade` within ranges + nodemailer 9 → 0 critical/high vulns (was 6 critical / 61 high)
+- **AdMob:** debug/profile builds use Google test ad units (`lib/constants/ad_units.dart`)
+- **Branding:** user-visible "Zenfit" → "Revive" in emails, push notifications, Stripe pages
+- `.gitignore`: added `.env.production`, `*.jks`, `reset_pg.sql`; DECISIONS.md rewritten (was stale Expo/WatermelonDB content)
+
+**Launch checklist (owner actions)**
+1. Re-enable billing on GCP project `project-1993e779-20ad-4034-847`; check Cloud SQL `zenfit-db` is running
+2. Create secrets `ZENFIT_GOOGLE_PLAY_SA`, `ZENFIT_SMTP_HOST`, `ZENFIT_SMTP_USER`, `ZENFIT_SMTP_PASS` — **before pushing**, or the deploy step fails (old revision keeps serving)
+3. Play Console → API access: link the service account, grant "View financial data" + "Manage orders and subscriptions"
+4. Play Console: subscriptions `revive_pro_monthly` / `revive_coach_monthly`, Data Safety, content rating, 6+ screenshots, internal testing track first
+5. Enable GitHub Pages (`/docs`) for the privacy policy URL; set up support@/privacy@revivefit.app
+6. Push to `main` → migration runs on deploy; then smoke-test signup, login, food log, purchase on internal track
+
+**Known issues**
+- iOS paywall uses Stripe web checkout — App Review will reject that for digital subscriptions; StoreKit needed before an App Store launch (Android-first launch unaffected)
+- Many Flutter deps are majors behind (Riverpod 3, go_router 17, Firebase 4.x, etc.) — deferred until after launch; no forced upgrades needed for Play
+- 5 moderate npm advisories remain (transitive)
+- No Play RTDN webhook: renewals are picked up lazily — `/payments/subscription` re-queries Google when a Play sub looks expired
+
+## Previous session
 **Date:** 2026-05-15 (session 36)
 **Duration:** ~2 hours
 **What was built:**

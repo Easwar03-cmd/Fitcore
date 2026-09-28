@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import IORedis from 'ioredis';
-import { randomBytes } from 'crypto';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import { userRepository } from '../repositories/user.repository';
 import {
   hashPassword,
@@ -208,8 +208,9 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // Constant-time compare to prevent timing attacks
-      const providedHash = hashRefreshToken(refreshToken);
-      if (providedHash !== user.refreshTokenHash) {
+      const providedHash = Buffer.from(hashRefreshToken(refreshToken));
+      const storedHash = Buffer.from(user.refreshTokenHash);
+      if (providedHash.length !== storedHash.length || !timingSafeEqual(providedHash, storedHash)) {
         return reply.status(401).send({
           success: false,
           error: { code: 'INVALID_TOKEN', message: 'Invalid refresh token' },
@@ -287,6 +288,16 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    // Never hand the code to the requester in production — that would let anyone
+    // who knows an email address reset that account's password.
+    if (config.NODE_ENV === 'production') {
+      request.log.error('SMTP not configured — password reset email cannot be sent');
+      return reply.status(503).send({
+        success: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Password reset is temporarily unavailable' },
+      });
+    }
+
     // SMTP not configured — return code directly so dev/test flows still work.
     request.log.warn({ code }, 'SMTP not configured — returning reset code in response (dev only)');
     return reply.send({ success: true, data: { code, expiresInMinutes: 15 } });
@@ -326,6 +337,8 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     const passwordHash = await hashPassword(newPassword);
     await userRepository.updatePassword(userId, passwordHash);
+    // Revoke existing sessions so a reset actually locks out whoever had access.
+    await userRepository.setRefreshToken(userId, null, null);
     await redis.del(`pwd_reset:${code}`);
 
     return reply.send({ success: true, data: { message: 'Password updated. Please log in.' } });

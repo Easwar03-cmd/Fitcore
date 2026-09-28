@@ -178,7 +178,9 @@ class PoseAnalyzer {
 
     if (lHip == null || lKnee == null || lAnkle == null ||
         rHip == null || rKnee == null || rAnkle == null ||
-        lSh == null  || rSh == null) return PoseFeedback.ready;
+        lSh == null  || rSh == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lKnee) || !_vis(rKnee) || !_vis(lHip)) return PoseFeedback.ready;
 
     final avgKnee = (_ang(lHip, lKnee, lAnkle) + _ang(rHip, rKnee, rAnkle)) / 2;
@@ -226,7 +228,9 @@ class PoseAnalyzer {
 
     if (lHip == null || lKnee == null || lAnkle == null ||
         rHip == null || rKnee == null || rAnkle == null ||
-        lSh == null  || rSh == null) return PoseFeedback.ready;
+        lSh == null  || rSh == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lKnee) || !_vis(rKnee)) return PoseFeedback.ready;
 
     final lKA = _ang(lHip, lKnee, lAnkle);
@@ -260,7 +264,9 @@ class PoseAnalyzer {
     final lAnk = _get(pose, PoseLandmarkType.leftAnkle);
 
     if (lSh == null || lE == null || lW == null ||
-        lH == null || lAnk == null) return PoseFeedback.ready;
+        lH == null || lAnk == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lSh) || !_vis(lH)) return PoseFeedback.ready;
 
     // ── Engagement: body must be roughly horizontal (not standing) ──────────
@@ -305,7 +311,9 @@ class PoseAnalyzer {
     final rAnk = _get(pose, PoseLandmarkType.rightAnkle);
 
     if (lSh == null || lH == null || lAnk == null ||
-        rSh == null || rH == null || rAnk == null) return PoseFeedback.ready;
+        rSh == null || rH == null || rAnk == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lSh) || !_vis(lH)) return PoseFeedback.ready;
 
     // ── Engagement: body must be roughly horizontal (not standing) ──────────
@@ -424,7 +432,9 @@ class PoseAnalyzer {
 
     if (lSh == null || lE == null || lW == null ||
         rSh == null || rE == null || rW == null ||
-        lH == null  || rH == null) return PoseFeedback.ready;
+        lH == null  || rH == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lE) || !_vis(rE)) return PoseFeedback.ready;
 
     // Not pressing yet — wrists still below shoulder level
@@ -453,7 +463,9 @@ class PoseAnalyzer {
     final rW  = _get(pose, PoseLandmarkType.rightWrist);
 
     if (lSh == null || lE == null || lW == null ||
-        rSh == null || rE == null || rW == null) return PoseFeedback.ready;
+        rSh == null || rE == null || rW == null) {
+      return PoseFeedback.ready;
+    }
     if (!_vis(lE) || !_vis(rE)) return PoseFeedback.ready;
 
     final lEA = _ang(lSh, lE, lW);

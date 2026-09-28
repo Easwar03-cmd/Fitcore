@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 
+import '../../../constants/ad_units.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../providers/ad_providers.dart';
 
@@ -71,7 +72,7 @@ class AdBannerPlaceholder extends ConsumerStatefulWidget {
 }
 
 class _AdBannerPlaceholderState extends ConsumerState<AdBannerPlaceholder> {
-  static const _adUnitId = 'ca-app-pub-3352385278044542/3534344490';
+  static const _adUnitId = AdUnits.homeBanner;
 
   BannerAd? _ad;
   bool _adLoaded = false;
@@ -183,7 +184,7 @@ class AdPopupPlaceholder extends ConsumerStatefulWidget {
 }
 
 class _AdPopupPlaceholderState extends ConsumerState<AdPopupPlaceholder> {
-  static const _adUnitId = 'ca-app-pub-3352385278044542/3099230221';
+  static const _adUnitId = AdUnits.homePopup;
   static const _adSize = AdSize(width: 180, height: 100);
 
   BannerAd? _ad;

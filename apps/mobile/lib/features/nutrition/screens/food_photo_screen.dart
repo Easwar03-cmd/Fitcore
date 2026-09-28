@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -187,14 +187,14 @@ class _PickerView extends ConsumerWidget {
             const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(child: Divider()),
+                const Expanded(child: Divider()),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text('Works best with',
                       style: TextStyle(
                           fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
-                Expanded(child: Divider()),
+                const Expanded(child: Divider()),
               ],
             ),
             const SizedBox(height: 12),
@@ -503,7 +503,7 @@ class _LogBar extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
       ),
       child: FilledButton.icon(
         onPressed: noneSelected
@@ -533,7 +533,7 @@ class _LoggingBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8)],
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
       ),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,

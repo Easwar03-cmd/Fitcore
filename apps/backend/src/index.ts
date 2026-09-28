@@ -20,6 +20,10 @@ const server = Fastify({
   // 1 MB global limit covers all regular API payloads (workout logs, nutrition, etc.).
   // The food-photo route overrides this to 20 MB per-route.
   bodyLimit: 1 * 1024 * 1024,
+  // Cloud Run's front end appends the real client IP to X-Forwarded-For.
+  // Trusting exactly one hop makes request.ip that appended value; the
+  // client-controlled leftmost entries are ignored.
+  trustProxy: (_address: string, hop: number) => hop < 1,
   logger: {
     level: config.NODE_ENV === 'production' ? 'warn' : 'info',
   },
@@ -50,9 +54,7 @@ async function bootstrap() {
     global: true,
     max: 100,
     timeWindow: '1 minute',
-    keyGenerator: (request) =>
-      (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
-      request.ip,
+    keyGenerator: (request) => request.ip,
     errorResponseBuilder: (_request, context) => ({
       success: false,
       error: {
@@ -124,24 +126,24 @@ async function bootstrap() {
 
   server.get('/payment/success', async (_req, reply) => {
     return reply.type('text/html').send(
-      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Zenfit — Payment Successful</title>
+      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Revive — Payment Successful</title>
       <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#0f0f14;color:#fff;}
       h1{font-size:2rem;margin-bottom:.5rem;}p{color:#aaa;font-size:1rem;}</style></head>
-      <body><h1>🎉 Welcome to Pro!</h1><p>Your subscription is active. You can close this tab and return to Zenfit.</p></body></html>`,
+      <body><h1>🎉 Welcome to Pro!</h1><p>Your subscription is active. You can close this tab and return to Revive.</p></body></html>`,
     );
   });
 
   server.get('/payment/cancel', async (_req, reply) => {
     return reply.type('text/html').send(
-      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Zenfit — Checkout Cancelled</title>
+      `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Revive — Checkout Cancelled</title>
       <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:#0f0f14;color:#fff;}
       h1{font-size:2rem;margin-bottom:.5rem;}p{color:#aaa;font-size:1rem;}</style></head>
-      <body><h1>Checkout Cancelled</h1><p>No charges were made. You can close this tab and return to Zenfit.</p></body></html>`,
+      <body><h1>Checkout Cancelled</h1><p>No charges were made. You can close this tab and return to Revive.</p></body></html>`,
     );
   });
 
   await server.listen({ port: config.PORT, host: '0.0.0.0' });
-  server.log.info(`Zenfit API running on port ${config.PORT}`);
+  server.log.info(`Revive API running on port ${config.PORT}`);
 
   // ── Background jobs (gracefully skipped if Redis is unavailable) ────────────
   await scheduleWeeklySummaryJob();

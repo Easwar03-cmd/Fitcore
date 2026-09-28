@@ -127,6 +127,7 @@ model Subscription {
   stripeId         String?   // Stripe subscription ID
   stripeCustomerId String?   @unique
   stripePriceId    String?
+  googlePlayToken  String?   @unique // binds a Play purchase to exactly one account
   validUntil       DateTime?
 
   user User @relation(fields: [userId], references: [id])

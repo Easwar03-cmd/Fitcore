@@ -3,6 +3,8 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(3000),
+  // Public URL of this API — used for Stripe checkout redirect pages.
+  PUBLIC_BASE_URL: z.string().url().default('https://zenfit-api-122167595419.us-central1.run.app'),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),

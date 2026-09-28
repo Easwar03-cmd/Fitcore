@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 
+import '../../../constants/ad_units.dart';
 import '../../subscription/providers/subscription_provider.dart';
 
 final _log = Logger();
@@ -19,7 +20,7 @@ class InterstitialAdNotifier extends StateNotifier<bool> {
     _load();
   }
 
-  static const _adUnitId = 'ca-app-pub-3352385278044542/8100275469';
+  static const _adUnitId = AdUnits.interstitial;
 
   final Ref _ref;
   InterstitialAd? _ad;

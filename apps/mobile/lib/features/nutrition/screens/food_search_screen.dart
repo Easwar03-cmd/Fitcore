@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -165,12 +165,12 @@ class _EmptyResults extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.search_off, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             'No results found',
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 15),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             'Try a different search term',
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
