@@ -1,7 +1,7 @@
 name: revive
 description: Revive — cross-platform fitness app (iOS + Android)
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -85,7 +85,9 @@ dependencies:
   camera: ^0.11.0
 
   # In-app purchases — Google Play Billing on Android (iOS uses Stripe web checkout)
-  in_app_purchase: ^3.2.0
+  in_app_purchase: ^3.2.3
+  # 0.5.x bundles Play Billing Library 8 (required by Google Play)
+  in_app_purchase_android: ^0.5.0
 
   # URL launcher (OAuth wearable connect flows)
   url_launcher: ^6.3.0
