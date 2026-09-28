@@ -105,14 +105,12 @@ class NotificationService {
       sound: true,
     );
 
-    // Android 13+ local notifications exact alarm permission
+    // Android 13+ notification permission. Reminders use inexact alarms, so no
+    // exact-alarm permission is requested (Play restricts it to alarm apps).
     if (!kIsWeb) {
       await _flnp
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.requestNotificationsPermission();
-      await _flnp
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestExactAlarmsPermission();
     }
 
     return settings.authorizationStatus == AuthorizationStatus.authorized ||
@@ -189,7 +187,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // repeat daily
@@ -217,7 +215,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -248,7 +246,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -277,7 +275,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -305,7 +303,7 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(sound: 'default'),
       ),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,

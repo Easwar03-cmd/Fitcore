@@ -9,24 +9,24 @@ final _log = Logger();
 // ── Permission type lists ──────────────────────────────────────────────────────
 
 /// Core types requested on every platform.
+/// Must stay in sync with the health permissions in AndroidManifest.xml —
+/// Health Connect review only allows permissions the app actually uses.
 const _kBaseTypes = [
   HealthDataType.STEPS,
   HealthDataType.HEART_RATE,
   HealthDataType.SLEEP_ASLEEP,
   HealthDataType.SLEEP_AWAKE,
-  HealthDataType.WEIGHT,
-  HealthDataType.WORKOUT,
+  HealthDataType.ACTIVE_ENERGY_BURNED,
 ];
 
 /// Parallel access list for the base types.
-/// WORKOUT needs READ_WRITE so Zenfit can push sessions back to the health app.
+/// ACTIVE_ENERGY_BURNED is write-only: [writeWorkout] pushes the burn back.
 const _kBasePermissions = [
-  HealthDataAccess.READ,       // STEPS
-  HealthDataAccess.READ,       // HEART_RATE
-  HealthDataAccess.READ,       // SLEEP_ASLEEP
-  HealthDataAccess.READ,       // SLEEP_AWAKE
-  HealthDataAccess.READ,       // WEIGHT
-  HealthDataAccess.READ_WRITE, // WORKOUT
+  HealthDataAccess.READ,  // STEPS
+  HealthDataAccess.READ,  // HEART_RATE
+  HealthDataAccess.READ,  // SLEEP_ASLEEP
+  HealthDataAccess.READ,  // SLEEP_AWAKE
+  HealthDataAccess.WRITE, // ACTIVE_ENERGY_BURNED
 ];
 
 /// Sleep stage detail — only available on Android and wearable-backed HealthKit.
@@ -84,7 +84,7 @@ class HealthService {
 
   /// Request all permissions Zenfit requires.
   ///
-  /// Returns true if the base types (steps, heart rate, sleep, weight, workout)
+  /// Returns true if the base types (steps, heart rate, sleep, active energy)
   /// were granted. Sleep stage types (deep/light/REM) are requested
   /// best-effort and do not affect the return value.
   Future<bool> requestPermissions() async {

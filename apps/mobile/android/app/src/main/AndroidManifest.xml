@@ -1,43 +1,41 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- ── Standard permissions ──────────────────────────────────────────────── -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Required for Google Play Billing (in_app_purchase plugin) -->
     <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- Gallery access: API 33+ uses READ_MEDIA_IMAGES; API 26-32 uses READ_EXTERNAL_STORAGE -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32"/>
-    <!-- Step counting via Google Fit fallback on Android 10-13 (Health Connect covers Android 14+) -->
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- ── Play policy: permissions the app must NOT ship ───────────────────── -->
+    <!-- Gallery goes through the Android photo picker (enabled in main.dart), so
+         no broad media/storage access. Camera never records audio (enableAudio:
+         false). Reminders use inexact alarms. Removed even if a plugin adds them. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
 
     <!-- ── Notification permissions ─────────────────────────────────────────── -->
     <!-- POST_NOTIFICATIONS required for Android 13+ (API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- RECEIVE_BOOT_COMPLETED: reschedule local notifications after reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <!-- SCHEDULE_EXACT_ALARM: exact-time local notifications (Android 12+) -->
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <!-- USE_EXACT_ALARM: alternative for Android 13+ (no runtime prompt needed) -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
 
-    <!-- ── Health Connect permissions ────────────────────────────────────────── -->
-    <!-- Steps -->
+    <!-- ── Health Connect permissions (only what health_service.dart uses) ───── -->
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
-    <!-- Heart rate -->
     <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
-    <!-- Sleep (covers SLEEP_ASLEEP, SLEEP_AWAKE, SLEEP_DEEP, SLEEP_LIGHT, SLEEP_REM) -->
+    <!-- Covers SLEEP_ASLEEP, SLEEP_AWAKE, SLEEP_DEEP, SLEEP_LIGHT, SLEEP_REM -->
     <uses-permission android:name="android.permission.health.READ_SLEEP"/>
-    <!-- Weight / body measurements -->
-    <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
-    <!-- Active calories — read (for dashboard) + write (push workout burn back to Health) -->
-    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED"/>
+    <!-- Push workout calorie burn back to Health Connect -->
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"/>
-    <!-- Exercise sessions — write completed workouts back to Health Connect -->
-    <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
 
     <application
         android:label="Revive"

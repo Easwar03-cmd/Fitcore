@@ -106,6 +106,20 @@ class CoachNotifier extends _$CoachNotifier {
     }
   }
 
+  /// Flags an AI response for review (Play generative-AI policy).
+  /// [reason] is one of: harmful, inaccurate, offensive, other.
+  Future<void> reportMessage(String messageText, String reason) async {
+    try {
+      await ref.read(apiClientProvider).dio.post(
+        '/ai/report',
+        data: {'messageText': messageText, 'reason': reason},
+      );
+    } on DioException catch (e) {
+      _log.w('Failed to report AI message', error: e);
+      rethrow;
+    }
+  }
+
   // ── Message send ─────────────────────────────────────────────────────────────
 
   Future<void> sendMessage(String text) async {

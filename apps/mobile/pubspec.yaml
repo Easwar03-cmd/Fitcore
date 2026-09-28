@@ -1,7 +1,7 @@
 name: revive
 description: Revive — cross-platform fitness app (iOS + Android)
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -79,6 +79,9 @@ dependencies:
   # Image handling
   cached_network_image: ^3.3.1
   image_picker: ^1.1.2
+  # Direct deps so main.dart can enable the Android system photo picker
+  image_picker_android: ^0.8.13
+  image_picker_platform_interface: ^2.10.0
 
   # AI pose detection (exercise form monitor)
   google_mlkit_pose_detection: ^0.13.0

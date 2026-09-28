@@ -57,7 +57,39 @@ function handleAiError(err: unknown, request: { log: { error: (...args: unknown[
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
+const reportSchema = z.object({
+  messageText: z.string().min(1).max(5000),
+  reason: z.enum(['harmful', 'inaccurate', 'offensive', 'other']),
+});
+
 export const aiRoutes: FastifyPluginAsync = async (fastify) => {
+  // POST /api/v1/ai/report — user flags an AI response (Play generative-AI
+  // policy). Logged at warn level so reports surface in Cloud Logging.
+  fastify.post('/report', async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+      });
+    }
+
+    const parsed = reportSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid report', details: parsed.error.flatten() },
+      });
+    }
+
+    request.log.warn(
+      { aiReport: { userId: request.user.userId, ...parsed.data } },
+      '[AI report] user flagged an AI response',
+    );
+    return reply.send({ success: true, data: { received: true } });
+  });
+
   // POST /api/v1/ai/coach
   fastify.post('/coach', async (request, reply) => {
     try {

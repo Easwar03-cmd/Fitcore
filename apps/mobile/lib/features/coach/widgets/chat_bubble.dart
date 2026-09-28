@@ -5,9 +5,12 @@ import '../../../core/theme/app_colors.dart';
 import '../models/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
-  const ChatBubble({super.key, required this.message});
+  const ChatBubble({super.key, required this.message, this.onLongPress});
 
   final ChatMessage message;
+
+  /// Opens the copy / report menu. Only wired up for coach replies.
+  final VoidCallback? onLongPress;
 
   bool get _isUser => message.role == MessageRole.user;
 
@@ -109,7 +112,7 @@ class ChatBubble extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              bubble,
+              GestureDetector(onLongPress: onLongPress, child: bubble),
             ],
           );
 

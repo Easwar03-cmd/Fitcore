@@ -64,7 +64,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Revive can read a photo from your library to log a meal by analysing its contents.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Revive reads your steps, heart rate, sleep, and weight from Apple Health to personalise your fitness dashboard and recovery score.</string>
+	<string>Revive reads your steps, heart rate, and sleep from Apple Health to personalise your fitness dashboard and recovery score.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Revive writes your workout energy expenditure to Apple Health so all your activity stays in sync.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

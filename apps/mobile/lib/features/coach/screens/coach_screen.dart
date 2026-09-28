@@ -6,6 +6,7 @@ import '../models/chat_message.dart';
 import '../providers/coach_provider.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/coach_input_bar.dart';
+import '../widgets/coach_message_actions.dart';
 
 // ── Chat item types ───────────────────────────────────────────────────────────
 
@@ -135,6 +136,24 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
     return items;
   }
 
+  Future<void> _onCoachMessageLongPress(ChatMessage message) async {
+    final reason = await showCoachMessageActions(context, message.text);
+    if (reason == null || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(coachNotifierProvider.notifier)
+          .reportMessage(message.text, reason);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Thanks — this response was reported.')),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not send report. Try again.')),
+      );
+    }
+  }
+
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
@@ -192,12 +211,19 @@ class _CoachScreenState extends ConsumerState<CoachScreen> {
                     display.length - 1 - (index - (_isLoading ? 1 : 0));
                 final item = display[itemIndex];
                 return switch (item) {
-                  _MessageItem(:final message) => ChatBubble(message: message),
+                  _MessageItem(:final message) => ChatBubble(
+                      message: message,
+                      onLongPress:
+                          message.role == MessageRole.coach && !message.isLocal
+                              ? () => _onCoachMessageLongPress(message)
+                              : null,
+                    ),
                   _DateLabel(:final date) => _DateSeparator(date: date),
                 };
               },
             ),
           ),
+          const CoachDisclaimer(),
           CoachInputBar(
             controller: _controller,
             focusNode: _focusNode,

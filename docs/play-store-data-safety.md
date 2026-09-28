@@ -104,3 +104,35 @@ Each answer maps directly to a question in the form.
 - Under **Photos → Photos**: select "Collected" AND "Shared" — shared with Google Gemini API for food analysis. Ephemeral (not stored on our servers). Set purpose to "App functionality".
 - Under **Location → Precise location**: select "Collected". Set to "Optional". Purpose: "App functionality". Background access: **No**.
 - The "Advertising ID" row: mark as collected and shared with Google AdMob. Note that AdMob personalisation requires user consent (your app uses `GADDelayAppMeasurementInit = true` to wait for consent).
+
+---
+
+## Other Play Console declarations (added 2026-09-28)
+
+### App content → Data deletion
+- **Delete account URL:** `https://easwar03-cmd.github.io/Fitcore/delete-account.html`
+- In-app path: Home → avatar → Profile → Delete Account
+
+### Data safety addition — user-generated content
+- **App activity → Other user-generated content:** Collected, not shared, optional. Purpose: App functionality. (When a user reports an AI coach reply, the reply text and user ID are logged for review.)
+
+### App content → Health apps / Health Connect
+Declared Health Connect permissions and justification (must match `AndroidManifest.xml`):
+| Permission | Why |
+|---|---|
+| READ_STEPS | Daily step count on the Home dashboard and streaks |
+| READ_HEART_RATE | Resting heart rate on Wellness screen and recovery score |
+| READ_SLEEP | Sleep duration, stages and sleep score on Wellness screen |
+| WRITE_ACTIVE_CALORIES_BURNED | Saves calories burned in a logged workout back to Health Connect |
+
+### Permissions the app intentionally does NOT request
+- Photos/videos (`READ_MEDIA_*`) — gallery uses the Android system photo picker
+- Microphone (`RECORD_AUDIO`) — camera features never record audio
+- Exact alarms (`SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`) — reminders use inexact scheduling
+- Background location — GPS is only used while an outdoor workout is active
+
+### App content → Target audience
+- Select **18 and over** (health data, AI coaching, ads, subscriptions)
+
+### Generative AI
+- The AI coach shows a "not medical advice" notice and lets users long-press any reply to report it (`POST /api/v1/ai/report`)
