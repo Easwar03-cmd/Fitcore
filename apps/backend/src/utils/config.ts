@@ -29,6 +29,9 @@ const envSchema = z.object({
   // Grant the service account "View financial data" in Google Play Console → Setup → API access.
   GOOGLE_PLAY_PACKAGE_NAME: z.string().optional(),
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  // Keyless alternative: service account the runtime identity impersonates
+  // (needs roles/iam.serviceAccountTokenCreator on it).
+  GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
 
   // Set to 'true' to grant all authenticated users Pro tier during beta.
   BETA_MODE: z.string().optional(),

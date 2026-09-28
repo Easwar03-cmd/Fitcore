@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuth, Impersonated, type AuthClient } from 'google-auth-library';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { config } from '../utils/config';
@@ -54,21 +54,43 @@ interface GooglePlaySubscriptionResponse {
   kind?: string;
 }
 
+const ANDROID_PUBLISHER_SCOPE = 'https://www.googleapis.com/auth/androidpublisher';
+
+const isGooglePlayConfigured = (): boolean =>
+  !!config.GOOGLE_PLAY_PACKAGE_NAME &&
+  !!(config.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL || config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON);
+
+// Keyless by default: the Cloud Run runtime identity impersonates the service
+// account invited in Play Console (org policy blocks downloading JSON keys).
+async function getGooglePlayAccessToken(): Promise<string | null | undefined> {
+  if (config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+    const auth = new GoogleAuth({
+      credentials: JSON.parse(config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON),
+      scopes: [ANDROID_PUBLISHER_SCOPE],
+    });
+    return (await (await auth.getClient()).getAccessToken()).token;
+  }
+  if (!config.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL) {
+    throw new Error('Google Play service account not configured');
+  }
+  const sourceClient = await new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+  }).getClient();
+  const impersonated = new Impersonated({
+    sourceClient: sourceClient as AuthClient,
+    targetPrincipal: config.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL,
+    targetScopes: [ANDROID_PUBLISHER_SCOPE],
+    lifetime: 3600,
+  });
+  return (await impersonated.getAccessToken()).token;
+}
+
 async function verifyGooglePlayPurchase(
   packageName: string,
   subscriptionId: string,
   purchaseToken: string,
 ): Promise<GooglePlaySubscriptionResponse> {
-  const serviceAccountJson = config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
-  if (!serviceAccountJson) throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON not configured');
-
-  const auth = new GoogleAuth({
-    credentials: JSON.parse(serviceAccountJson),
-    scopes: ['https://www.googleapis.com/auth/androidpublisher'],
-  });
-  const client = await auth.getClient();
-  const tokenResponse = await client.getAccessToken();
-  const accessToken = tokenResponse.token;
+  const accessToken = await getGooglePlayAccessToken();
 
   const url =
     `https://androidpublisher.googleapis.com/androidpublisher/v3/applications` +
@@ -113,7 +135,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
     if (sub?.googlePlayToken && sub.validUntil && sub.validUntil <= new Date()) {
       const productId = (Object.keys(GOOGLE_PLAY_PRODUCT_TIERS) as GooglePlayProductId[])
         .find((id) => GOOGLE_PLAY_PRODUCT_TIERS[id] === sub?.tier);
-      if (productId && config.GOOGLE_PLAY_PACKAGE_NAME && config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+      if (productId && config.GOOGLE_PLAY_PACKAGE_NAME && isGooglePlayConfigured()) {
         try {
           const data = await verifyGooglePlayPurchase(
             config.GOOGLE_PLAY_PACKAGE_NAME,
@@ -235,7 +257,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
     }
 
-    if (!config.GOOGLE_PLAY_PACKAGE_NAME || !config.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON) {
+    if (!config.GOOGLE_PLAY_PACKAGE_NAME || !isGooglePlayConfigured()) {
       return reply.status(503).send({
         success: false,
         error: { code: 'NOT_CONFIGURED', message: 'Google Play verification not configured on server' },
