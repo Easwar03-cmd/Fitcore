@@ -29,6 +29,12 @@
 5. Enable GitHub Pages (`/docs`) for the privacy policy URL; set up support@/privacy@revivefit.app
 6. Push to `main` → migration runs on deploy; then smoke-test signup, login, food log, purchase on internal track
 
+**Follow-up (same day)**
+- Play Billing Library 7.1.1 → 8.0.0 (`in_app_purchase_android` 0.5.0); app version 1.0.0+3
+- Org policy `iam.disableServiceAccountKeyCreation` blocks JSON keys → Play verification is keyless: Cloud Run's compute SA impersonates `revive-play-billing@` (`GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL`); `ZENFIT_GOOGLE_PLAY_SA` secret unused
+- Deployed revision `zenfit-api-00030-52n`; live smoke test passed (signup, subscription, account delete)
+- Play API returned 401 for `revive-play-billing@` → Play Console permission not yet effective
+
 **Known issues**
 - iOS paywall uses Stripe web checkout — App Review will reject that for digital subscriptions; StoreKit needed before an App Store launch (Android-first launch unaffected)
 - Many Flutter deps are majors behind (Riverpod 3, go_router 17, Firebase 4.x, etc.) — deferred until after launch; no forced upgrades needed for Play
