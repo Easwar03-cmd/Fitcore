@@ -35,7 +35,18 @@
 - Deployed revision `zenfit-api-00030-52n`; live smoke test passed (signup, subscription, account delete)
 - Play API returned 401 for `revive-play-billing@` → Play Console permission not yet effective
 
+**Play review fixes (2026-10-06, version 1.0.0+6)**
+- Rejection: Broken Functionality — AI coach showed "AI service error". Root cause: Gemini prepaid credits depleted (HTTP 402 on every model). Owner must top up in AI Studio.
+- Gemini 402/403/404 → 503 `AI_UNAVAILABLE` with a clear message; model configurable via `GEMINI_MODEL`
+- Dead buttons fixed: meal plan "Upgrade to Pro" (was `() {}`), paywall plan tap when Play prices fail, wearables refresh
+- Third-party wearables (Fitbit/Garmin/WHOOP/Oura) hidden — OAuth exchange is a stub (`_kThirdPartyWearablesEnabled`)
+- Health Connect button handles missing app / denied access with feedback
+- AI error text surfaced via `apiErrorMessage()`; meal plan no longer spins forever on parse errors
+- Tests: 14 → 20
+
 **Known issues**
+- Social screens are placeholders (not linked from the UI; routes still registered)
+- Wearable OAuth token exchange not implemented (backend `integrations.routes.ts`)
 - iOS paywall uses Stripe web checkout — App Review will reject that for digital subscriptions; StoreKit needed before an App Store launch (Android-first launch unaffected)
 - Many Flutter deps are majors behind (Riverpod 3, go_router 17, Firebase 4.x, etc.) — deferred until after launch; no forced upgrades needed for Play
 - 5 moderate npm advisories remain (transitive)
