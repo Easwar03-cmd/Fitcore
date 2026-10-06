@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:logger/logger.dart';
@@ -87,6 +89,30 @@ class HealthService {
   /// Returns true if the base types (steps, heart rate, sleep, active energy)
   /// were granted. Sleep stage types (deep/light/REM) are requested
   /// best-effort and do not affect the return value.
+  /// Whether the platform health store can be used. Always true on iOS; on
+  /// Android, false when Health Connect is missing or needs an update.
+  Future<bool> isHealthStoreAvailable() async {
+    if (Platform.isIOS) return true;
+    try {
+      await _health.configure();
+      final status = await _health.getHealthConnectSdkStatus();
+      return status == HealthConnectSdkStatus.sdkAvailable;
+    } catch (e) {
+      _log.w('Could not read Health Connect status', error: e);
+      return false;
+    }
+  }
+
+  /// Opens the Play Store listing for Health Connect (Android only).
+  Future<void> installHealthStore() async {
+    if (Platform.isIOS) return;
+    try {
+      await _health.installHealthConnect();
+    } catch (e) {
+      _log.w('Could not open Health Connect install page', error: e);
+    }
+  }
+
   Future<bool> requestPermissions() async {
     try {
       await _health.configure();

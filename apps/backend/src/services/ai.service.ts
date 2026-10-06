@@ -89,7 +89,8 @@ Use the user's data (goal, calories today, workouts done) when it's relevant —
 
 If there's a real medical concern, tell them to see a doctor. Never recommend dangerous practices.`;
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// Overridable via env so a model retirement doesn't need a code change.
+const GEMINI_MODEL = config.GEMINI_MODEL;
 
 const FREE_TIER_DAILY_LIMIT = 5;
 

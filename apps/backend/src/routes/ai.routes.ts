@@ -49,6 +49,16 @@ function handleAiError(err: unknown, request: { log: { error: (...args: unknown[
     if (err.status === 429) {
       return { status: 503, code: 'AI_RATE_LIMITED', message: 'AI service is temporarily busy. Please try again in a moment.' };
     }
+    // 402 = Gemini prepaid credits depleted; 403/404 = key or model problem.
+    // Owner action is needed — tell users plainly instead of a generic error.
+    if (err.status === 402 || err.status === 403 || err.status === 404) {
+      request.log.error('[Gemini] AI unavailable — check AI Studio billing, API key and GEMINI_MODEL');
+      return {
+        status: 503,
+        code: 'AI_UNAVAILABLE',
+        message: 'AI features are temporarily unavailable. Please try again later.',
+      };
+    }
     return { status: 502, code: 'AI_ERROR', message: isProd ? 'AI service error' : (err.message ?? `Gemini API error (${err.status})`) };
   }
   request.log.error('[AI]', err instanceof Error ? err.message : err);

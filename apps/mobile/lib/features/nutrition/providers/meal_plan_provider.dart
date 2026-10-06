@@ -60,13 +60,11 @@ class MealPlanNotifier extends AsyncNotifier<WeeklyMealPlan?> {
         return;
       }
       _log.e('Failed to generate meal plan', error: e, stackTrace: st);
-      state = AsyncError(
-        Exception(
-          e.response?.data?['error']?['message'] ??
-              'Failed to generate meal plan. Please try again.',
-        ),
-        st,
-      );
+      state = AsyncError(e, st);
+    } catch (e, st) {
+      // e.g. a malformed AI response — never leave the spinner running.
+      _log.e('Failed to parse meal plan', error: e, stackTrace: st);
+      state = AsyncError(e, st);
     }
   }
 

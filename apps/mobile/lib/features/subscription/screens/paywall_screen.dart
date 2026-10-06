@@ -67,10 +67,24 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   }
 
   Future<void> _purchaseWithGooglePlay(String tier) async {
-    final product = _products.firstWhere(
-      (p) => p.id == (tier == 'pro' ? kIapProductPro : kIapProductCoach),
-      orElse: () => throw StateError('Product not loaded'),
-    );
+    final productId = tier == 'pro' ? kIapProductPro : kIapProductCoach;
+    final matches = _products.where((p) => p.id == productId);
+    if (matches.isEmpty) {
+      // Prices didn't load — say so and retry instead of a silent no-op tap.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Google Play is unavailable right now. Retrying — please try again in a moment.'),
+        ),
+      );
+      setState(() {
+        _iapError = null;
+        _iapLoading = true;
+      });
+      await _loadProducts();
+      return;
+    }
+    final product = matches.first;
 
     setState(() => _purchaseProcessing = true);
     try {

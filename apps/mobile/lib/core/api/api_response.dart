@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 /// Typed response envelope matching the backend shape:
 /// Success: { success: true, data: T, meta?: {...} }
 /// Error:   { success: false, error: { code, message, details? } }
@@ -59,4 +61,22 @@ class ApiMeta {
         total: json['total'] as int?,
         cursor: json['cursor'] as String?,
       );
+}
+
+/// User-facing message for a failed API call: the server's error message when
+/// it sent one, otherwise a generic network/server fallback.
+String apiErrorMessage(Object error) {
+  if (error is DioException) {
+    final body = error.response?.data;
+    if (body is Map<String, dynamic>) {
+      final err = body['error'];
+      if (err is Map<String, dynamic> && err['message'] is String) {
+        return err['message'] as String;
+      }
+    }
+    if (error.response == null) {
+      return 'No connection. Check your internet and try again.';
+    }
+  }
+  return 'Something went wrong. Please try again.';
 }

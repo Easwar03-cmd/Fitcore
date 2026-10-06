@@ -45,9 +45,10 @@ class _ActionsBodyState extends State<_ActionsBody> {
           ListTile(
             leading: const Icon(Icons.copy_rounded),
             title: const Text('Copy'),
-            onTap: () async {
-              await Clipboard.setData(ClipboardData(text: widget.messageText));
-              if (context.mounted) Navigator.pop(context);
+            onTap: () {
+              // Close first so the tap always responds, then copy.
+              Navigator.pop(context);
+              Clipboard.setData(ClipboardData(text: widget.messageText));
             },
           ),
           ListTile(

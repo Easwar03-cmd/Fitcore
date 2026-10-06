@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../core/api/api_response.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../models/exercise.dart';
 import '../models/home_exercise.dart';
@@ -418,8 +419,8 @@ class _HomeRecommendationSection extends ConsumerWidget {
             ),
           ),
         ),
-        error: (_, __) => _GenerateTile(
-          isError: true,
+        error: (e, __) => _GenerateTile(
+          errorMessage: apiErrorMessage(e),
           onTap: () => ref
               .read(
                   workoutRecommendationProvider(WorkoutType.home).notifier)
@@ -431,9 +432,10 @@ class _HomeRecommendationSection extends ConsumerWidget {
 }
 
 class _GenerateTile extends StatelessWidget {
-  const _GenerateTile({required this.onTap, this.isError = false});
+  const _GenerateTile({required this.onTap, this.errorMessage});
   final VoidCallback onTap;
-  final bool isError;
+  final String? errorMessage;
+  bool get isError => errorMessage != null;
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +463,7 @@ class _GenerateTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   isError
-                      ? 'Could not load recommendation — tap to retry'
+                      ? '${errorMessage!} Tap to retry.'
                       : 'Get AI Home Workout Recommendation',
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w500),

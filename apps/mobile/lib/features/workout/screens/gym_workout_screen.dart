@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../core/api/api_response.dart';
 import '../../subscription/providers/subscription_provider.dart';
 import '../models/exercise.dart';
 import '../providers/workout_provider.dart';
@@ -59,9 +60,9 @@ class GymWorkoutScreen extends ConsumerWidget {
                       ),
                 loading: () => const _LoadingCard(
                     label: 'Analysing your gym training history…'),
-                error: (_, __) => _GenerateButton(
+                error: (e, __) => _GenerateButton(
                   label: 'Retry AI Recommendation',
-                  subtitle: 'Could not load — tap to try again',
+                  subtitle: '${apiErrorMessage(e)} Tap to try again.',
                   onTap: () => ref
                       .read(workoutRecommendationProvider(WorkoutType.gym)
                           .notifier)

@@ -8,6 +8,11 @@ import '../../../core/services/health_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/wearable_provider.dart';
 
+/// Third-party OAuth (Fitbit, Garmin, WHOOP, Oura) is hidden until the backend
+/// token exchange in integrations.routes.ts is implemented — shipping buttons
+/// that can never connect violates Play's Broken Functionality policy.
+const _kThirdPartyWearablesEnabled = false;
+
 // ── OAuth configuration ───────────────────────────────────────────────────────
 // To enable a provider:
 //  1. Register your app on the provider's developer portal.
@@ -63,17 +68,48 @@ class _WearableIntegrationsScreenState
   @override
   void initState() {
     super.initState();
-    _checkHealthPermissions();
+    _checkHealthPermissions(userInitiated: false);
   }
 
-  Future<void> _checkHealthPermissions() async {
-    final granted =
-        await ref.read(healthServiceProvider).requestPermissions();
-    if (mounted) {
-      setState(() {
-        _healthConnected = granted;
-        _checkingHealth = false;
-      });
+  /// Requests health permissions. When the user tapped the button, every
+  /// outcome is surfaced so the tap never appears to do nothing.
+  Future<void> _checkHealthPermissions({bool userInitiated = true}) async {
+    final health = ref.read(healthServiceProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _checkingHealth = true);
+
+    if (!await health.isHealthStoreAvailable()) {
+      if (mounted) setState(() => _checkingHealth = false);
+      if (userInitiated) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(
+                'Health Connect is required to sync health data.'),
+            action: SnackBarAction(
+              label: 'Install',
+              onPressed: health.installHealthStore,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    final granted = await health.requestPermissions();
+    if (!mounted) return;
+    setState(() {
+      _healthConnected = granted;
+      _checkingHealth = false;
+    });
+    if (userInitiated) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(granted
+              ? 'Health data access granted.'
+              : 'Access not granted. You can allow it any time in '
+                  '${Platform.isIOS ? 'the Health app' : 'Health Connect'} settings.'),
+        ),
+      );
     }
   }
 
@@ -86,11 +122,12 @@ class _WearableIntegrationsScreenState
       appBar: AppBar(
         title: const Text('Wearable Integrations'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () =>
-                ref.read(wearableProvider.notifier).refresh(),
-          ),
+          if (_kThirdPartyWearablesEnabled)
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () =>
+                  ref.read(wearableProvider.notifier).refresh(),
+            ),
         ],
       ),
       body: ListView(
@@ -102,31 +139,41 @@ class _WearableIntegrationsScreenState
 
           // ── Platform health (Apple Health / Google Fit) ─────────────────────
           _SectionLabel(
-            Platform.isIOS ? 'Apple Health' : 'Google Fit',
+            Platform.isIOS ? 'Apple Health' : 'Health Connect',
           ),
           const SizedBox(height: 8),
           _HealthCard(
             isConnected: _healthConnected,
             isChecking: _checkingHealth,
-            onConnect: _checkHealthPermissions,
+            onConnect: () => _checkHealthPermissions(),
           ),
           const SizedBox(height: 24),
 
           // ── Third-party wearables ───────────────────────────────────────────
-          const _SectionLabel('Third-Party Wearables'),
-          const SizedBox(height: 8),
-          ...['fitbit', 'garmin', 'whoop', 'oura'].map((provider) {
-            final isConnected = connected.containsKey(provider);
-            return _WearableCard(
-              provider: provider,
-              isConnected: isConnected,
-              connectedAt: connected[provider]?.connectedAt,
-              onConnect: () => _launchOAuth(provider),
-              onDisconnect: () => _disconnect(provider),
-            );
-          }),
+          if (_kThirdPartyWearablesEnabled) ...[
+            const _SectionLabel('Third-Party Wearables'),
+            const SizedBox(height: 8),
+            ...['fitbit', 'garmin', 'whoop', 'oura'].map((provider) {
+              final isConnected = connected.containsKey(provider);
+              return _WearableCard(
+                provider: provider,
+                isConnected: isConnected,
+                connectedAt: connected[provider]?.connectedAt,
+                onConnect: () => _launchOAuth(provider),
+                onDisconnect: () => _disconnect(provider),
+              );
+            }),
+          ] else
+            Text(
+              'Fitbit, Garmin, WHOOP and Oura: most of these devices can sync '
+              'to ${Platform.isIOS ? 'Apple Health' : 'Health Connect'}, and '
+              'Revive reads that data automatically.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
 
-          if (wearableAsync.isLoading) ...[
+          if (_kThirdPartyWearablesEnabled && wearableAsync.isLoading) ...[
             const SizedBox(height: 8),
             const LinearProgressIndicator(),
           ],
@@ -210,7 +257,7 @@ class _InfoBanner extends StatelessWidget {
           Expanded(
             child: Text(
               'Connect wearables to automatically sync sleep, heart rate, '
-              'HRV, and activity data into your Wellness and Progress tabs.',
+              'and activity data into your Wellness and Progress tabs.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
@@ -263,15 +310,15 @@ class _HealthCard extends StatelessWidget {
           icon: isIos ? Icons.favorite_rounded : Icons.sports_gymnastics_rounded,
           color: isIos ? AppColors.error : AppColors.info,
         ),
-        title: Text(isIos ? 'Apple Health' : 'Google Fit',
+        title: Text(isIos ? 'Apple Health' : 'Health Connect',
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
                 ?.copyWith(fontWeight: FontWeight.w600)),
         subtitle: Text(
           isIos
-              ? 'Steps, heart rate, sleep, weight & workouts'
-              : 'Steps, heart rate, sleep & activity',
+              ? 'Steps, heart rate, sleep & workout calories'
+              : 'Steps, heart rate, sleep & workout calories',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),

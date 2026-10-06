@@ -1,7 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../constants/app_routes.dart';
+import '../../../core/api/api_response.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/meal_plan.dart';
 import '../providers/meal_plan_provider.dart';
@@ -59,7 +62,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
       body: planState.when(
         loading: () => const _GeneratingView(),
         error: (e, _) => _ErrorView(
-          message: e.toString(),
+          message: apiErrorMessage(e),
           onRetry: () => ref.read(mealPlanProvider.notifier).generate(),
         ),
         data: (plan) {
@@ -382,7 +385,8 @@ class _PaywallView extends StatelessWidget {
             ),
             const SizedBox(height: 28),
             FilledButton.icon(
-              onPressed: () {},
+              onPressed: () =>
+                  context.push(AppRoutes.paywall, extra: 'AI meal plans'),
               icon: const Icon(Icons.workspace_premium),
               label: const Text('Upgrade to Pro'),
               style: FilledButton.styleFrom(
