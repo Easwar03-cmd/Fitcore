@@ -43,6 +43,7 @@
 - Health Connect button handles missing app / denied access with feedback
 - AI error text surfaced via `apiErrorMessage()`; meal plan no longer spins forever on parse errors
 - Tests: 14 → 20
+- 16 KB page size (version 1.0.0+7): `libbarhopper_v3.so` (ML Kit barcode, bundled by mobile_scanner 5.2.3) was 4 KB aligned → `dev.steenbakker.mobile_scanner.useUnbundled=true` uses the Play Services model; `com.google.mlkit.vision.DEPENDENCIES=barcode` downloads it at install. All 64-bit .so files verified ≥ 16 KB aligned
 
 **Known issues**
 - Social screens are placeholders (not linked from the UI; routes still registered)
