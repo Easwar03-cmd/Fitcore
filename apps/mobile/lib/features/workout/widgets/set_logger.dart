@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
+import '../../../core/theme/app_text_styles.dart';
 
 /// How the set-logger collects input for an exercise.
 enum SetInputMode {
@@ -105,25 +108,17 @@ class _SetLoggerState extends State<SetLogger> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Set ${widget.setNumber}',
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        Text('Set ${widget.setNumber}', style: AppTextStyles.heading),
         const SizedBox(height: 12),
         _buildInputRow(),
         const SizedBox(height: 16),
         ElevatedButton.icon(
           onPressed: _submit,
-          icon: const Icon(Icons.add),
+          icon: const Icon(PhosphorIconsBold.plus, size: 18),
           label: const Text('Add Set'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
         ),
       ],
     );
@@ -151,7 +146,6 @@ class _SetLoggerState extends State<SetLogger> {
         decoration: const InputDecoration(
           labelText: 'Reps',
           hintText: '10',
-          border: OutlineInputBorder(),
         ),
       );
 
@@ -165,7 +159,6 @@ class _SetLoggerState extends State<SetLogger> {
         decoration: const InputDecoration(
           labelText: 'Weight (kg)',
           hintText: '60',
-          border: OutlineInputBorder(),
         ),
       );
 
@@ -177,7 +170,6 @@ class _SetLoggerState extends State<SetLogger> {
         decoration: const InputDecoration(
           labelText: 'Duration (sec)',
           hintText: '30',
-          border: OutlineInputBorder(),
         ),
       );
 }

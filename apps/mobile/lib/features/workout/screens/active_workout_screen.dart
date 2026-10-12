@@ -11,6 +11,12 @@ import '../providers/workout_provider.dart';
 import '../widgets/rest_timer_widget.dart';
 import '../widgets/set_logger.dart';
 import '../widgets/workout_timer_widget.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/metric_list_card.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
 
 SetInputMode _inputModeFor(Exercise exercise) {
   if (exercise.timedOnly) return SetInputMode.durationOnly;
@@ -161,35 +167,31 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(workoutSessionProvider);
+    final exercise = session.currentExercise;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workout'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: _confirmCancel,
-        ),
+      appBar: PageAppBar(
+        title: exercise?.name ?? 'Workout',
+        onBack: _confirmCancel,
         actions: [
           if (session.isSubmitting)
             const Padding(
-              padding: EdgeInsets.only(right: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+              padding: EdgeInsets.only(right: 12),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
           else
-            TextButton(
+            FilledButton(
               onPressed: _finish,
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 44)),
               child: const Text('Finish'),
             ),
         ],
       ),
-      body: session.currentExercise == null
+      body: exercise == null
           ? const Center(child: CircularProgressIndicator())
           : _WorkoutBody(
               session: session,
@@ -247,103 +249,104 @@ class _WorkoutBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final exercise = session.currentExercise!;
     final sets = session.setsForCurrentExercise;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Workout timer ────────────────────────────────────────────────
-          WorkoutTimerWidget(
-            remainingSeconds: timerRemainingSeconds,
-            isPaused: timerPaused,
-            onSetTimer: onTimerOpen,
-            onPause: onTimerPause,
-            onResume: onTimerResume,
-            onStop: onTimerStop,
-          ),
-          const SizedBox(height: 12),
-
-          // ── Current exercise card ────────────────────────────────────────
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor:
-                        exercise.muscleGroup.color.withValues(alpha: 0.15),
-                    child: Icon(exercise.muscleGroup.icon,
-                        color: exercise.muscleGroup.color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          exercise.name,
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          exercise.muscleGroup.label,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: onSwitchExercise,
-                    child: const Text('Switch'),
-                  ),
-                ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      children: [
+        // ── Title row: ink circle + exercise ───────────────────────────────
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.salmon, width: 3),
+                ),
+                child: Icon(exercise.muscleGroup.icon,
+                    color: Colors.white, size: 24),
               ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ── Outdoor mode toggle (all exercises) ──────────────────────────
-          _OutdoorToggle(
-            isOutdoorMode: session.isOutdoorMode,
-            onToggle: onToggleOutdoor,
-          ),
-          const SizedBox(height: 12),
-
-          // ── Live GPS stats (shown once outdoor mode is on) ───────────────
-          if (session.isOutdoorMode) ...[
-            _GpsStatsBar(
-              distanceKm: session.distanceKm,
-              paceMinPerKm: session.paceMinPerKm,
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Logged sets for this exercise ────────────────────────────────
-          if (sets.isNotEmpty) ...[
-            Text('Sets logged', style: theme.textTheme.titleSmall),
-            const SizedBox(height: 8),
-            ...sets.map((s) => _SetRow(set: s)),
-            const SizedBox(height: 20),
-          ],
-
-          // ── Rest timer OR set logger ─────────────────────────────────────
-          if (session.isResting)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: RestTimerWidget(
-                  secondsLeft: session.restSecondsLeft,
-                  onSkip: onSkipRest,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(exercise.name,
+                        style: AppTextStyles.title.copyWith(fontSize: 22)),
+                    Text(exercise.muscleGroup.label,
+                        style: AppTextStyles.caption),
+                  ],
                 ),
               ),
-            )
-          else
-            SetLogger(
+              TextButton(
+                onPressed: onSwitchExercise,
+                child: const Text('Switch'),
+              ),
+            ],
+          ),
+        ),
+
+        // ── Workout timer ──────────────────────────────────────────────────
+        WorkoutTimerWidget(
+          remainingSeconds: timerRemainingSeconds,
+          isPaused: timerPaused,
+          onSetTimer: onTimerOpen,
+          onPause: onTimerPause,
+          onResume: onTimerResume,
+          onStop: onTimerStop,
+        ),
+        const SizedBox(height: 12),
+
+        // ── Outdoor mode toggle (all exercises) ────────────────────────────
+        _OutdoorToggle(
+          isOutdoorMode: session.isOutdoorMode,
+          onToggle: onToggleOutdoor,
+        ),
+        const SizedBox(height: 12),
+
+        // ── Live GPS stats ─────────────────────────────────────────────────
+        if (session.isOutdoorMode) ...[
+          _GpsStatsBar(
+            distanceKm: session.distanceKm,
+            paceMinPerKm: session.paceMinPerKm,
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Logged sets for this exercise ──────────────────────────────────
+        if (sets.isNotEmpty) ...[
+          PastelCard(
+            radius: 28,
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sets logged', style: AppTextStyles.heading),
+                const SizedBox(height: 8),
+                ...sets.map((s) => _SetRow(set: s)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Rest timer OR set logger ───────────────────────────────────────
+        if (session.isResting)
+          RestTimerWidget(
+            secondsLeft: session.restSecondsLeft,
+            onSkip: onSkipRest,
+          )
+        else
+          PastelCard(
+            tint: PastelTint.sky,
+            radius: 28,
+            padding: const EdgeInsets.all(18),
+            child: SetLogger(
               setNumber: session.nextSetNumber,
               inputMode: _inputModeFor(exercise),
               onLog: onLogSet,
@@ -351,8 +354,8 @@ class _WorkoutBody extends StatelessWidget {
               lastWeightKg: sets.isNotEmpty ? sets.last.weightKg : null,
               lastDurationSec: sets.isNotEmpty ? sets.last.durationSec : null,
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
@@ -370,47 +373,38 @@ class _OutdoorToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = isOutdoorMode
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onToggle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.map_rounded, color: color),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Outdoor Mode',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(color: color, fontWeight: FontWeight.w600),
-                    ),
-                    Text(
-                      isOutdoorMode
-                          ? 'GPS tracking active'
-                          : 'Tap to track route & distance',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: isOutdoorMode,
-                onChanged: (_) => onToggle(),
-              ),
-            ],
+    return PastelCard(
+      tint: isOutdoorMode ? PastelTint.lime : PastelTint.white,
+      radius: 24,
+      onTap: onToggle,
+      semanticLabel:
+          'Outdoor mode, ${isOutdoorMode ? 'GPS tracking active' : 'off'}',
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+                color: AppColors.surfaceMuted, shape: BoxShape.circle),
+            child: const Icon(PhosphorIconsRegular.mapTrifold, size: 22),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Outdoor Mode', style: AppTextStyles.heading),
+                Text(
+                  isOutdoorMode
+                      ? 'GPS tracking active'
+                      : 'Tap to track route & distance',
+                  style: AppTextStyles.caption.copyWith(color: AppColors.ink),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: isOutdoorMode, onChanged: (_) => onToggle()),
+        ],
       ),
     );
   }
@@ -439,58 +433,29 @@ class _GpsStatsBar extends StatelessWidget {
     if (pace == null) return '—';
     final mins = pace.floor();
     final secs = ((pace - mins) * 60).round();
-    return "$mins'${secs.toString().padLeft(2, '0')}\"";
+    return '$mins:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      color: theme.colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            // ── Distance ────────────────────────────────────────────────────
-            const Icon(Icons.straighten_rounded, size: 18),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _distanceLabel,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  Text('Distance',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // ── Pace ─────────────────────────────────────────────────────────
-            const Icon(Icons.speed_rounded, size: 18),
-            const SizedBox(width: 6),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _paceLabel,
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text('min/km',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ],
+    return MetricListCard(
+      minHeight: 150,
+      items: [
+        MetricItem(
+          icon: PhosphorIconsRegular.path,
+          label: 'Distance',
+          value: _distanceLabel,
+          iconColor: AppColors.teal,
         ),
-      ),
+        MetricItem(
+          icon: PhosphorIconsRegular.gauge,
+          label: 'Pace min/km',
+          value: _paceLabel,
+          iconColor: AppColors.coralText,
+        ),
+      ],
+      imageName: 'workout_runner.png',
+      fallbackIcon: PhosphorIconsRegular.personSimpleRun,
     );
   }
 }
@@ -517,25 +482,22 @@ class _SetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 13,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Text(
-              '${set.setNumber}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer),
-            ),
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+                color: AppColors.sky, shape: BoxShape.circle),
+            child: Text('${set.setNumber}', style: AppTextStyles.micro),
           ),
           const SizedBox(width: 12),
-          Text(_detail, style: theme.textTheme.bodyMedium),
+          Text(_detail, style: AppTextStyles.body),
           const Spacer(),
-          Icon(Icons.check_circle_rounded,
-              size: 18, color: theme.colorScheme.primary),
+          const Icon(PhosphorIconsFill.checkCircle, size: 20),
         ],
       ),
     );
