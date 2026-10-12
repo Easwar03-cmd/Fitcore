@@ -40,7 +40,7 @@ Each answer maps directly to a question in the form.
 ### Health and fitness
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
 |---|---|---|---|---|
-| Health info (weight, height, body fat, BMI, heart rate, HRV, sleep) | Yes | No | Optional | App functionality (dashboard, recovery score) |
+| Health info (weight, height, body fat, BMI) | Yes | No — unless the user turns on "Share my fitness report with admin" in a community, in which case a summary is visible to that community's admin | Optional | App functionality (dashboard, community tracking chosen by the user) |
 | Fitness info (workouts, steps, calorie logs, GPS routes) | Yes | No | Required | App functionality |
 
 > Health data is **not** used for advertising or shared with third parties for their independent use.
@@ -56,11 +56,13 @@ Each answer maps directly to a question in the form.
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
 |---|---|---|---|---|
 | Photos (meal photos for nutritional analysis) | Yes | Yes — Google Gemini API (transient, not stored) | Optional | App functionality (food photo logging) |
+| Photos and videos (attached to community messages) | Yes | Yes — visible to members of that community | Optional | App functionality (community chat) |
+| Files and docs (PDF/text attached to community messages) | Yes | Yes — visible to members of that community | Optional | App functionality (community chat) |
 
 ### Camera
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
 |---|---|---|---|---|
-| Photos and videos (live camera frames for barcode/form monitor) | No — processed on-device, never stored or transmitted | No | Optional | App functionality |
+| Photos and videos (live camera frames for barcode scanning) | No — processed on-device, never stored or transmitted | No | Optional | App functionality |
 
 ### App activity
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
@@ -79,7 +81,7 @@ Each answer maps directly to a question in the form.
 ## Data Sharing Details
 
 ### Is health and fitness data shared with any third parties?
-**Yes — Google Gemini API only**, for the purpose of generating AI coach responses, meal plans, and workout recommendations. This data is not shared for advertising or sold.
+**Yes — Google Gemini API only**, for the purpose of generating meal plans, workout recommendations and food-photo analysis. This data is not shared for advertising or sold.
 
 ### Is location data shared with any third parties?
 **No.**
@@ -114,20 +116,22 @@ Each answer maps directly to a question in the form.
 - In-app path: Home → avatar → Profile → Delete Account
 
 ### Data safety addition — user-generated content
-- **App activity → Other user-generated content:** Collected, not shared, optional. Purpose: App functionality. (When a user reports an AI coach reply, the reply text and user ID are logged for review.)
+- **Messages → Other in-app messages:** Collected, shared with the other members of the community the user posts in, optional. Purpose: App functionality.
+- **App activity → Other user-generated content:** Collected (challenge titles, notepad notes, private to-do items, reports), optional. Purpose: App functionality. To-do items are never shared. When a user reports AI output or community content, the report and user ID are logged for review.
+- **Audio → Voice or sound recordings:** Voice dictation in the challenge notepad uses the device speech-recognition service. Revive does not record or store audio; declare as processed ephemerally / not collected by Revive and re-verify against the final `speech_to_text` behaviour on Android before submitting.
 
 ### App content → Health apps / Health Connect
 Declared Health Connect permissions and justification (must match `AndroidManifest.xml`):
 | Permission | Why |
 |---|---|
 | READ_STEPS | Daily step count on the Home dashboard and streaks |
-| READ_HEART_RATE | Resting heart rate on Wellness screen and recovery score |
-| READ_SLEEP | Sleep duration, stages and sleep score on Wellness screen |
 | WRITE_ACTIVE_CALORIES_BURNED | Saves calories burned in a logged workout back to Health Connect |
+
+### Microphone (`RECORD_AUDIO`)
+Requested only for voice-to-text in the challenge notepad (user taps "Dictate"). Camera features never record audio.
 
 ### Permissions the app intentionally does NOT request
 - Photos/videos (`READ_MEDIA_*`) — gallery uses the Android system photo picker
-- Microphone (`RECORD_AUDIO`) — camera features never record audio
 - Exact alarms (`SCHEDULE_EXACT_ALARM`, `USE_EXACT_ALARM`) — reminders use inexact scheduling
 - Background location — GPS is only used while an outdoor workout is active
 
@@ -135,4 +139,9 @@ Declared Health Connect permissions and justification (must match `AndroidManife
 - Select **18 and over** (health data, AI coaching, ads, subscriptions)
 
 ### Generative AI
-- The AI coach shows a "not medical advice" notice and lets users long-press any reply to report it (`POST /api/v1/ai/report`)
+- AI meal plans, workout recommendations and food-photo analysis show a flag button that reports the result (`POST /api/v1/ai/report`)
+
+### User-generated content (community)
+- In-app: report message / report community / block user, admin can delete messages and remove members
+- Terms of Service section on community content; delete-account URL covers community data
+- Required moderation answers: users are told how to report; reports are logged and reviewed (`[community report]` log entries in Cloud Logging)

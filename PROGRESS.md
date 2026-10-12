@@ -1,6 +1,45 @@
 # Revive — Build Progress
 
 ## Last session
+**Date:** 2026-10-12 (session 38) — branch `refactor/community`
+**What was built:** Major restructure approved in `REFACTOR_PLAN.md`
+
+**Removed**
+- AI Coach (mobile feature + `/ai/coach`, `/ai/chat`, Redis rate limiting, RAG context, `coach.repository`)
+- AI Form Monitor (screen, pose analyzer, `/ai/form-analysis`, `camera` + ML Kit pose/text/label deps)
+- Wellness (screen, `/wellness/*`, sleep/HRV/HR reads, `READ_HEART_RATE` + `READ_SLEEP` Health Connect permissions)
+- Placeholder Social (screens + 501 backend stubs); other 501 stubs (`/workout/logs/:id` PATCH, `/workout/exercises`, `/workout/templates`, `/user/stats`)
+- Unused deps: `socket.io`, `cloudinary`, `@fastify/swagger`; `ADMIN_EMAILS`; required `CLOUDINARY_URL`
+
+**Added — Community (5th tab)**
+- Backend: `community*.routes.ts`, `challenge.routes.ts`, `todo.routes.ts`; Prisma models `Community`, `CommunityMember`, `CommunityMessage`, `Challenge`, `ChallengeParticipant`, `ChallengeCheckin`, `TodoItem`, `CommunityBlock`, `CommunityReport`
+- Migration `20261012000000_community_remove_wellness` — **drops** `MoodLog`, `SleepLog`, `Friendship`. Review before deploy (Cloud Build runs migrations on push to main).
+- Mobile: `features/community/*` (chat, admin settings, member reports, challenges, notepad w/ dictation, private to-do)
+- Account deletion hands owned communities to the longest-standing member (or deletes them)
+- Tests: `apps/backend/src/__tests__/community-report.test.ts` (tracking window rules, challenge day numbering)
+
+**Other fixes**
+- `requireAuth()` helper replaces 22 copy-pasted JWT blocks
+- AI workout recommendations now enforced server-side (Coach tier, same as UI)
+- `/auth/forgot-password` returns 503 when Redis is down (was "sent" with nothing stored)
+- FCM channel id `zenfit_default` → `revive_default` (matched the app's channel)
+- Report-flag button on meal plan, workout recommendation and food-photo results
+- Policy/Play docs updated (privacy policy, terms, delete-account, data safety, store listing)
+
+**Owner actions before release**
+1. Create a private GCS bucket, set `GCS_MEDIA_BUCKET` on Cloud Run, grant the runtime service account `roles/storage.objectAdmin` on it and `roles/iam.serviceAccountTokenCreator` on itself (needed to sign URLs). Add a bucket CORS rule if you ever upload from web.
+2. Review the migration SQL; take a Cloud SQL backup first (drops 3 tables).
+3. Play Console: update Data Safety (microphone, user content), re-declare Health Connect permissions (now only steps + active calories write), target-audience/UGC answers.
+4. iOS: add `NSSpeechRecognitionUsageDescription` strings reviewed (already in Info.plist).
+5. Decide Coach-tier pricing/plan contents (kept as-is by request).
+
+**Known limitations**
+- Admin report has no steps (steps live on the device only) and no muscle-group volume
+- Deep links (`/community/join/:code` works in-app; no `https` app-link/intent filter yet — invite is shared as a code)
+- Resuming a held member restarts their tracking window from the resume date by design
+- Large files over 300 lines remain (paywall, home, food_photo, active_workout, …)
+
+## Previous session
 **Date:** 2026-09-28 (session 37)
 **What was built:** Full A–Z audit after a ~4-month break + launch-blocker fixes
 

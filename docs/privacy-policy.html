@@ -74,7 +74,8 @@
     <li><strong>Fitness goals</strong> — goal type (lose weight, build muscle, maintain, endurance) and activity level.</li>
     <li><strong>Food logs</strong> — meals and snacks you add, including food name, serving size, and macro-nutrient breakdown.</li>
     <li><strong>Workout logs</strong> — exercises performed, sets, reps, weight lifted, duration, GPS route, and perceived effort.</li>
-    <li><strong>Mood &amp; wellness entries</strong> — optional daily mood rating (1–5 emoji scale).</li>
+    <li><strong>Community content</strong> — community names, messages, photos, videos and documents you post, challenges you create (title, duration, daily check-ins) and the notes you write in a challenge notepad. Messages and media are visible to the members of that community. Voice dictation text you choose to share is posted as a normal message.</li>
+    <li><strong>Private to-do list</strong> — tasks you add in the Community tab. Stored against your account so it follows you to a new device; it is never visible to any other user or community admin.</li>
     <li><strong>Profile photo</strong> — if you choose to add one.</li>
     <li><strong>Support messages</strong> — if you contact us by email.</li>
   </ul>
@@ -89,7 +90,8 @@
 
   <h3>1.3 Information From Your Device Hardware</h3>
   <ul>
-    <li><strong>Camera</strong> — used to scan food barcodes, photograph meals for AI nutritional analysis, and stream live video for the AI Exercise Form Monitor. Camera frames are processed on-device and are <em>never</em> stored or transmitted.</li>
+    <li><strong>Camera</strong> — used to scan food barcodes, photograph meals for AI nutritional analysis, and take photos or video to attach to community messages. Barcode scanning runs on-device and its frames are never stored or transmitted.</li>
+    <li><strong>Microphone &amp; speech recognition</strong> — used only while you tap the "Dictate" button in a challenge notepad, to convert your speech to text. Audio is not stored by Revive; depending on your device, speech recognition is performed on-device or by your device's speech service (e.g. Google).</li>
     <li><strong>Photo library</strong> — accessed only when you explicitly choose a photo to log a meal. The selected image is sent to Google Gemini for nutritional analysis and then discarded; it is not stored on our servers.</li>
     <li><strong>Location</strong> — collected only during an active outdoor workout session when you tap "Start GPS workout". GPS coordinates are used to draw your route and calculate distance/pace. Raw coordinate streams are discarded after the session is saved; only the aggregate route polyline and distance are stored.</li>
     <li><strong>Step count</strong> — read from your device's built-in pedometer (Android: Google Fit platform; iOS: CoreMotion/HealthKit) to populate the steps tile on your dashboard.</li>
@@ -106,11 +108,6 @@
     </thead>
     <tbody>
       <tr><td>Steps</td><td>Read</td><td>Dashboard step counter</td></tr>
-      <tr><td>Heart rate</td><td>Read</td><td>Recovery score &amp; wellness screen</td></tr>
-      <tr><td>Resting heart rate</td><td>Read</td><td>Recovery score</td></tr>
-      <tr><td>Heart rate variability (HRV)</td><td>Read</td><td>Recovery score</td></tr>
-      <tr><td>Sleep analysis</td><td>Read</td><td>Sleep card &amp; 7-day trend</td></tr>
-      <tr><td>Body weight</td><td>Read</td><td>Weight trend chart</td></tr>
       <tr><td>Active energy burned</td><td>Write</td><td>Record calories burned during workouts</td></tr>
     </tbody>
   </table>
@@ -121,12 +118,27 @@
     You can revoke Health permissions at any time in your device Settings.
   </p>
 
+  <h3>1.5 Communities, Admin Tracking and Your Control</h3>
+  <p>
+    Communities are groups created by other users. By default a community admin can see only your
+    name and what you post. An admin can see a summary of your fitness data
+    (workouts, minutes, calories logged, weight change, streak and your challenge progress)
+    <strong>only if you switch on "Share my fitness report with admin" for that community</strong>.
+    This is off by default and you can switch it off at any time; access stops immediately.
+  </p>
+  <ul>
+    <li>If you leave a community, the admin stops receiving new data from you. The admin may keep the summary covering the period up to the day you left until they delete it.</li>
+    <li>An admin can put your tracking on hold (the summary stops at that date) or permanently delete the tracking record, which removes it entirely.</li>
+    <li>Your private to-do list and the notes in your notepad (unless you choose to share them) are never shown to admins or other members.</li>
+    <li>You can report or block users and report communities from within the app.</li>
+  </ul>
+
   <!-- 2 -->
   <h2>2. How We Use Your Information</h2>
   <ul>
-    <li>Provide and personalise the Revive service (calorie targets, workout recommendations, AI coach responses).</li>
+    <li>Provide and personalise the Revive service (calorie targets, workout recommendations, meal plans).</li>
     <li>Send push notifications you have opted into (workout reminders, streak warnings, weekly summaries).</li>
-    <li>Power AI features via Google Gemini API — your fitness context (goals, recent logs, body stats) is sent to Gemini to generate meal plans, workout suggestions, and coach replies. Gemini processes this data under <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li>Power AI features via Google Gemini API — your fitness context (goals, recent logs, body stats) is sent to Gemini to generate meal plans, workout suggestions and food-photo analysis. Gemini processes this data under <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
     <li>Display relevant ads via Google AdMob. Ad personalisation requires your consent (shown on first launch). You may opt out at any time in Settings → Privacy.</li>
     <li>Monitor app stability via Firebase Crashlytics and Sentry.</li>
     <li>Understand feature usage in aggregate via Firebase Analytics and Amplitude to improve the app.</li>
@@ -158,7 +170,7 @@
       <tr><th>Third party</th><th>Data shared</th><th>Purpose</th></tr>
     </thead>
     <tbody>
-      <tr><td>Google Gemini API</td><td>Fitness context (goals, recent logs, body stats); meal photos (transient)</td><td>AI coach, meal plans, food photo analysis</td></tr>
+      <tr><td>Google Gemini API</td><td>Fitness context (goals, recent logs, body stats); meal photos (transient)</td><td>Meal plans, workout recommendations, food photo analysis</td></tr>
       <tr><td>Google Firebase</td><td>FCM token; crash stack traces; anonymised analytics events</td><td>Push notifications, crash reporting, analytics</td></tr>
       <tr><td>Google AdMob</td><td>Advertising ID (with consent); approximate location</td><td>Contextual / personalised ads</td></tr>
       <tr><td>Amplitude</td><td>Anonymised usage events (no PII, no health data)</td><td>Product analytics</td></tr>
