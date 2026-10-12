@@ -313,7 +313,7 @@ Loaded through `CutoutImage`; a missing file falls back to an icon disc.
 | `workout_runner.png` | *Runner.png* (trimmed, de-haloed) | Active workout → GPS stats card |
 | `heart_3d.png` | *Heart.jpg* (background removed) | Training-load (deload) banner |
 | `challenge_medal.png` | *Meda;.jpg* (background removed) | Challenges hero |
-| `obj_dumbbell.png`, `obj_apple.png`, `obj_chat.png`, `obj_target.png`, `obj_scale.png`, `obj_drop.png`, `obj_trophy.png` | generated 3D-style renders (`scratchpad/make_objects.py` source in git history) | empty states, water card, onboarding / body-log (step 5–6) |
+| `obj_dumbbell.png`, `obj_apple.png`, `obj_chat.png`, `obj_target.png`, `obj_scale.png`, `obj_drop.png`, `obj_trophy.png` | generated 3D-style renders (`apps/mobile/tools/make_3d_objects.py`) | empty states, water card, onboarding / body-log (step 5–6) |
 
 **Body outline:** drawn in code (`core/widgets/body_figure.dart`) — front and back mannequin with 9 selectable muscle regions, so it can be recoloured and hit-tested. No SVG asset needed.
 
