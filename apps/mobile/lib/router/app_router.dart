@@ -35,6 +35,7 @@ import '../features/community/screens/create_community_screen.dart';
 import '../features/community/screens/join_preview_screen.dart';
 import '../features/community/screens/member_report_screen.dart';
 import '../features/community/screens/todo_screen.dart';
+import '../features/workout/models/exercise.dart' show MuscleGroup;
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
@@ -140,7 +141,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'exercises',
                 name: 'exercise-picker',
-                builder: (context, state) => const ExercisePickerScreen(),
+                builder: (context, state) => ExercisePickerScreen(
+                  initialGroup:
+                      state.extra is MuscleGroup ? state.extra as MuscleGroup : null,
+                ),
               ),
               GoRoute(
                 path: 'active',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/cutout_image.dart';
 
 /// One-time dialog asking the user to grant health data access.
 
@@ -36,6 +37,19 @@ class HealthPermissionsDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: const SizedBox(
+              height: 120,
+              width: double.infinity,
+              child: CutoutImage(
+                name: 'hero_fitband.jpg',
+                fallbackIcon: PhosphorIconsRegular.watch,
+                alignment: Alignment.center,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           const Text(
             'Revive would like to read and write:',
             style: TextStyle(fontSize: 14),

@@ -11,9 +11,12 @@ import '../../../core/widgets/hero_card.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/pastel_card.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../progress/providers/progress_provider.dart';
+import '../../../core/widgets/muscle_workload_card.dart';
 import '../providers/deload_check_provider.dart';
 import '../providers/workout_provider.dart';
 import '../widgets/deload_banner_card.dart';
+import '../widgets/train_muscle.dart';
 
 class WorkoutScreen extends ConsumerWidget {
   const WorkoutScreen({super.key});
@@ -73,7 +76,7 @@ class WorkoutScreen extends ConsumerWidget {
               subtitle: 'AI recommendation + log sets with weights.',
               ctaLabel: 'Get started',
               onCta: () => context.push(AppRoutes.gymWorkout),
-              imageName: 'hero_gym_athlete.png',
+              imageName: 'hero_gym_athlete.jpg',
               fallbackIcon: PhosphorIconsRegular.barbell,
               height: 160,
             ),
@@ -89,9 +92,17 @@ class WorkoutScreen extends ConsumerWidget {
             subtitle: 'AI recommendation + bodyweight & calisthenics.',
             ctaLabel: 'Get started',
             onCta: () => context.push(AppRoutes.homeWorkouts),
-            imageName: 'hero_home_workout.png',
+            imageName: 'hero_home_workout.jpg',
             fallbackIcon: PhosphorIconsRegular.personSimpleRun,
             height: 160,
+          ),
+          const SizedBox(height: 16),
+
+          // ── Muscles workload picker ─────────────────────────────────────
+          MuscleWorkloadCard(
+            volume: ref.watch(progressProvider).valueOrNull?.muscleVolume ??
+                const {},
+            onTrain: (k) => startTrainingForMuscle(context, ref, k),
           ),
         ],
       ),

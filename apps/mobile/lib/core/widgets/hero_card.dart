@@ -85,7 +85,24 @@ class HeroCard extends StatelessWidget {
               ],
             ),
           ),
-          if (imageName != null)
+          if (imageName != null && CutoutImage.isPhotoName(imageName!))
+            // Photographs sit inside the card as a rounded inset tile.
+            Positioned(
+              right: 10,
+              top: 10,
+              bottom: 10,
+              width: height * 0.92,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.hero - 8),
+                child: CutoutImage(
+                  name: imageName!,
+                  fallbackIcon: fallbackIcon,
+                  alignment: Alignment.center,
+                ),
+              ),
+            )
+          else if (imageName != null)
+            // Transparent cut-outs overflow the card's top edge.
             Positioned(
               right: 4,
               top: -22,

@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/cutout_image.dart';
 
 /// Water intake: progress, glass row and +ml quick-add circles.
 ///
@@ -42,7 +43,13 @@ class WaterTrackerCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(PhosphorIconsRegular.drop, size: 20),
+              const CutoutImage(
+                name: 'obj_drop.png',
+                fallbackIcon: PhosphorIconsRegular.drop,
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+              ),
               const SizedBox(width: 8),
               Text('Water', style: AppTextStyles.heading),
               const Spacer(),

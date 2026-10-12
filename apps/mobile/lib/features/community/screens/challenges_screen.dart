@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_routes.dart';
 import '../models/community_models.dart';
 import '../providers/challenge_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/hero_card.dart';
 
 class ChallengesScreen extends ConsumerWidget {
   const ChallengesScreen({super.key, required this.communityId});
@@ -34,7 +37,10 @@ class ChallengesScreen extends ConsumerWidget {
           data: (list) {
             if (list.isEmpty) {
               return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
                 children: [
+                  _ChallengeHero(),
+                  const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
@@ -55,6 +61,8 @@ class ChallengesScreen extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
               children: [
+                _ChallengeHero(),
+                const SizedBox(height: 16),
                 for (final c in list)
                   _ChallengeCard(
                     challenge: c,
@@ -69,6 +77,21 @@ class ChallengesScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class _ChallengeHero extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const HeroCard(
+      tint: PastelTint.butter,
+      chipLabel: 'Challenges',
+      chipIcon: PhosphorIconsFill.trophy,
+      title: 'Show up every day',
+      subtitle: 'Mark each day complete',
+      imageName: 'challenge_medal.png',
+      fallbackIcon: PhosphorIconsRegular.medal,
     );
   }
 }

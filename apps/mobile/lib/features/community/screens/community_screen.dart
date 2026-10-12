@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_routes.dart';
 import '../providers/community_provider.dart';
 import '../widgets/community_tile.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/hero_card.dart';
 
 class CommunityScreen extends ConsumerWidget {
   const CommunityScreen({super.key});
@@ -41,6 +44,18 @@ class CommunityScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 20),
+            HeroCard(
+              tint: PastelTint.lime,
+              chipLabel: 'Community',
+              chipIcon: PhosphorIconsFill.usersThree,
+              title: 'Train together',
+              subtitle: 'Join by invite or search by name',
+              ctaLabel: 'Find communities',
+              onCta: () => context.push(AppRoutes.communitySearch),
+              imageName: 'hero_community.jpg',
+              fallbackIcon: PhosphorIconsRegular.usersThree,
+            ),
+            const SizedBox(height: 24),
             Text('Joined communities', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
             communities.when(

@@ -94,7 +94,7 @@ class HomeDashboard extends StatelessWidget {
                 subtitle: 'Daily target · $target kcal',
                 ctaLabel: 'Log food',
                 onCta: () => context.push(AppRoutes.foodSearch),
-                imageName: 'hero_home_plate.png',
+                imageName: 'hero_home_plate.jpg',
                 fallbackIcon: PhosphorIconsRegular.bowlFood,
               ),
             ),

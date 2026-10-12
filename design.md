@@ -297,24 +297,25 @@ The reference's depth comes from **cut-out photos and 3D renders overflowing car
 
 > I will not copy the photographs from the reference screenshot into the app. Use the images you own / have licensed.
 
-### 7.1 File contract (already wired in code)
+### 7.1 Assets in the app (`apps/mobile/assets/images/`)
 
-Drop files into `apps/mobile/assets/images/`. Until a file exists the card shows a white disc with an icon in the same position, so nothing breaks.
-**Format:** transparent PNG or WebP · subject cut out · soft contact shadow optional · keep < 150 KB each.
+`.jpg` = photograph shown as a rounded inset tile · `.png` = transparent cut-out / 3D render that overflows the card.
+Loaded through `CutoutImage`; a missing file falls back to an icon disc.
 
-| File name | Where it shows | Card tint behind it | Subject to supply | Size (px) | Status in code |
-|---|---|---|---|---|---|
-| `hero_home_plate.png` | Home → top hero card (right side, overflows top) | sky | Healthy plate / bowl / apple, 3D-render or photo cut-out | 900 × 900 | ✅ wired |
-| `hero_gym_athlete.png` | Workout → "Gym Workout" hero | sky | Person lifting / battle ropes (like reference A) | 900 × 1000 | ✅ wired |
-| `hero_home_workout.png` | Workout → "Home Workout" hero | lime | Person doing bodyweight / yoga / push-up | 900 × 1000 | ✅ wired |
-| `workout_runner.png` | Active workout → outdoor GPS metric card | sky | Runner mid-stride (like reference C) | 700 × 900 | ✅ wired |
-| `hero_progress.png` | Progress → top value card | sky | Scale / body-measure render or athlete | 800 × 800 | step 5 |
-| `hero_community.png` | Community → create/empty states | lime | Group of people / friends high-five | 900 × 700 | step 5 |
-| `challenge_trophy.png` | Challenges → hero + "completed" | butter | 3D trophy / medal | 600 × 600 | step 5 |
-| `empty_workout.png`, `empty_food.png`, `empty_chat.png` | Empty states | sky | Simple 3D object (dumbbell / apple / chat bubble) | 512 × 512 | step 5 |
-| `onboarding_goal.png`, `onboarding_body.png`, `onboarding_activity.png` | Onboarding screens | sky / lime / butter | One subject each | 900 × 900 | step 6 |
-| `auth_hero.png` | Login / signup header | sky | Athlete or abstract 3D | 1000 × 800 | step 6 |
-| `anatomy_front.svg`, `anatomy_back.svg` | Muscle tiles (Progress heat-map) | grey | Body outline with separable muscle paths (chest, back, shoulders, arms, legs, core) | vector | step 5 |
+| File | Source | Used on |
+|---|---|---|
+| `hero_home_plate.jpg` | your *Bowl.jpg* (cropped) | Home hero |
+| `hero_gym_athlete.jpg` | *Battle ropes.jpg* | Workout → Gym hero |
+| `hero_home_workout.jpg` | *Push-up.jpg* | Workout → Home hero |
+| `hero_progress.jpg` | *Athlete.jpg* | Progress hero |
+| `hero_community.jpg` | *People.jpg* | Community hero |
+| `hero_fitband.jpg` | *Fitband.jpg* | Health-permission dialog |
+| `workout_runner.png` | *Runner.png* (trimmed, de-haloed) | Active workout → GPS stats card |
+| `heart_3d.png` | *Heart.jpg* (background removed) | Training-load (deload) banner |
+| `challenge_medal.png` | *Meda;.jpg* (background removed) | Challenges hero |
+| `obj_dumbbell.png`, `obj_apple.png`, `obj_chat.png`, `obj_target.png`, `obj_scale.png`, `obj_drop.png`, `obj_trophy.png` | generated 3D-style renders (`scratchpad/make_objects.py` source in git history) | empty states, water card, onboarding / body-log (step 5–6) |
+
+**Body outline:** drawn in code (`core/widgets/body_figure.dart`) — front and back mannequin with 9 selectable muscle regions, so it can be recoloured and hit-tested. No SVG asset needed.
 
 ### 7.2 What I can do with your photos
 - Remove backgrounds → transparent PNG (I'll use `rembg`/Pillow locally; you review each result).
@@ -411,12 +412,13 @@ Branch `redesign/pastel-bento`, one commit per step, `flutter analyze` + tests g
 | 3 Floating nav shell | ✅ |
 | 4 Home, Nutrition, Workout (hub, lists, picker, active, summary, history) | ✅ |
 | 4b Nutrition sub-screens (search, barcode, photo, meal plan, log sheet) | ⏳ themed by global theme only — full restyle in step 5 |
-| 5 Progress, Community, Profile, Subscription | ⏳ |
+| 4c Images integrated, **Muscles workload picker** (Workout hub + Progress, replaces old heat-map) | ✅ |
+| 5 Progress (rest), Community, Profile, Subscription | ⏳ |
 | 6 Auth, onboarding, splash | ⏳ |
 | 7 Assets drop-in, goldens, TalkBack pass | ⏳ |
 
 ### Deliberate deviations (feature parity wins over pixel parity)
-- Reference screen A's **"Muscles workload" body-tile picker** is not added to the Workout hub: Revive has no feature behind it (it would be a new feature). The anatomy tiles are used where Revive already has a muscle heat-map (Progress).
+- ~~Muscles workload picker~~ — **now implemented** (see §6.4): scrolling body tiles, weekly sets + status per muscle, and "Train" opens the exercise picker filtered to that muscle.
 - Reference screen D/E **heart / battery / ECG** content has no Revive equivalent; the layouts (bento grid, slide action, value-hero card, ruler chart) are reused for calories, steps, water and workout metrics.
 
 ---

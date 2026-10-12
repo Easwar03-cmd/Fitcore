@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
+import 'cutout_image.dart';
 
 /// Pulsing placeholder block with the same radius as the card it stands in for.
 class Skeleton extends StatefulWidget {
@@ -65,9 +66,13 @@ class EmptyState extends StatelessWidget {
     this.message,
     this.actionLabel,
     this.onAction,
+    this.imageName,
   });
 
   final IconData icon;
+
+  /// Optional 3D render from `assets/images/` shown instead of the icon disc.
+  final String? imageName;
   final String title;
   final String? message;
   final String? actionLabel;
@@ -82,13 +87,22 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: const BoxDecoration(
-                  color: AppColors.sky, shape: BoxShape.circle),
-              child: Icon(icon, size: 40),
-            ),
+            if (imageName != null)
+              CutoutImage(
+                name: imageName!,
+                fallbackIcon: icon,
+                width: 132,
+                height: 132,
+                alignment: Alignment.center,
+              )
+            else
+              Container(
+                width: 96,
+                height: 96,
+                decoration: const BoxDecoration(
+                    color: AppColors.sky, shape: BoxShape.circle),
+                child: Icon(icon, size: 40),
+              ),
             const SizedBox(height: 16),
             Text(title,
                 textAlign: TextAlign.center, style: theme.textTheme.titleMedium),

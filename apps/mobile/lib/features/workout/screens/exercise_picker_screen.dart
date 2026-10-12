@@ -11,7 +11,10 @@ import '../../../core/widgets/skeleton.dart';
 import '../models/exercise.dart';
 
 class ExercisePickerScreen extends StatefulWidget {
-  const ExercisePickerScreen({super.key});
+  const ExercisePickerScreen({super.key, this.initialGroup});
+
+  /// When set, only this muscle group is listed (opened from the muscle picker).
+  final MuscleGroup? initialGroup;
 
   @override
   State<ExercisePickerScreen> createState() => _ExercisePickerScreenState();
@@ -19,6 +22,7 @@ class ExercisePickerScreen extends StatefulWidget {
 
 class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
   String _query = '';
+  late MuscleGroup? _group = widget.initialGroup;
 
   Map<MuscleGroup, List<Exercise>> get _grouped {
     final q = _query.trim().toLowerCase();
@@ -30,6 +34,7 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
 
     final map = <MuscleGroup, List<Exercise>>{};
     for (final group in MuscleGroup.values) {
+      if (_group != null && group != _group) continue;
       final list = filtered.where((e) => e.muscleGroup == group).toList();
       if (list.isNotEmpty) map[group] = list;
     }
@@ -54,6 +59,20 @@ class _ExercisePickerScreenState extends State<ExercisePickerScreen> {
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
+          if (_group != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: InputChip(
+                  label: Text('Showing ${_group!.label}'),
+                  avatar: Icon(_group!.icon, size: 16),
+                  onDeleted: () => setState(() => _group = null),
+                  deleteButtonTooltipMessage: 'Show all muscle groups',
+                  backgroundColor: _group!.color,
+                ),
+              ),
+            ),
           Expanded(
             child: grouped.isEmpty
                 ? const EmptyState(

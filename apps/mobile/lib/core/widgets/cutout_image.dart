@@ -15,8 +15,15 @@ class CutoutImage extends StatelessWidget {
     this.width,
     this.height,
     this.alignment = Alignment.bottomRight,
-    this.fit = BoxFit.contain,
+    this.fit,
   });
+
+  /// `.jpg` files are rectangular photographs (shown cover-fit, clipped by the
+  /// parent); `.png` files are transparent cut-outs / 3D renders (contain-fit).
+  static bool isPhotoName(String name) {
+    final n = name.toLowerCase();
+    return n.endsWith('.jpg') || n.endsWith('.jpeg');
+  }
 
   /// File name inside `assets/images/`, e.g. `hero_athlete_ropes.png`.
   final String name;
@@ -24,7 +31,7 @@ class CutoutImage extends StatelessWidget {
   final double? width;
   final double? height;
   final Alignment alignment;
-  final BoxFit fit;
+  final BoxFit? fit;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +41,8 @@ class CutoutImage extends StatelessWidget {
         height: height,
         child: Image.asset(
           'assets/images/$name',
-          fit: fit,
+          cacheWidth: 900,
+          fit: fit ?? (isPhotoName(name) ? BoxFit.cover : BoxFit.contain),
           alignment: alignment,
           errorBuilder: (_, __, ___) => Center(
             child: Container(

@@ -10,6 +10,8 @@ import '../providers/chat_provider.dart';
 import '../providers/community_provider.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/message_bubble.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/widgets/skeleton.dart';
 
 class CommunityChatScreen extends ConsumerStatefulWidget {
   const CommunityChatScreen({super.key, required this.communityId});
@@ -302,13 +304,11 @@ class _MessageList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (messages.isEmpty) {
-      return Center(
-        child: Text(
-          'No messages yet. Say hello!',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
+      return const EmptyState(
+        icon: PhosphorIconsRegular.chatCircleDots,
+        imageName: 'obj_chat.png',
+        title: 'No messages yet',
+        message: 'Say hello!',
       );
     }
 

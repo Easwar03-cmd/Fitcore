@@ -53,6 +53,7 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
         data: (logs) => logs.isEmpty
             ? const EmptyState(
                 icon: PhosphorIconsRegular.barbell,
+                imageName: 'obj_dumbbell.png',
                 title: 'No workouts yet',
                 message: 'Finish your first workout to see it here.',
               )
