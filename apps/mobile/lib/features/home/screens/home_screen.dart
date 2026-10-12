@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../constants/app_routes.dart';
@@ -10,19 +10,15 @@ import '../../../core/services/sync_queue_service.dart' show syncServiceProvider
 import '../../../core/services/sync_status_provider.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/circle_icon_button.dart';
+import '../../../core/widgets/page_app_bar.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/nutrition/models/food_log.dart';
 import '../../../features/nutrition/providers/nutrition_provider.dart';
-import '../models/home_state.dart';
 import '../providers/home_provider.dart';
 import '../widgets/ad_placeholders.dart';
-import '../widgets/calorie_ring.dart';
-import '../widgets/macro_bars.dart';
-import '../widgets/step_counter_card.dart';
-import '../widgets/streak_card.dart';
-import '../widgets/water_tracker_card.dart';
+import '../widgets/health_permissions_dialog.dart';
+import '../widgets/home_dashboard.dart';
 
 /// SharedPreferences key — written once the health permissions dialog is shown.
 const _kHealthPermsPrompted = 'health_perms_prompted';
@@ -66,7 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final granted = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const _HealthPermissionsDialog(),
+      builder: (_) => const HealthPermissionsDialog(),
     );
 
     if (granted == true) {
@@ -111,404 +107,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     });
 
-    final userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : '?';
-
     return Scaffold(
-      appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: GestureDetector(
-            onTap: () => context.push(AppRoutes.profile),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.primary.withAlpha(40),
-              child: Text(
-                userInitial,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: Text(
-          'Hi, $userName 👋',
-          style: AppTextStyles.titleLarge
-              .copyWith(color: Theme.of(context).colorScheme.onSurface),
-        ),
-        actions: const [],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              if (syncStatus.pendingCount > 0)
-                _SyncBanner(
-                  pendingCount: syncStatus.pendingCount,
-                  isSyncing: syncStatus.isSyncing,
-                  onSync: () =>
-                      ref.read(syncServiceProvider).flush(),
-                ),
-              Expanded(
-                child: homeAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => _ErrorView(
-                    message: e.toString(),
-                    onRetry: () => ref.read(homeProvider.notifier).refresh(),
-                  ),
-                  data: (home) => _Dashboard(
-                    home: home,
-                    logsAsync: logsAsync,
-                    onRefresh: () async {
-                      await ref.read(homeProvider.notifier).refresh();
-                    },
-                    onAddWater: (ml) =>
-                        ref.read(homeProvider.notifier).addWater(ml),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // Popup ad — appears after a 2-second delay, bottom-left anchored.
-          if (_popupVisible)
-            const Positioned(
-              bottom: 16,
-              left: 16,
-              child: AdPopupPlaceholder(),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Sync banner ───────────────────────────────────────────────────────────────
-
-class _SyncBanner extends StatelessWidget {
-  const _SyncBanner({
-    required this.pendingCount,
-    required this.isSyncing,
-    required this.onSync,
-  });
-
-  final int pendingCount;
-  final bool isSyncing;
-  final VoidCallback onSync;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.primary.withAlpha(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Stack(
           children: [
-            if (isSyncing)
-              const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              const Icon(Icons.cloud_off_rounded,
-                  size: 16, color: AppColors.primary),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                isSyncing
-                    ? 'Syncing…'
-                    : '$pendingCount item${pendingCount == 1 ? '' : 's'} '
-                        'waiting to sync',
-                style: AppTextStyles.bodySmall
-                    .copyWith(color: AppColors.primary),
-              ),
-            ),
-            if (!isSyncing)
-              TextButton(
-                onPressed: onSync,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('Sync now'),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Health permissions dialog ─────────────────────────────────────────────────
-
-class _HealthPermissionsDialog extends StatelessWidget {
-  const _HealthPermissionsDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(25),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.favorite_rounded,
-                color: AppColors.primary, size: 22),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text('Connect Health Data',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Revive would like to read and write:',
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 14),
-          const _PermissionRow(Icons.directions_walk_rounded, 'Steps',
-              'Auto-fill your daily step count'),
-          const _PermissionRow(Icons.fitness_center_rounded, 'Workouts',
-              'Write completed sessions back to your health app'),
-          const SizedBox(height: 10),
-          Text(
-            'You can change these permissions any time in your device settings.',
-            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-        ],
-      ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Skip'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Allow'),
-        ),
-      ],
-    );
-  }
-}
-
-class _PermissionRow extends StatelessWidget {
-  const _PermissionRow(this.icon, this.title, this.subtitle);
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600)),
-                Text(subtitle,
-                    style: TextStyle(
-                        fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Dashboard body ────────────────────────────────────────────────────────────
-
-class _Dashboard extends StatelessWidget {
-  const _Dashboard({
-    required this.home,
-    required this.logsAsync,
-    required this.onRefresh,
-    required this.onAddWater,
-  });
-
-  final HomeDashboardState home;
-  final AsyncValue<DayLogs> logsAsync;
-  final Future<void> Function() onRefresh;
-  final void Function(int ml) onAddWater;
-
-  @override
-  Widget build(BuildContext context) {
-    final totals = logsAsync.valueOrNull?.totals ?? DayTotals.zero;
-
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Banner ad ─────────────────────────────────────────────────
-            const AdBannerPlaceholder(),
-
-            // ── Calorie ring ──────────────────────────────────────────────
-            AppCard(
-              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
-              child: Column(
-                children: [
-                  CalorieRing(
-                    consumed: totals.calories,
-                    target: home.adaptiveTarget,
-                    size: 200,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Daily target · ${home.adaptiveTarget} kcal',
-                    style: AppTextStyles.bodySmall
-                        .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
-                  if (home.caloriesBurnedToday > 0) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(20),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '+${home.caloriesBurnedToday} kcal from workout',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                GreetingHeader(
+                  name: userName,
+                  greeting: 'Hi',
+                  onAvatarTap: () => context.push(AppRoutes.profile),
+                  trailing: [
+                    CircleIconButton(
+                      icon: PhosphorIconsRegular.bell,
+                      semanticLabel: 'Notification settings',
+                      showDot: syncStatus.pendingCount > 0,
+                      onPressed: () =>
+                          context.push(AppRoutes.notificationPrefs),
                     ),
                   ],
-                ],
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms)
-                .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
-
-            const SizedBox(height: 14),
-
-            // ── Macro bars ────────────────────────────────────────────────
-            AppCard(
-              child: MacroBars(
-                totals: totals,
-                tdee: home.adaptiveTarget,
-                goal: home.goal,
-              ),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms, delay: 80.ms)
-                .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
-
-            const SizedBox(height: 14),
-
-            // ── Steps + Streak row ────────────────────────────────────────
-            Row(
-              children: [
-                Expanded(
-                  child: AppCard(
-                    child: StepCounterCard(
-                      steps: home.steps,
-                      stepGoal: home.stepGoal,
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 12),
+                if (syncStatus.pendingCount > 0)
+                  SyncBanner(
+                    pendingCount: syncStatus.pendingCount,
+                    isSyncing: syncStatus.isSyncing,
+                    onSync: () => ref.read(syncServiceProvider).flush(),
+                  ),
                 Expanded(
-                  child: AppCard(
-                    child: StreakCard(
-                      streak: home.streak,
-                      graceUsed: home.graceUsed,
+                  child: homeAsync.when(
+                    loading: () => const HomeSkeleton(),
+                    error: (e, _) => HomeErrorView(
+                      message: e.toString(),
+                      onRetry: () => ref.read(homeProvider.notifier).refresh(),
+                    ),
+                    data: (home) => HomeDashboard(
+                      home: home,
+                      totals: logsAsync.valueOrNull?.totals ?? DayTotals.zero,
+                      onRefresh: () async {
+                        await ref.read(homeProvider.notifier).refresh();
+                      },
+                      onAddWater: (ml) =>
+                          ref.read(homeProvider.notifier).addWater(ml),
                     ),
                   ),
                 ),
               ],
-            )
-                .animate()
-                .fadeIn(duration: 400.ms, delay: 160.ms)
-                .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
-
-            const SizedBox(height: 14),
-
-            // ── Water tracker ─────────────────────────────────────────────
-            AppCard(
-              child: WaterTrackerCard(
-                waterMl: home.waterMl,
-                waterTargetMl: home.waterTargetMl,
-                onAdd: onAddWater,
+            ),
+            // Popup ad — appears after a 2-second delay, bottom-left anchored.
+            if (_popupVisible)
+              const Positioned(
+                bottom: 16,
+                left: 16,
+                child: AdPopupPlaceholder(),
               ),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms, delay: 240.ms)
-                .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Error view ────────────────────────────────────────────────────────────────
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.wifi_off_rounded,
-              size: 48,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message.replaceFirst('Exception: ', ''),
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
           ],
         ),
       ),

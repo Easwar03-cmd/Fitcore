@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../constants/app_routes.dart';
 import '../core/services/sync_queue_service.dart' show syncServiceProvider;
+import '../core/widgets/floating_nav.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.child});
@@ -64,38 +66,38 @@ class _MainShellState extends ConsumerState<MainShell>
       },
       child: Scaffold(
         body: widget.child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _tabIndex(context),
-        onTap: (i) => context.go(_tabs[i]),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_outlined),
-            activeIcon: Icon(Icons.restaurant),
-            label: 'Nutrition',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center_outlined),
-            activeIcon: Icon(Icons.fitness_center),
-            label: 'Workout',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Progress',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            activeIcon: Icon(Icons.groups),
-            label: 'Community',
-          ),
-        ],
+        bottomNavigationBar: FloatingNav(
+          currentIndex: _tabIndex(context),
+          onTap: (i) => context.go(_tabs[i]),
+          items: const [
+            FloatingNavItem(
+              icon: PhosphorIconsRegular.house,
+              activeIcon: PhosphorIconsFill.house,
+              label: 'Home',
+            ),
+            FloatingNavItem(
+              icon: PhosphorIconsRegular.forkKnife,
+              activeIcon: PhosphorIconsFill.forkKnife,
+              label: 'Nutrition',
+            ),
+            FloatingNavItem(
+              icon: PhosphorIconsRegular.barbell,
+              activeIcon: PhosphorIconsFill.barbell,
+              label: 'Workout',
+            ),
+            FloatingNavItem(
+              icon: PhosphorIconsRegular.chartLineUp,
+              activeIcon: PhosphorIconsFill.chartLineUp,
+              label: 'Progress',
+            ),
+            FloatingNavItem(
+              icon: PhosphorIconsRegular.usersThree,
+              activeIcon: PhosphorIconsFill.usersThree,
+              label: 'Community',
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }

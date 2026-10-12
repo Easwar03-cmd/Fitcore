@@ -58,6 +58,9 @@ dependencies:
   timezone: ^0.9.4
   flutter_timezone: ^5.0.0
 
+  # Icons (Phosphor Regular — design.md §3.5)
+  phosphor_flutter: ^2.1.0
+
   # Logging
   logger: ^2.4.0
 
@@ -127,8 +130,13 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-VariableFont_wght.ttf
   assets:
     - .env
     - .env.production
     - assets/data/
     - assets/icons/
+    - assets/images/
