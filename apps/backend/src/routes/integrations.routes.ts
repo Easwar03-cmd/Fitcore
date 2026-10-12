@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 
 import { integrationsRepository } from '../repositories/integrations.repository';
@@ -49,12 +50,7 @@ async function exchangeCodeForTokens(
 export const integrationsRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /api/v1/integrations/status — list connected wearables for the user
   fastify.get('/status', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
     const connections = await integrationsRepository.getStatus(userId);
     // Return as map { provider → { connectedAt, updatedAt } } for easy lookup.
@@ -70,12 +66,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/v1/integrations/oauth/callback — exchange OAuth code for tokens
   fastify.post('/oauth/callback', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
 
     const parsed = oauthCallbackSchema.safeParse(request.body);
@@ -112,12 +103,7 @@ export const integrationsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // DELETE /api/v1/integrations/:provider — disconnect a wearable
   fastify.delete('/:provider', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
     const { provider } = request.params as { provider: string };
 

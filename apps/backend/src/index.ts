@@ -7,10 +7,13 @@ import { nutritionRoutes } from './routes/nutrition.routes';
 import { workoutRoutes } from './routes/workout.routes';
 import { bodyRoutes } from './routes/body.routes';
 import { aiRoutes } from './routes/ai.routes';
-import { socialRoutes } from './routes/social.routes';
-import { wellnessRoutes } from './routes/wellness.routes';
 import { integrationsRoutes } from './routes/integrations.routes';
 import { paymentsRoutes } from './routes/payments.routes';
+import { communityRoutes } from './routes/community.routes';
+import { communityMemberRoutes } from './routes/community-members.routes';
+import { communityChatRoutes, communitySafetyRoutes } from './routes/community-chat.routes';
+import { challengeRoutes } from './routes/challenge.routes';
+import { todoRoutes } from './routes/todo.routes';
 import {
   scheduleWeeklySummaryJob,
   startWeeklySummaryWorker,
@@ -117,10 +120,15 @@ async function bootstrap() {
   await server.register(workoutRoutes, { prefix: '/api/v1/workout' });
   await server.register(bodyRoutes, { prefix: '/api/v1/body' });
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
-  await server.register(socialRoutes, { prefix: '/api/v1/social' });
-  await server.register(wellnessRoutes, { prefix: '/api/v1/wellness' });
   await server.register(integrationsRoutes, { prefix: '/api/v1/integrations' });
   await server.register(paymentsRoutes, { prefix: '/api/v1/payments' });
+  // Community: several plugins share one prefix (static paths win over /:id).
+  await server.register(communityRoutes, { prefix: '/api/v1/community' });
+  await server.register(communityMemberRoutes, { prefix: '/api/v1/community' });
+  await server.register(communityChatRoutes, { prefix: '/api/v1/community' });
+  await server.register(communitySafetyRoutes, { prefix: '/api/v1/community' });
+  await server.register(challengeRoutes, { prefix: '/api/v1/community' });
+  await server.register(todoRoutes, { prefix: '/api/v1/todo' });
 
   server.get('/health', async () => ({ status: 'ok' }));
 

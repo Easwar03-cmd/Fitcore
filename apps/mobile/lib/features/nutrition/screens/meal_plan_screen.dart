@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import '../../../core/widgets/report_ai_button.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
       appBar: AppBar(
         title: const Text('Meal Plan'),
         actions: [
+          if (planState.valueOrNull != null)
+            const ReportAiButton(contentLabel: 'AI meal plan'),
           if (planState.valueOrNull != null)
             IconButton(
               tooltip: 'Regenerate',

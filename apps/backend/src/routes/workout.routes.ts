@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 
 import { workoutRepository } from '../repositories/workout.repository';
@@ -30,12 +31,7 @@ const createWorkoutLogSchema = z.object({
 export const workoutRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/v1/workout/logs — create a completed workout session
   fastify.post('/logs', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
 
     const parsed = createWorkoutLogSchema.safeParse(request.body);
@@ -78,34 +74,9 @@ export const workoutRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/workout/logs — last 20 workouts for the user
   fastify.get('/logs', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
     const logs = await workoutRepository.getWorkoutLogs(userId);
     return reply.send({ success: true, data: logs });
-  });
-
-  // ── Stubs (Phase 2+) ─────────────────────────────────────────────────────
-
-  const UNAUTHORIZED = { success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } };
-  const NOT_IMPLEMENTED = { success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' } };
-
-  fastify.patch('/logs/:id', async (request, reply) => {
-    try { await request.jwtVerify(); } catch { return reply.status(401).send(UNAUTHORIZED); }
-    return reply.status(501).send(NOT_IMPLEMENTED);
-  });
-
-  // Public — exercise library does not require auth.
-  fastify.get('/exercises', async (_request, reply) =>
-    reply.status(501).send(NOT_IMPLEMENTED),
-  );
-
-  fastify.get('/templates', async (request, reply) => {
-    try { await request.jwtVerify(); } catch { return reply.status(401).send(UNAUTHORIZED); }
-    return reply.status(501).send(NOT_IMPLEMENTED);
   });
 };

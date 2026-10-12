@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 
 import { bodyRepository } from '../repositories/body.repository';
@@ -15,12 +16,7 @@ const createBodyStatSchema = z.object({
 export const bodyRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/v1/body/stats — log a body weight (+ optional body fat %)
   fastify.post('/stats', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
 
     const parsed = createBodyStatSchema.safeParse(request.body);
@@ -46,12 +42,7 @@ export const bodyRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/body/stats — last 30 entries for the authenticated user
   fastify.get('/stats', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
     const stats = await bodyRepository.getBodyStats(userId);
     return reply.send({ success: true, data: stats });

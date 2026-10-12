@@ -59,12 +59,16 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Revive uses the microphone only while you dictate notes in a challenge notepad.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Revive converts your speech to text when you dictate notes.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Revive uses the camera to scan food barcodes, analyse meals from photos, and monitor your exercise form in real time.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Revive can read a photo from your library to log a meal by analysing its contents.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Revive reads your steps, heart rate, and sleep from Apple Health to personalise your fitness dashboard and recovery score.</string>
+	<string>Revive reads your daily steps from Apple Health to personalise your fitness dashboard.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Revive writes your workout energy expenditure to Apple Health so all your activity stays in sync.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

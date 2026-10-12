@@ -1,15 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 import { GoogleGenerativeAIFetchError } from '@google/generative-ai';
 import {
-  sendCoachMessage,
   generateMealPlan,
   analyzeFoodPhoto,
-  analyzeExerciseForm,
   getWorkoutRecommendation,
   getDeloadCheck,
-  checkCoachRateLimit,
-  type ChatMessage,
 } from '../services/ai.service';
 import { prisma } from '../utils/db';
 import { config } from '../utils/config';
@@ -19,25 +16,6 @@ import { config } from '../utils/config';
 const foodPhotoRequestSchema = z.object({
   imageBase64: z.string().min(100),
   mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
-});
-
-const chatMessageSchema = z.object({
-  role: z.enum(['user', 'assistant']),
-  content: z.string().min(1).max(4000),
-});
-
-const coachRequestSchema = z.object({
-  messages: z.array(chatMessageSchema).min(1).max(50),
-});
-
-const chatHistoryItemSchema = z.object({
-  role: z.enum(['user', 'assistant']),
-  content: z.string().min(1),
-});
-
-const chatRequestSchema = z.object({
-  message: z.string().min(1).max(4000),
-  history: z.array(chatHistoryItemSchema).max(20).default([]),
 });
 
 // ─── Shared error handler ─────────────────────────────────────────────────────
@@ -62,7 +40,7 @@ function handleAiError(err: unknown, request: { log: { error: (...args: unknown[
     return { status: 502, code: 'AI_ERROR', message: isProd ? 'AI service error' : (err.message ?? `Gemini API error (${err.status})`) };
   }
   request.log.error('[AI]', err instanceof Error ? err.message : err);
-  return { status: 500, code: 'INTERNAL_ERROR', message: isProd ? 'Failed to get coach response' : (err instanceof Error ? err.message : 'Unknown error') };
+  return { status: 500, code: 'INTERNAL_ERROR', message: isProd ? 'AI request failed' : (err instanceof Error ? err.message : 'Unknown error') };
 }
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
@@ -76,14 +54,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/v1/ai/report — user flags an AI response (Play generative-AI
   // policy). Logged at warn level so reports surface in Cloud Logging.
   fastify.post('/report', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const parsed = reportSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -100,101 +71,9 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, data: { received: true } });
   });
 
-  // POST /api/v1/ai/coach
-  fastify.post('/coach', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
-
-    const userId = request.user.userId;
-
-    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
-    const rateLimitResult = await checkCoachRateLimit(userId, subscription?.tier ?? null);
-    if (!rateLimitResult.allowed) {
-      return reply.status(429).send({
-        success: false,
-        error: { code: 'RATE_LIMITED', message: 'Daily AI coach limit reached. Upgrade to Pro for unlimited access.' },
-      });
-    }
-
-    const parsed = coachRequestSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten() },
-      });
-    }
-
-    try {
-      const responseText = await sendCoachMessage(userId, parsed.data.messages as ChatMessage[]);
-      return reply.send({ success: true, data: { message: responseText, remaining: rateLimitResult.remaining } });
-    } catch (err) {
-      const { status, code, message } = handleAiError(err, request);
-      return reply.status(status).send({ success: false, error: { code, message } });
-    }
-  });
-
-  // POST /api/v1/ai/chat
-  fastify.post('/chat', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
-
-    const userId = request.user.userId;
-
-    const subscription = await prisma.subscription.findUnique({ where: { userId }, select: { tier: true } });
-    const rateLimitResult = await checkCoachRateLimit(userId, subscription?.tier ?? null);
-    if (!rateLimitResult.allowed) {
-      return reply.status(429).send({
-        success: false,
-        error: { code: 'RATE_LIMITED', message: 'Daily AI coach limit reached. Upgrade to Pro for unlimited access.' },
-      });
-    }
-
-    const parsed = chatRequestSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten() },
-      });
-    }
-
-    const { message, history } = parsed.data;
-
-    try {
-      const messages: ChatMessage[] = [
-        ...history.map((h) => ({ role: h.role as 'user' | 'assistant', content: h.content })),
-        { role: 'user' as const, content: message },
-      ];
-
-      const replyText = await sendCoachMessage(userId, messages);
-      return reply.send({ success: true, data: { reply: replyText, remaining: rateLimitResult.remaining } });
-    } catch (err) {
-      const { status, code, message: msg } = handleAiError(err, request);
-      return reply.status(status).send({ success: false, error: { code, message: msg } });
-    }
-  });
-
   // POST /api/v1/ai/analyze-food-photo  (20 MB limit — base64 image)
   fastify.post('/analyze-food-photo', { bodyLimit: 20 * 1024 * 1024 }, async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const userId = request.user.userId;
 
@@ -228,14 +107,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/ai/deload-check
   fastify.get('/deload-check', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     try {
       const check = await getDeloadCheck(request.user.userId);
       return reply.send({ success: true, data: check });
@@ -247,16 +119,28 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/ai/workout-recommendation
   fastify.get('/workout-recommendation', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
+    if (!(await requireAuth(request, reply))) return reply;
+
+    const userId = request.user.userId;
+
+    // Same rule the app UI uses (Coach tier only) — enforced here too so the
+    // endpoint cannot be called directly by lower tiers.
+    const sub = await prisma.subscription.findUnique({
+      where: { userId },
+      select: { tier: true, validUntil: true },
+    });
+    const hasCoachTier =
+      sub?.tier === 'coach' && (!sub.validUntil || sub.validUntil > new Date());
+    if (!hasCoachTier) {
+      return reply.status(403).send({
         success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+        error: {
+          code: 'UPGRADE_REQUIRED',
+          message: 'AI workout recommendations are available on the Coach plan.',
+        },
       });
     }
 
-    const userId = request.user.userId;
     const query = request.query as { type?: string };
     const type = query.type === 'home' ? 'home' : 'gym';
 
@@ -269,60 +153,9 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  // POST /api/v1/ai/form-analysis  (all tiers — real-time AI coaching cues)
-  const formAnalysisBodySchema = z.object({
-    exerciseName: z.string().min(1).max(100),
-    currentFeedback: z.string().min(1).max(200),
-    feedbackLevel: z.enum(['none', 'good', 'warn', 'error']),
-    primaryAngleDeg: z.number().nullable().optional(),
-    repCount: z.number().int().min(0),
-  });
-
-  fastify.post('/form-analysis', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
-
-    const parsed = formAnalysisBodySchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({
-        success: false,
-        error: { code: 'VALIDATION_ERROR', message: 'Invalid request body', details: parsed.error.flatten() },
-      });
-    }
-
-    const { exerciseName, currentFeedback, feedbackLevel, primaryAngleDeg, repCount } = parsed.data;
-
-    try {
-      const analysis = await analyzeExerciseForm(
-        exerciseName,
-        currentFeedback,
-        feedbackLevel,
-        primaryAngleDeg ?? null,
-        repCount,
-      );
-      return reply.send({ success: true, data: analysis });
-    } catch (err) {
-      const { status, code, message } = handleAiError(err, request);
-      return reply.status(status).send({ success: false, error: { code, message } });
-    }
-  });
-
   // POST /api/v1/ai/meal-plan  (Pro / Coach tier only)
   fastify.post('/meal-plan', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const userId = request.user.userId;
 

@@ -35,3 +35,21 @@
 ## ADR-008: AdMob test units outside release builds
 **Date:** 2026-09-28
 **Decision:** All ad unit IDs live in `lib/constants/ad_units.dart`, switched on `kReleaseMode`, to avoid AdMob invalid-traffic suspensions during development.
+
+## ADR-009: Community chat uses polling + FCM, not websockets
+**Decision:** Chat clients poll `GET /community/:id/messages?after=` every ~3 s while a chat is open; new messages also trigger an FCM push.
+**Reason:** Cloud Run scales to several stateless instances; Socket.io would need a Redis adapter and sticky behaviour. Polling is simple and good enough at this scale.
+**Trade-off:** Up to ~3 s latency and some wasted requests; revisit with SSE/websockets if communities get large.
+
+## ADR-010: Admin tracking is live-queried, never copied
+**Decision:** Admins never receive stored copies of a member's data. The report is computed on request from the member's own data inside a window (`consentAt` → now / hold date / leave date), computed only by `trackingWindow()`.
+**Reason:** "Hold" and "delete record" then have exact meaning (end-date vs. removal), and consent revocation is instant.
+**Trade-off:** Resuming a hold restarts the window from the resume date so data produced during the hold is never exposed.
+
+## ADR-011: To-do list lives on the backend, owner-only
+**Decision:** `TodoItem` is stored server-side and every query is filtered by the authenticated user; no admin/report code path touches it.
+**Reason:** Must survive device loss and be readable from another device.
+
+## ADR-012: Group and personal challenges share one model
+**Decision:** `Challenge` (+ `kind`) with a `ChallengeParticipant` row per person; personal = exactly one participant. Each participant has their own start date, notes and check-ins.
+

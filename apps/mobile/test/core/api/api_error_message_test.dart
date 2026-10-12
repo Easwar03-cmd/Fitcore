@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:revive/core/api/api_response.dart';
 
 DioException _dioWith({int? status, Object? body}) {
-  final req = RequestOptions(path: '/ai/coach');
+  final req = RequestOptions(path: '/ai/meal-plan');
   return DioException(
     requestOptions: req,
     response: status == null

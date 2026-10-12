@@ -29,11 +29,19 @@ model User {
   workoutLogs         WorkoutLog[]
   bodyStats           BodyStat[]
   goals               Goal[]
-  friendships         Friendship[] @relation("UserFriendships")
   subscription        Subscription?
-  moodLogs            MoodLog[]
-  sleepLogs           SleepLog[]
   wearableConnections WearableConnection[]
+
+  // Community
+  adminOfCommunities    Community[]            @relation("CommunityAdmin")
+  communityMemberships  CommunityMember[]
+  communityMessages     CommunityMessage[]
+  challengesCreated     Challenge[]
+  challengeParticipants ChallengeParticipant[]
+  todoItems             TodoItem[]
+  blocksMade            CommunityBlock[]       @relation("Blocker")
+  blocksReceived        CommunityBlock[]       @relation("Blocked")
+  reportsMade           CommunityReport[]
 }
 
 
@@ -133,40 +141,6 @@ model Subscription {
   user User @relation(fields: [userId], references: [id])
 }
 
-model Friendship {
-  id       String @id @default(cuid())
-  userId   String
-  friendId String
-  status   String // pending | accepted
-
-  user User @relation("UserFriendships", fields: [userId], references: [id])
-}
-
-model MoodLog {
-  id       String   @id @default(cuid())
-  userId   String
-  score    Int      // 1-5
-  loggedAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-}
-
-model SleepLog {
-  id           String   @id @default(cuid())
-  userId       String
-  sleepDate    DateTime // midnight of the night being recorded
-  sleepMinutes Int
-  deepMinutes  Int?
-  lightMinutes Int?
-  remMinutes   Int?
-  sleepScore   Int      // 0-100
-  syncedAt     DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, sleepDate])
-}
-
 model WearableConnection {
   id          String   @id @default(cuid())
   userId      String
@@ -180,4 +154,156 @@ model WearableConnection {
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, provider])
+}
+
+// ─── Community ────────────────────────────────────────────────────────────────
+
+model Community {
+  id               String   @id @default(cuid())
+  name             String
+  nameLower        String   @unique // case-insensitive uniqueness + search
+  description      String?
+  avatarUrl        String?
+  adminId          String
+  isPublic         Boolean  @default(true) // appears in name search
+  requireApproval  Boolean  @default(false)
+  membersCanChat   Boolean  @default(true)
+  membersCanInvite Boolean  @default(true)
+  inviteCode       String   @unique
+  createdAt        DateTime @default(now())
+
+  admin      User               @relation("CommunityAdmin", fields: [adminId], references: [id])
+  members    CommunityMember[]
+  messages   CommunityMessage[]
+  challenges Challenge[]
+
+  @@index([adminId])
+}
+
+model CommunityMember {
+  id          String    @id @default(cuid())
+  communityId String
+  userId      String
+  role        String    @default("member")  // admin | member
+  status      String    @default("active")  // pending | active | on_hold | left
+  shareReport Boolean   @default(false)     // consent: admin may see fitness report + challenges
+  consentAt   DateTime?
+  heldAt      DateTime?
+  leftAt      DateTime?
+  joinedAt    DateTime  @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
+}
+
+model CommunityMessage {
+  id          String    @id @default(cuid())
+  communityId String
+  authorId    String
+  kind        String    // text | update | media | notepad_share | challenge_event
+  body        String?
+  mediaPath   String?   // object path in the media bucket
+  mediaType   String?   // image | video | document
+  mediaName   String?
+  replyToId   String?
+  payload     Json?     // notepad snapshot / challenge card
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([communityId, createdAt])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  communityId String
+  creatorId   String
+  kind        String   // personal | group
+  title       String
+  description String   @default("")
+  totalDays   Int
+  status      String   @default("open") // open | closed
+  createdAt   DateTime @default(now())
+
+  community    Community              @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  creator      User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participants ChallengeParticipant[]
+
+  @@index([communityId])
+}
+
+// One row per person doing a challenge (personal challenge = exactly one row).
+model ChallengeParticipant {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  startDate   DateTime @db.Date // the user's local calendar date when they started
+  notes       String   @default("") // this person's notepad
+  status      String   @default("active") // active | completed | abandoned
+
+  challenge Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkins  ChallengeCheckin[]
+
+  @@unique([challengeId, userId])
+  @@index([userId])
+}
+
+model ChallengeCheckin {
+  id            String   @id @default(cuid())
+  participantId String
+  dayNumber     Int
+  date          DateTime @db.Date
+  completedAt   DateTime @default(now())
+
+  participant ChallengeParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, dayNumber])
+}
+
+// Private daily to-do list. Only ever returned to its owner.
+model TodoItem {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  done        Boolean  @default(false)
+  repeatDaily Boolean  @default(false) // root of a repeating item
+  templateId  String?  // set on the per-day copies of a repeating root
+  hidden      Boolean  @default(false) // tombstone for a deleted per-day copy
+  forDate     DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, forDate])
+  @@index([userId, forDate])
+}
+
+model CommunityBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model CommunityReport {
+  id          String   @id @default(cuid())
+  reporterId  String
+  messageId   String?
+  communityId String?
+  userId      String?
+  reason      String
+  createdAt   DateTime @default(now())
+
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 }

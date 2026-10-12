@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/report_ai_button.dart';
 import '../models/workout_recommendation.dart';
 
 /// Displays the AI-generated workout recommendation on the Workout tab.
@@ -49,6 +50,8 @@ class RecommendationCard extends StatelessWidget {
                       fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
+                const ReportAiButton(
+                    contentLabel: 'AI workout recommendation', size: 18),
                 IconButton(
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   padding: EdgeInsets.zero,

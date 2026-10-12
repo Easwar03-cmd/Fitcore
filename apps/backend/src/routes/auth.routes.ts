@@ -274,9 +274,15 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     const code = randomBytes(5).toString('hex').toUpperCase(); // 10-char hex code (~1 trillion combinations)
     const redis = getRedis();
-    if (redis) {
-      await redis.set(`pwd_reset:${code}`, user.id, 'EX', RESET_TTL);
+    if (!redis) {
+      // Without Redis the code cannot be stored, so it could never be redeemed.
+      request.log.error('Redis unavailable — password reset code cannot be stored');
+      return reply.status(503).send({
+        success: false,
+        error: { code: 'SERVICE_UNAVAILABLE', message: 'Password reset is temporarily unavailable' },
+      });
     }
+    await redis.set(`pwd_reset:${code}`, user.id, 'EX', RESET_TTL);
 
     if (isEmailConfigured) {
       await sendPasswordResetEmail(email, code).catch((err) => {

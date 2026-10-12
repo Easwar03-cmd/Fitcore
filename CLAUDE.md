@@ -9,7 +9,7 @@
 **App name:** Revive
 **Type:** Cross-platform mobile fitness app (iOS + Android)
 **Solo developer:** Yes — one person building this with Claude Code assistance
-**Goal:** A comprehensive fitness app covering calorie tracking, workout logging, AI coaching, wearable integration, mental wellness, and social features.
+**Goal:** A comprehensive fitness app covering calorie tracking, workout logging, AI meal plans/workout ideas, wearable integration, and communities with challenges.
 **Current status:** See `PROGRESS.md` for latest state.
 
 ---
@@ -34,13 +34,12 @@
 - **ORM:** Prisma v5 with PostgreSQL
 - **Cache:** Redis (ioredis)
 - **Job queue:** BullMQ (background sync, report generation)
-- **Real-time:** Socket.io (live workout sessions, social feed)
+- **Community chat:** polling (~3 s while a chat is open) + FCM push — no websockets (stateless on Cloud Run)
 - **Auth:** JWT access tokens (15min) + refresh tokens (30 days), stored in flutter_secure_storage
-- **File storage:** Cloudinary (images, exercise videos)
+- **File storage:** Google Cloud Storage (`GCS_MEDIA_BUCKET`) — community media via signed upload/read URLs
 
 ### AI / ML
-- **LLM:** Google Gemini API (`gemini-2.0-flash`) for coach chatbot, meal plans, workout adaptation
-- **Pose detection:** Google ML Kit (on-device, for form analysis)
+- **LLM:** Google Gemini API (model from `GEMINI_MODEL` env) for meal plans, workout recommendations, food-photo analysis
 - **Food recognition:** Google ML Kit Vision (food photo logging)
 - **Embeddings:** OpenAI text-embedding-3-small + Pinecone (personalization vectors)
 
@@ -100,18 +99,11 @@ zenfit/
 │   │   │   │   │   ├── screens/
 │   │   │   │   │   ├── widgets/   # CalorieChart, StrengthCurve, MuscleHeatMap
 │   │   │   │   │   └── providers/
-│   │   │   │   ├── social/        # Friends, challenges
-│   │   │   │   │   ├── screens/
-│   │   │   │   │   ├── widgets/   # FeedCard, ChallengeCard, LeaderBoard
-│   │   │   │   │   └── providers/
-│   │   │   │   ├── coach/         # AI coach chat
-│   │   │   │   │   ├── screens/
-│   │   │   │   │   ├── widgets/
-│   │   │   │   │   └── providers/
-│   │   │   │   ├── wellness/      # Sleep, meditation, mood
-│   │   │   │   │   ├── screens/
-│   │   │   │   │   ├── widgets/
-│   │   │   │   │   └── providers/
+│   │   │   │   ├── community/     # Communities, chat, challenges, notepad, to-do
+│   │   │   │   │   ├── screens/   # CommunityScreen, CommunityChatScreen, ChallengeDetailScreen, MemberReportScreen, TodoScreen…
+│   │   │   │   │   ├── widgets/   # MessageBubble, ChatComposer, NotepadField (voice-to-text)
+│   │   │   │   │   ├── providers/ # community, chat (polling), challenge, todo
+│   │   │   │   │   └── models/
 │   │   │   │   └── settings/      # Profile, subscription, integrations
 │   │   │   │       ├── screens/
 │   │   │   │       └── providers/
@@ -124,7 +116,6 @@ zenfit/
 │   │   │   │   │   └── daos/
 │   │   │   │   ├── services/      # HealthService, NotificationService
 │   │   │   │   │   ├── health_service.dart   # Apple Health + Google Fit
-│   │   │   │   │   └── coach_service.dart    # AI coach API calls
 │   │   │   │   ├── theme/         # AppTheme, colors, typography, spacing
 │   │   │   │   │   ├── app_theme.dart
 │   │   │   │   │   ├── app_colors.dart
@@ -147,7 +138,9 @@ zenfit/
 │       │   │   ├── workout.routes.ts
 │       │   │   ├── user.routes.ts
 │       │   │   ├── ai.routes.ts
-│       │   │   └── social.routes.ts
+│       │   │   ├── community.routes.ts / community-members.routes.ts / community-chat.routes.ts
+│       │   │   ├── challenge.routes.ts
+│       │   │   └── todo.routes.ts
 │       │   ├── services/          # Business logic (no DB calls here)
 │       │   ├── repositories/      # All Prisma DB queries live here
 │       │   ├── jobs/              # BullMQ job handlers
@@ -307,7 +300,7 @@ model Friendship {
 - Track weekly sets per muscle group (chest, back, shoulders, arms, legs, core)
 - Minimum effective volume: 10 sets/week per muscle group
 - Maximum recoverable volume: 20 sets/week per muscle group
-- Flag overtraining or undertraining in the AI coach's weekly summary
+- Overtraining is flagged by the deload check (`GET /ai/deload-check`)
 
 ### Streak logic
 - Streak increments if user logs at least one of: a food log, a workout, OR hits 7500+ steps for the day
@@ -325,8 +318,9 @@ model Friendship {
 /api/v1/nutrition/*    — food logs, food search, meal plans
 /api/v1/workout/*      — workout logs, exercise library, templates
 /api/v1/body/*         — body stats, progress photos
-/api/v1/ai/*           — coach chat, meal suggestions, workout adaptation
-/api/v1/social/*       — friends, challenges, feed
+/api/v1/ai/*           — meal plan, workout recommendation, food photo, deload check, report
+/api/v1/community/*    — communities, members, chat, challenges, reports, blocks
+/api/v1/todo/*         — private daily to-do (owner-only)
 /api/v1/integrations/* — Apple Health, Google Fit, wearables
 ```
 
@@ -356,7 +350,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Project setup (monorepo, Flutter app, Fastify, Prisma, PostgreSQL) — backend + Flutter scaffold done; Drift DB + sync DAO scaffolded; FCM configured for Android (`google-services.json` placed, Google Services plugin wired in Gradle); **GCP Cloud Run production deployment live at https://zenfit-api-122167595419.us-central1.run.app**; Cloud Build CI/CD on push to main; Cloud SQL PostgreSQL 15 (zenfit-db, us-central1); Upstash Redis; 12 secrets in Secret Manager
 - [x] Auth screens (signup, login, forgot password)
 - [x] Onboarding flow (goal selection, body stats, activity level)
-- [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Wellness) — 5-tab bottom nav; Social moved to AppBar icon (people_outline); avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Wearable, Subscription, Logout); PopScope in MainShell: back on any non-Home tab goes to /home, back on Home exits app
+- [x] Tab navigation shell (Home, Nutrition, Workout, Progress, Community) — 5-tab bottom nav; avatar leading button on HomeScreen → ProfileScreen; ProfileScreen replaces SettingsScreen with card-grouped UI (Notifications, Subscription, Logout; Wearable Integrations hidden until real OAuth client IDs exist); PopScope in MainShell: back on any non-Home tab goes to /home, back on Home exits app
 - [x] Light / dark / auto theme system — `AppTheme.light` + `AppTheme.dark`; `ThemePreference` enum (auto/light/dark) persisted in SharedPreferences; `effectiveThemeModeProvider` auto-switches at 6 AM (light) / 6 PM (dark) via a boundary Timer; 400ms animated crossfade (`themeAnimationDuration`); toggle in Profile → Appearance via `SegmentedButton`; all 209 hardcoded neutral `AppColors.*` references replaced with `Theme.of(context).colorScheme.*` for full light-mode text visibility
 - [x] Food search + logging (Open Food Facts API + USDA + multi-cuisine local database) — three parallel searches; local results surface first; ~280-item multi-cuisine database in `assets/data/local_foods.json` (Indian, American, Italian, Chinese, fruits, vegetables, proteins, beverages, nuts, snacks); USDA name normalizer cleans "Egg, boiled" → "Boiled Egg" style; `isLiquid` flag on FoodItem drives ml unit + 250ml default in log sheet; serving-chip quick-select shown for any food with commonServings (not just Indian); delete option on logged foods: × button on collapsed chips + trash icon on expanded rows; NutritionScreen meal sections redesigned as tappable `MealCard` widgets (emoji + kcal header + `+` button; empty placeholder; collapsed horizontal `FoodChip` scroll + "See all" toggle; expanded full list with swipe-to-delete; flutter_animate entry animations; `mealType` passed via GoRouter `extra` to pre-select meal in `LogFoodSheet`)
 - [x] Barcode scanner
@@ -375,33 +369,30 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Calories burned estimation — outdoor: distance × MET × weight (kOutdoorKcalPerKgPerKm); indoor fallback: time × MET × weight
 - [x] Progress charts (weight trend, calorie trend, strength curve)
 - [x] Muscle group volume heat map
-- [x] Sleep tracking display (from wearable) — full Wellness screen: sleep card, stages bar, 7-day trend, sleep score, HR card + zone, mood logger (1-5 emoji + 14-day trend), readiness ring
 - [x] Offline mode (Drift sync queue)
 - [x] Push notifications (reminders, streaks) — FCM token registration, local scheduled notifications (workout/food/streak/breakfast/lunch), weekly summary BullMQ job; breakfast reminder 8 AM, lunch reminder 1 PM added to `restoreSchedules()`; prefs keys `notif_breakfast_enabled` + `notif_lunch_enabled`
 
 ### Phase 3 — AI Features
-- [x] AI coach chat (Gemini API integration) — upgraded to `gemini-2.5-flash`; rate limits removed entirely; greeting message injected on first open ("Hey {name}!"); RAG context cache (nutrition/workout/body, 15-min TTL) injected per message; multi-bubble display; silent 4s auto-retry on 503; all errors surface with Retry snackbar; suggestion chips + rate-limit banner removed; `isLocal` flag on ChatMessage keeps greeting out of backend history
 - [x] Adaptive daily calorie target (post-workout adjustment) — `caloriesBurnedToday` persisted in SharedPreferences (daily key); `adaptiveTarget = tdee + caloriesBurnedToday` on `HomeDashboardState`; `WorkoutSessionNotifier.finishWorkout` calls `homeProvider.addBurnedCalories` on both online save and offline enqueue; calorie ring, macro bars, and target label all use `adaptiveTarget`; "+X kcal from workout" chip shown when burned > 0
 - [x] AI meal plan generator (weekly) — Gemini JSON schema; 7-day plan; Pro/Coach gate; cached in SharedPreferences; expandable PlannedMealCard; paywall view for free tier
 - [ ] Grocery list from meal plan
 - [x] Food photo logging (Gemini Vision) — multimodal analysis; detects all items in mixed dishes; proportional macro scaling on serving edit; camera FAB on NutritionScreen; available all tiers
 - [x] Workout recommendation engine — split into gym vs home; `GET /ai/workout-recommendation?type=gym|home`; gym prompt enforces equipment exercises, home prompt enforces bodyweight-only; `workoutRecommendationProvider` is a Riverpod family (WorkoutType.gym / .home) with keepAlive and manual-only generate(); new GymWorkoutScreen at `/workout/gym`; home recommendation section at top of HomeWorkoutListScreen; main WorkoutScreen navigates to each sub-screen instead of auto-fetching
 - [x] Home workout page — 40 bodyweight/calisthenics exercises in kHomeExerciseLibrary; HomeWorkoutListScreen at /workout/home; category + difficulty filter chips; SetInputMode (repsOnly / durationOnly / repsAndWeight) on SetLogger; no weight input for bodyweight exercises
-- [x] Recovery score (HRV + sleep + training load) — HRV (SDNN) fetched from HealthKit/Google Fit; formula: sleepScore×0.4 + hrComponent×0.3 + trainingLoad×0.3; HRV preferred over RHR when available (10–100ms → 0–100); falls back to resting HR; Wellness screen card renamed "Recovery Score"; 4-pill breakdown: Sleep · HRV · HR · Load
 - [x] Deload week detection — pure algorithmic (no Gemini); 4-week set count analysis via getFourWeekWorkoutSummary; flags ≥3 consecutive weeks ≥40 sets or 4-week avg >60 sets; GET /ai/deload-check; DeloadBannerCard on WorkoutScreen (amber warning / green OK)
-- [x] AI exercise form monitor — on-device real-time pose detection (google_mlkit_pose_detection ^0.13.0 + camera ^0.11.0); 9 supported exercises (squat, lunge, push-up, plank, deadlift, romanian deadlift, overhead press, bicep curl, pull-up); per-exercise joint-angle rules in PoseAnalyzer; green skeleton overlay = correct form, amber = correction cue text; phase-based rep counter (angle bottom→top threshold per exercise); front/back camera toggle; NV21 on Android + correct rotation270deg coordinate transform (FittedBox.cover scale+offset); EMA landmark smoothing (α=0.5) via PoseSmoother; 2-frame feedback debouncing; exercise-specific engagement detection (each exercise only analyses form when user is actually in the movement, not standing idle); full-body skeleton including head+feet; 6fps processing; no backend or API calls — fully on-device; entry point is "AI Form Monitor" card on WorkoutScreen → `/workout/monitor`
 
-### Phase 4 — Social & Monetization
-- [ ] User search + friend system
-- [ ] Activity feed
-- [ ] 30-day challenges
-- [ ] Leaderboards
+### Phase 4 — Community & Monetization
+- [x] Communities — create, join by invite code / name search, admin settings (public/private, approval, members-can-chat), invite code regenerate, delete
+- [x] Community chat — WhatsApp-style (updates, replies, photo/video/PDF attachments via GCS signed URLs, delete, report, block), polling + FCM push
+- [x] Challenges — personal and group; N-day (7–365), per-person start date, daily mark-complete, day grid, notepad with autocorrect + voice-to-text, share notepad to chat
+- [x] Admin member tracking — consent (default off) → fitness report + challenge progress; hold / resume / delete record; leaving freezes the report; window enforced server-side
+- [x] Private daily to-do (backend, owner-only, repeat daily)
 - [ ] XP + level system
+- [ ] Leaderboards
 - [ ] Badges & achievements
 - [ ] Streak shields
 - [x] Stripe subscription integration (Free / Pro / Coach tiers)
 - [x] Paywall screens for premium features
-- [ ] Coach marketplace (basic)
 - [x] Ad placeholder slots (home screen banner + popup) — swap for AdWidget from google_mobile_ads before launch; TODO(admob) comments mark each slot
 
 ---
@@ -413,12 +404,11 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 | Calorie & macro tracking | ✓ | ✓ | ✓ |
 | Workout logging | ✓ | ✓ | ✓ |
 | Basic progress charts | ✓ | ✓ | ✓ |
-| AI coach chat | 5 msg/day | Unlimited | Unlimited |
 | Adaptive meal plans | — | ✓ | ✓ |
 | Advanced analytics | — | ✓ | ✓ |
 | Wearable sync | Basic | Full | Full |
-| Social & challenges | ✓ | ✓ | ✓ |
-| Coach marketplace access | — | — | ✓ |
+| Communities & challenges | ✓ | ✓ | ✓ |
+| AI workout recommendations | — | — | ✓ |
 | Food photo logging | — | ✓ | ✓ |
 
 ---
@@ -464,26 +454,9 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 
 ---
 
-## AI coach — Claude API integration
+## AI features
 
-### System prompt (use this exactly)
-```
-You are Zenfit Coach, a knowledgeable and motivating fitness assistant. You have access to the user's fitness data including their goals, recent workouts, calorie logs, and body stats. Give concise, actionable advice. Always be encouraging but honest. Never recommend extreme diets or dangerous exercises. If the user describes symptoms that could indicate a medical issue, always recommend consulting a doctor. Keep responses under 200 words unless the user explicitly asks for more detail.
-```
-
-### Context to inject with every message
-```dart
-class CoachContext {
-  final CoachUser user;        // name, fitnessGoal, tdee
-  final CoachToday today;      // caloriesLogged, calorieTarget, workoutDone, steps
-  final CoachWeekSummary week; // workoutsCompleted, avgCalories, weightChange
-}
-```
-
-### Rate limiting
-- Free tier: 5 messages/day per user (tracked in Redis with 24h TTL key `coach:limit:{userId}`)
-- Pro/Coach tier: unlimited
-- Always check subscription tier before calling Claude API
+All AI calls go through the backend (`/api/v1/ai/*`, Gemini). Every AI result in the app has a flag button that posts to `/ai/report` (Play generative-AI policy). Remove-able features: none are chat-based.
 
 ---
 
@@ -495,10 +468,11 @@ DATABASE_URL=postgresql://...
 REDIS_URL=redis://...
 JWT_SECRET=
 JWT_REFRESH_SECRET=
-ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=
+GCS_MEDIA_BUCKET=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-CLOUDINARY_URL=
 OPEN_FOOD_FACTS_BASE_URL=https://world.openfoodfacts.org
 USDA_API_KEY=
 SENTRY_DSN=
@@ -529,10 +503,10 @@ At the beginning of every Claude Code session, do this in order:
 ## Common pitfalls to avoid
 
 - **Do not use `SharedPreferences` for sensitive data.** Use `flutter_secure_storage` for tokens and anything private. `SharedPreferences` is only for non-sensitive settings.
-- **Do not call the Claude API from the Flutter app directly.** All AI calls go through the backend `/api/v1/ai/*` routes so the API key is never exposed.
+- **Do not call the Gemini API from the Flutter app directly.** All AI calls go through the backend `/api/v1/ai/*` routes so the API key is never exposed.
 - **Do not store refresh tokens in Riverpod state.** Keep them in `flutter_secure_storage` only — Riverpod state can be inspected.
 - **Do not skip Zod validation on the backend** even for internal routes.
-- **Do not build social features before the core tracking loop is solid.** Core = food log + workout log + dashboard working end-to-end.
+- **Community privacy rules:** the admin report window is computed ONLY by `trackingWindow()` in `community-report.service.ts`; the to-do table is never read outside `todo.routes.ts`. Keep both true and keep their tests passing (`yarn workspace @zenfit/backend test`).
 - **Do not use `dynamic` to escape Dart type errors.** Fix the types properly with proper generics or sealed classes.
 - **Drift sync conflicts:** last-write-wins for user-generated data (logs). For settings/profile, server wins.
 - **Do not call `setState` inside a `ConsumerWidget`.** Use Riverpod notifiers to update state — mixing setState and Riverpod causes unpredictable rebuilds.

@@ -131,22 +131,3 @@ export interface CoachMessage {
   timestamp: string;
 }
 
-export interface CoachContext {
-  user: { name: string; fitnessGoal: FitnessGoal; tdee: number };
-  today: {
-    caloriesLogged: number;
-    calorieTarget: number;
-    workoutDone: boolean;
-    steps: number;
-  };
-  weekSummary: {
-    workoutsCompleted: number;
-    avgCalories: number;
-    weightChange: number;
-  };
-}
-
-export interface CoachResponse {
-  message: string;
-  messagesRemainingToday: number | null; // null = unlimited (pro/coach tier)
-}

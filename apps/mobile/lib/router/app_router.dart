@@ -7,7 +7,6 @@ import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
-import '../features/coach/screens/coach_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/nutrition/screens/barcode_screen.dart';
 import '../features/nutrition/screens/food_search_screen.dart';
@@ -24,13 +23,19 @@ import '../features/settings/screens/profile_screen.dart';
 import '../features/settings/screens/wearable_integrations_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/subscription/screens/subscription_screen.dart';
-import '../features/social/screens/challenges_screen.dart';
-import '../features/social/screens/friend_search_screen.dart';
-import '../features/social/screens/leaderboard_screen.dart';
-import '../features/social/screens/social_screen.dart';
-import '../features/wellness/screens/wellness_screen.dart';
+import '../features/community/screens/community_screen.dart';
+import '../features/community/screens/challenge_detail_screen.dart';
+import '../features/community/screens/challenges_screen.dart';
+import '../features/community/screens/community_admin_screen.dart';
+import '../features/community/screens/community_chat_screen.dart';
+import '../features/community/screens/community_info_screen.dart';
+import '../features/community/screens/community_search_screen.dart';
+import '../features/community/screens/create_challenge_screen.dart';
+import '../features/community/screens/create_community_screen.dart';
+import '../features/community/screens/join_preview_screen.dart';
+import '../features/community/screens/member_report_screen.dart';
+import '../features/community/screens/todo_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
-import '../features/workout/screens/exercise_monitor_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
 import '../features/workout/screens/home_workout_list_screen.dart';
@@ -158,11 +163,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const GymWorkoutScreen(),
               ),
               GoRoute(
-                path: 'monitor',
-                name: 'exercise-monitor',
-                builder: (context, state) => const ExerciseMonitorScreen(),
-              ),
-              GoRoute(
                 path: 'home',
                 name: 'home-workouts',
                 builder: (context, state) => HomeWorkoutListScreen(
@@ -184,41 +184,82 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: AppRoutes.wellness,
-            name: 'wellness',
-            builder: (context, state) => const WellnessScreen(),
+            path: AppRoutes.community,
+            name: 'community',
+            builder: (context, state) => const CommunityScreen(),
+          ),
+        ],
+      ),
+
+      // ── Community (full-screen, outside bottom nav) ──────────────────────
+      // Static paths are declared before '/community/:id'.
+      GoRoute(
+        path: AppRoutes.communityCreate,
+        name: 'community-create',
+        builder: (context, state) => const CreateCommunityScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communitySearch,
+        name: 'community-search',
+        builder: (context, state) => const CommunitySearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityTodo,
+        name: 'community-todo',
+        builder: (context, state) => const TodoScreen(),
+      ),
+      GoRoute(
+        path: '/community/join/:code',
+        name: 'community-join',
+        builder: (context, state) =>
+            JoinPreviewScreen(code: state.pathParameters['code']!),
+      ),
+      GoRoute(
+        path: '/community/:id',
+        name: 'community-chat',
+        builder: (context, state) =>
+            CommunityChatScreen(communityId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'info',
+            builder: (context, state) =>
+                CommunityInfoScreen(communityId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'admin',
+            builder: (context, state) =>
+                CommunityAdminScreen(communityId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'member/:uid',
+            builder: (context, state) => MemberReportScreen(
+              communityId: state.pathParameters['id']!,
+              userId: state.pathParameters['uid']!,
+            ),
+          ),
+          GoRoute(
+            path: 'challenges',
+            builder: (context, state) =>
+                ChallengesScreen(communityId: state.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => CreateChallengeScreen(
+                    communityId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'challenge/:cid',
+            builder: (context, state) => ChallengeDetailScreen(
+              communityId: state.pathParameters['id']!,
+              challengeId: state.pathParameters['cid']!,
+            ),
           ),
         ],
       ),
 
       // ── Top-level features (outside bottom nav) ──────────────────────────
-      GoRoute(
-        path: AppRoutes.coach,
-        name: 'coach',
-        builder: (context, state) => const CoachScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.social,
-        name: 'social',
-        builder: (context, state) => const SocialScreen(),
-        routes: [
-          GoRoute(
-            path: 'search',
-            name: 'friend-search',
-            builder: (context, state) => const FriendSearchScreen(),
-          ),
-          GoRoute(
-            path: 'challenges',
-            name: 'challenges',
-            builder: (context, state) => const ChallengesScreen(),
-          ),
-          GoRoute(
-            path: 'leaderboard',
-            name: 'leaderboard',
-            builder: (context, state) => const LeaderboardScreen(),
-          ),
-        ],
-      ),
       GoRoute(
         path: AppRoutes.profile,
         name: 'profile',

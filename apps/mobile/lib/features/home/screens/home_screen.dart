@@ -140,12 +140,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: const [],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(AppRoutes.coach),
-        icon: const Icon(Icons.chat_bubble_outline_rounded),
-        label: const Text('AI Coach'),
-        tooltip: 'Open AI Coach',
-      ),
       body: Stack(
         children: [
           Column(
@@ -290,12 +284,6 @@ class _HealthPermissionsDialog extends StatelessWidget {
           const SizedBox(height: 14),
           const _PermissionRow(Icons.directions_walk_rounded, 'Steps',
               'Auto-fill your daily step count'),
-          const _PermissionRow(Icons.favorite_border_rounded, 'Heart Rate',
-              'Show resting HR on your dashboard'),
-          const _PermissionRow(Icons.bedtime_outlined, 'Sleep',
-              'Track sleep duration and stages'),
-          const _PermissionRow(Icons.monitor_weight_outlined, 'Weight',
-              'Read body weight from your health app'),
           const _PermissionRow(Icons.fitness_center_rounded, 'Workouts',
               'Write completed sessions back to your health app'),
           const SizedBox(height: 10),

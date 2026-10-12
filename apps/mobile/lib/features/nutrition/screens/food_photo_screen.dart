@@ -1,3 +1,4 @@
+import '../../../core/widgets/report_ai_button.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -84,6 +85,8 @@ class _FoodPhotoScreenState extends ConsumerState<FoodPhotoScreen> {
       appBar: AppBar(
         title: const Text('Log Food by Photo'),
         actions: [
+          if (state.hasImage && !state.isAnalyzing)
+            const ReportAiButton(contentLabel: 'AI food photo analysis'),
           if (state.hasImage && !state.isAnalyzing)
             TextButton.icon(
               onPressed: () =>

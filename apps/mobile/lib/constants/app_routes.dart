@@ -31,20 +31,27 @@ abstract final class AppRoutes {
   static const workoutHistory = '/workout/history';
   static const homeWorkouts = '/workout/home';
   static const gymWorkout = '/workout/gym';
-  static const exerciseMonitor = '/workout/monitor';
 
   // Progress sub-routes
   static const bodyLog = '/progress/body';
 
-  // Social (accessed from AppBar, outside bottom nav)
-  static const social = '/social';
-  static const friendSearch = '/social/search';
-  static const challenges = '/social/challenges';
-  static const leaderboard = '/social/leaderboard';
-
   // Top-level features (outside bottom nav)
-  static const coach = '/coach';
-  static const wellness = '/wellness';
+  static const community = '/community';
+  static const communityCreate = '/community/create';
+  static const communitySearch = '/community/search';
+  static const communityTodo = '/community/todo';
+  static String communityJoinPath(String code) => '/community/join/$code';
+  static String communityChatPath(String id) => '/community/$id';
+  static String communityInfoPath(String id) => '/community/$id/info';
+  static String communityAdminPath(String id) => '/community/$id/admin';
+  static String communityMemberPath(String id, String userId) =>
+      '/community/$id/member/$userId';
+  static String communityChallengesPath(String id) =>
+      '/community/$id/challenges';
+  static String communityNewChallengePath(String id) =>
+      '/community/$id/challenges/new';
+  static String communityChallengePath(String id, String challengeId) =>
+      '/community/$id/challenge/$challengeId';
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
   static const wearableIntegrations = '/profile/wearables';
