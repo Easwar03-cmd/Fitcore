@@ -58,10 +58,6 @@ dependencies:
   timezone: ^0.9.4
   flutter_timezone: ^5.0.0
 
-  # Food photo / ML Kit
-  google_mlkit_text_recognition: ^0.14.0
-  google_mlkit_image_labeling: ^0.13.0
-
   # Logging
   logger: ^2.4.0
 
@@ -82,10 +78,6 @@ dependencies:
   # Direct deps so main.dart can enable the Android system photo picker
   image_picker_android: ^0.8.13
   image_picker_platform_interface: ^2.10.0
-
-  # AI pose detection (exercise form monitor)
-  google_mlkit_pose_detection: ^0.13.0
-  camera: ^0.11.0
 
   # In-app purchases — Google Play Billing on Android (iOS uses Stripe web checkout)
   in_app_purchase: ^3.2.3

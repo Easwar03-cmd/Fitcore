@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
-import '../../subscription/providers/subscription_provider.dart';
 import '../providers/deload_check_provider.dart';
 import '../providers/workout_provider.dart';
 import '../widgets/deload_banner_card.dart';
@@ -81,20 +80,6 @@ class WorkoutScreen extends ConsumerWidget {
               subtitle: 'AI recommendation + bodyweight & calisthenics.',
               color: const Color(0xFF805AD5),
               onTap: () => context.push(AppRoutes.homeWorkouts),
-            ),
-            const SizedBox(height: 12),
-
-            // ── AI Form Monitor card ──────────────────────────────────────
-            _WorkoutTypeCard(
-              icon: Icons.visibility_rounded,
-              title: 'AI Form Monitor',
-              subtitle: 'Live camera pose detection — green means perfect form.',
-              color: const Color(0xFF059669),
-              isLocked: !canUseAiFeatures,
-              onTap: canUseAiFeatures
-                  ? () => context.push(AppRoutes.exerciseMonitor)
-                  : () => context.push(AppRoutes.paywall,
-                        extra: 'AI Form Monitor'),
             ),
           ],
         ),
