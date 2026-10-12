@@ -1,3 +1,8 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/pastel_chip.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -123,10 +128,6 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
               FilledButton.icon(
                 icon: const Icon(Icons.workspace_premium_rounded),
                 label: const Text('Upgrade to Pro'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: const Color(0xFF6C63FF),
-                ),
                 onPressed: () => context.push(AppRoutes.paywall),
               ),
               const SizedBox(height: 12),
@@ -198,53 +199,41 @@ class _PlanBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    final (label, color) = switch (sub.tier) {
-      'pro' => ('Pro', const Color(0xFF6C63FF)),
-      'coach' => ('Coach', const Color(0xFFFF6B35)),
-      _ => ('Free', cs.outline),
+    final (label, tint) = switch (sub.tier) {
+      'pro' => ('Pro', PastelTint.sky),
+      'coach' => ('Coach', PastelTint.butter),
+      _ => ('Free', PastelTint.grey),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.workspace_premium_rounded, color: color, size: 36),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Current plan',
-                  style: tt.bodySmall
-                      ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5))),
-              Text(label,
-                  style: tt.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800, color: color)),
-            ],
-          ),
-          const Spacer(),
-          if (sub.isPaid)
+    return PastelCard(
+      tint: tint,
+      radius: 28,
+      padding: const EdgeInsets.all(20),
+      semanticLabel: 'Current plan: $label${sub.isPaid ? ', active' : ''}',
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text('Active',
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700)),
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle),
+              child: const Icon(PhosphorIconsRegular.crown, size: 28),
             ),
-        ],
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Current plan',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.ink)),
+                Text(label, style: AppTextStyles.title),
+              ],
+            ),
+            const Spacer(),
+            if (sub.isPaid) const PastelChip(label: 'Active', filled: true),
+          ],
+        ),
       ),
     );
   }
@@ -286,9 +275,6 @@ class _FeatureSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
     final features = sub.isPaid
         ? [
             'Ad-free experience',
@@ -300,28 +286,28 @@ class _FeatureSummary extends StatelessWidget {
           ]
         : ['Calorie & macro tracking', 'Workout logging', 'Contains ads'];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return PastelCard(
+      radius: 28,
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Included features',
-              style: tt.labelMedium
-                  ?.copyWith(color: cs.onSurface.withValues(alpha: 0.5))),
-          const SizedBox(height: 10),
+          Text('Included features', style: AppTextStyles.heading),
+          const SizedBox(height: 12),
           for (final f in features)
             Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle_rounded,
-                      size: 16, color: cs.primary),
-                  const SizedBox(width: 8),
-                  Text(f, style: tt.bodyMedium),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                        color: AppColors.lime, shape: BoxShape.circle),
+                    child: const Icon(PhosphorIconsBold.check, size: 14),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(f, style: AppTextStyles.body)),
                 ],
               ),
             ),

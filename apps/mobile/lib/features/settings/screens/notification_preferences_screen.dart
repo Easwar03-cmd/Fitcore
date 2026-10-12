@@ -1,8 +1,9 @@
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/notification_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../providers/notification_preferences_provider.dart';
 import '../../../core/widgets/page_app_bar.dart';
 
@@ -33,7 +34,12 @@ class _PrefsBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       children: [
+        PastelCard(
+          radius: 24,
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(children: [
         const _SectionHeader('Workout Reminders'),
         SwitchListTile(
           secondary: const Icon(Icons.fitness_center_rounded),
@@ -99,8 +105,7 @@ class _PrefsBody extends ConsumerWidget {
         const Divider(height: 1),
         const _SectionHeader('Streak & Motivation'),
         SwitchListTile(
-          secondary: const Icon(Icons.local_fire_department_rounded,
-              color: AppColors.warning),
+          secondary: const Icon(Icons.local_fire_department_rounded),
           title: const Text('Streak at-risk warning'),
           subtitle: const Text('Fires at 9 pm if your streak would break tonight'),
           value: prefs.streakWarningEnabled,
@@ -109,10 +114,11 @@ class _PrefsBody extends ConsumerWidget {
             prefs.copyWith(streakWarningEnabled: val),
           ),
         ),
-        const Divider(height: 1),
-        const SizedBox(height: 24),
+          ]),
+        ),
+        const SizedBox(height: 16),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             'Weekly summary push notifications are sent every Sunday at 6 pm '
             'and cannot be disabled here — use your device settings to silence them.',
@@ -159,11 +165,8 @@ class _SectionHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
       child: Text(
-        text.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              letterSpacing: 1.2,
-            ),
+        text,
+        style: AppTextStyles.heading,
       ),
     );
   }
@@ -206,10 +209,7 @@ class _TimePickerTile extends StatelessWidget {
         },
         child: Text(
           _formatted(),
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.bodyStrong,
         ),
       ),
     );
