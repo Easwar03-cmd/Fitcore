@@ -10,6 +10,7 @@ import '../../../constants/app_routes.dart';
 import '../../../core/services/iap_service.dart';
 import '../models/subscription_info.dart';
 import '../providers/subscription_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -80,7 +81,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen>
     final tt = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Subscription')),
+      appBar: const PageAppBar(title: 'Subscription'),
       body: subAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/community_models.dart';
 import '../providers/community_provider.dart' show CommunityException;
 import '../providers/todo_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 /// Private daily routine checklist. Not shared with anyone.
 class TodoScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _TodoScreenState extends ConsumerState<TodoScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My daily to-do')),
+      appBar: const PageAppBar(title: 'My daily to-do'),
       body: Column(
         children: [
           Container(

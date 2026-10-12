@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/iap_service.dart';
 import '../../../core/utils/regional_pricing.dart';
 import '../providers/subscription_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key, this.highlightFeature});
@@ -233,7 +234,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         ref.watch(subscriptionProvider).valueOrNull?.tier ?? 'free';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Upgrade Revive')),
+      appBar: const PageAppBar(title: 'Upgrade Revive'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         child: Column(

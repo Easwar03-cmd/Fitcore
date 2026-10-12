@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../providers/community_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 /// Landing screen for an invite code (typed in, or opened from a shared link).
 class JoinPreviewScreen extends ConsumerStatefulWidget {
@@ -44,7 +45,7 @@ class _JoinPreviewScreenState extends ConsumerState<JoinPreviewScreen> {
   Widget build(BuildContext context) {
     final preview = ref.watch(invitePreviewProvider(widget.code));
     return Scaffold(
-      appBar: AppBar(title: const Text('Join community')),
+      appBar: const PageAppBar(title: 'Join community'),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: preview.when(

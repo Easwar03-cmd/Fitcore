@@ -1,9 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/notification_preferences_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class NotificationPreferencesScreen extends ConsumerWidget {
   const NotificationPreferencesScreen({super.key});
@@ -13,7 +14,7 @@ class NotificationPreferencesScreen extends ConsumerWidget {
     final prefsAsync = ref.watch(notificationPreferencesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: const PageAppBar(title: 'Notifications'),
       body: prefsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),

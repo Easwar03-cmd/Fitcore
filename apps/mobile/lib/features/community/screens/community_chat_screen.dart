@@ -12,6 +12,8 @@ import '../widgets/chat_composer.dart';
 import '../widgets/message_bubble.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/widgets/skeleton.dart';
+import '../../../core/widgets/circle_icon_button.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class CommunityChatScreen extends ConsumerStatefulWidget {
   const CommunityChatScreen({super.key, required this.communityId});
@@ -194,33 +196,21 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
     final myId = ref.watch(authProvider).valueOrNull?.user.id;
 
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: InkWell(
-          onTap: () => context.push(AppRoutes.communityInfoPath(id)),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(detail.valueOrNull?.name ?? 'Community',
-                    style: Theme.of(context).textTheme.titleMedium),
-                if (detail.valueOrNull != null)
-                  Text('${detail.value!.memberCount} members',
-                      style: Theme.of(context).textTheme.bodySmall),
-              ],
-            ),
-          ),
-        ),
+      appBar: PageAppBar(
+        title: detail.valueOrNull?.name ?? 'Community',
+        subtitle: detail.valueOrNull == null
+            ? null
+            : '${detail.value!.memberCount} members',
         actions: [
-          IconButton(
-            tooltip: 'Challenges',
-            icon: const Icon(Icons.emoji_events_outlined),
+          CircleIconButton(
+            icon: PhosphorIconsRegular.trophy,
+            semanticLabel: 'Challenges',
             onPressed: () => context.push(AppRoutes.communityChallengesPath(id)),
           ),
-          IconButton(
-            tooltip: 'Community info',
-            icon: const Icon(Icons.info_outline_rounded),
+          const SizedBox(width: 4),
+          CircleIconButton(
+            icon: PhosphorIconsRegular.info,
+            semanticLabel: 'Community info',
             onPressed: () => context.push(AppRoutes.communityInfoPath(id)),
           ),
         ],

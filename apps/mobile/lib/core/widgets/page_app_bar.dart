@@ -13,6 +13,7 @@ class PageAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PageAppBar({
     super.key,
     this.title,
+    this.subtitle,
     this.actions = const [],
     this.showBack = true,
     this.onBack,
@@ -26,10 +27,14 @@ class PageAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions = const [],
     this.onBack,
   })  : showBack = true,
+        subtitle = null,
         plain = true,
         backgroundColor = null;
 
   final String? title;
+
+  /// Small muted line under [title] (e.g. member count).
+  final String? subtitle;
   final List<Widget> actions;
   final bool showBack;
   final VoidCallback? onBack;
@@ -73,11 +78,24 @@ class PageAppBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Center(
                     child: title == null
                         ? null
-                        : Text(
-                            title!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.headerTitle,
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.headerTitle,
+                              ),
+                              if (subtitle != null)
+                                Text(
+                                  subtitle!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.caption
+                                      .copyWith(fontSize: 11),
+                                ),
+                            ],
                           ),
                   ),
                 ),

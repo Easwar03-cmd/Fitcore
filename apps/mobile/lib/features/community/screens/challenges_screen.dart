@@ -8,6 +8,7 @@ import '../providers/challenge_provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/hero_card.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class ChallengesScreen extends ConsumerWidget {
   const ChallengesScreen({super.key, required this.communityId});
@@ -18,7 +19,7 @@ class ChallengesScreen extends ConsumerWidget {
     final challenges = ref.watch(challengeListProvider(communityId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Challenges')),
+      appBar: const PageAppBar(title: 'Challenges'),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await context.push(AppRoutes.communityNewChallengePath(communityId));

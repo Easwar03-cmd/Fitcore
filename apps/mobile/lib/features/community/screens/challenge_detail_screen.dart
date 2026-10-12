@@ -7,6 +7,7 @@ import '../models/community_models.dart';
 import '../providers/challenge_provider.dart';
 import '../providers/community_provider.dart';
 import '../widgets/notepad_field.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class ChallengeDetailScreen extends ConsumerWidget {
   const ChallengeDetailScreen({
@@ -43,8 +44,8 @@ class ChallengeDetailScreen extends ConsumerWidget {
     final actions = ref.read(challengeActionsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(detail.valueOrNull?.title ?? 'Challenge'),
+      appBar: PageAppBar(
+        title: detail.valueOrNull?.title ?? 'Challenge',
         actions: [
           if (detail.valueOrNull != null &&
               (detail.value!.creatorId == myId ||

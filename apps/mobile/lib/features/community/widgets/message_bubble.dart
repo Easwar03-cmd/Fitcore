@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/community_models.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// One chat message in a WhatsApp-style bubble. Pure widget — all actions come
 /// in as callbacks.
@@ -29,10 +30,10 @@ class MessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final bg = m.deleted
-        ? cs.surfaceContainerHighest
+        ? AppColors.surfaceMuted
         : isMine
-            ? cs.primaryContainer
-            : cs.surfaceContainerHigh;
+            ? AppColors.sky
+            : Colors.white;
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,

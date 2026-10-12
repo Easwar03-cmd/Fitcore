@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/body_stat.dart';
 import '../providers/body_log_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class BodyLogScreen extends ConsumerStatefulWidget {
   const BodyLogScreen({super.key});
@@ -89,7 +90,7 @@ class _BodyLogScreenState extends ConsumerState<BodyLogScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Log Body Weight')),
+      appBar: const PageAppBar(title: 'Log Body Weight'),
       body: RefreshIndicator(
         onRefresh: () => ref.read(bodyLogProvider.notifier).refresh(),
         child: ListView(

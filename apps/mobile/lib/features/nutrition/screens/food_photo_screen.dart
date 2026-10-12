@@ -13,6 +13,7 @@ import '../../subscription/providers/subscription_provider.dart';
 import '../providers/food_photo_provider.dart';
 import '../providers/nutrition_provider.dart';
 import '../widgets/detected_food_card.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 const _mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -38,7 +39,7 @@ class _FoodPhotoScreenState extends ConsumerState<FoodPhotoScreen> {
     final sub = ref.watch(subscriptionProvider).valueOrNull;
     if (sub != null && !sub.isPaid) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Log Food by Photo')),
+        appBar: const PageAppBar(title: 'Log Food by Photo'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

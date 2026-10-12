@@ -6,6 +6,7 @@ import '../../../constants/app_routes.dart';
 import '../providers/challenge_provider.dart';
 import '../providers/community_provider.dart' show CommunityException;
 import '../widgets/notepad_field.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class CreateChallengeScreen extends ConsumerStatefulWidget {
   const CreateChallengeScreen({super.key, required this.communityId});
@@ -65,7 +66,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('New challenge')),
+      appBar: const PageAppBar(title: 'New challenge'),
       body: Form(
         key: _formKey,
         child: ListView(
