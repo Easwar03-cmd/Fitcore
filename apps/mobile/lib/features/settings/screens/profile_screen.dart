@@ -47,6 +47,12 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => context.push(AppRoutes.notificationPrefs),
               ),
               _TileData(
+                icon: PhosphorIconsRegular.watch,
+                tint: PastelTint.lime,
+                label: 'Wearables & health',
+                onTap: () => context.push(AppRoutes.wearableIntegrations),
+              ),
+              _TileData(
                 icon: PhosphorIconsRegular.crown,
                 tint: PastelTint.butter,
                 label: 'Subscription',

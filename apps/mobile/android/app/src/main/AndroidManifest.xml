@@ -30,8 +30,23 @@
     <!-- RECEIVE_BOOT_COMPLETED: reschedule local notifications after reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
+    <!-- ── Bluetooth LE (wearable heart-rate connection) ─────────────────────── -->
+    <!-- Android 12+: scan without deriving location from BLE results. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- Android 11 and below -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30"/>
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+
     <!-- ── Health Connect permissions (only what health_service.dart uses) ───── -->
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE"/>
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY"/>
+    <!-- Covers sleep sessions and stages (asleep / awake / deep / light / REM) -->
+    <uses-permission android:name="android.permission.health.READ_SLEEP"/>
     <!-- Push workout calorie burn back to Health Connect -->
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"/>
 

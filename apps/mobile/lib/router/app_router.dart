@@ -20,7 +20,7 @@ import '../features/progress/screens/body_log_screen.dart';
 import '../features/progress/screens/progress_screen.dart';
 import '../features/settings/screens/notification_preferences_screen.dart';
 import '../features/settings/screens/profile_screen.dart';
-import '../features/settings/screens/wearable_integrations_screen.dart';
+import '../features/wearables/screens/wearables_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/subscription/screens/subscription_screen.dart';
 import '../features/community/screens/community_screen.dart';
@@ -277,7 +277,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'wearables',
             name: 'wearable-integrations',
-            builder: (context, state) => const WearableIntegrationsScreen(),
+            builder: (context, state) => const WearablesScreen(),
           ),
           GoRoute(
             path: 'subscription',

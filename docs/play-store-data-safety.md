@@ -40,7 +40,7 @@ Each answer maps directly to a question in the form.
 ### Health and fitness
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
 |---|---|---|---|---|
-| Health info (weight, height, body fat, BMI) | Yes | No — unless the user turns on "Share my fitness report with admin" in a community, in which case a summary is visible to that community's admin | Optional | App functionality (dashboard, community tracking chosen by the user) |
+| Health info (weight, height, body fat, BMI, heart rate, resting heart rate, HRV, sleep) | Yes — heart rate / sleep / HRV are read on-device only and not uploaded | No — unless the user turns on "Share my fitness report with admin" in a community, in which case a summary is visible to that community's admin | Optional | App functionality (dashboard, community tracking chosen by the user) |
 | Fitness info (workouts, steps, calorie logs, GPS routes) | Yes | No | Required | App functionality |
 
 > Health data is **not** used for advertising or shared with third parties for their independent use.
@@ -125,7 +125,14 @@ Declared Health Connect permissions and justification (must match `AndroidManife
 | Permission | Why |
 |---|---|
 | READ_STEPS | Daily step count on the Home dashboard and streaks |
+| READ_HEART_RATE | Average heart rate in the rest & heart summary |
+| READ_RESTING_HEART_RATE | Resting heart rate in the rest score |
+| READ_HEART_RATE_VARIABILITY | HRV in the rest score |
+| READ_SLEEP | Sleep duration and stages in the sleep & rest summary |
 | WRITE_ACTIVE_CALORIES_BURNED | Saves calories burned in a logged workout back to Health Connect |
+
+### Bluetooth (`BLUETOOTH_SCAN` with `neverForLocation`, `BLUETOOTH_CONNECT`)
+Only used on Wearables & health to pair a watch/band and read its Heart Rate service. No location is derived from scans.
 
 ### Microphone (`RECORD_AUDIO`)
 Requested only for voice-to-text in the challenge notepad (user taps "Dictate"). Camera features never record audio.

@@ -46,6 +46,7 @@ Whether your goal is losing weight, building muscle, improving endurance, or jus
 • Notepad for every challenge with voice-to-text dictation, shareable with your community
 • Community admins can follow members' fitness reports and challenges — only if the member chooses to share
 • A private daily to-do list for your routines, visible only to you
+• Rest score from sleep, resting heart rate and HRV
 • Deload week detection — the app flags when your training volume suggests you need a lighter week
 
 ─── PROGRESS & ANALYTICS ───
@@ -55,7 +56,8 @@ Whether your goal is losing weight, building muscle, improving endurance, or jus
 
 ─── WEARABLE & HEALTH SYNC ───
 • Syncs with Apple Health (iOS) and Google Fit (Android)
-• Reads your daily steps
+• Reads steps, heart rate, resting heart rate, HRV and sleep (with your permission)
+• Connect a smartwatch or band over Bluetooth for live heart rate
 • Writes workout energy back to your health platform
 
 ─── STREAKS & MOTIVATION ───

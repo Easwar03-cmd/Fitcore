@@ -18,6 +18,7 @@ import '../widgets/calorie_trend_chart.dart';
 import '../widgets/strength_curve_chart.dart';
 import '../widgets/weekly_summary_card.dart';
 import '../widgets/weight_trend_chart.dart';
+import '../../wearables/widgets/rest_summary_card.dart';
 
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
@@ -157,6 +158,10 @@ class ProgressScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
               ],
+
+              // ── Rest & heart (wearables) ────────────────────────────────────
+              const RestSummaryCard(),
+              const SizedBox(height: 16),
 
               // ── Muscles workload ────────────────────────────────────────────
               MuscleWorkloadCard(

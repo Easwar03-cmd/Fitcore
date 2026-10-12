@@ -94,6 +94,7 @@
   <ul>
     <li><strong>Camera</strong> — used to scan food barcodes, photograph meals for AI nutritional analysis, and take photos or video to attach to community messages. Barcode scanning runs on-device and its frames are never stored or transmitted.</li>
     <li><strong>Microphone &amp; speech recognition</strong> — used only while you tap the "Dictate" button in a challenge notepad, to convert your speech to text. Audio is not stored by Revive; depending on your device, speech recognition is performed on-device or by your device's speech service (e.g. Google).</li>
+    <li><strong>Bluetooth (Nearby devices)</strong> — used only when you open Wearables &amp; health and tap "Find devices", to connect to a watch or band and show your live heart rate. Live readings are shown on screen and are not stored or uploaded. Revive remembers the identifier of the device you paired on your phone so it can reconnect.</li>
     <li><strong>Photo library</strong> — accessed only when you explicitly choose a photo to log a meal. The selected image is sent to Google Gemini for nutritional analysis and then discarded; it is not stored on our servers.</li>
     <li><strong>Location</strong> — collected only during an active outdoor workout session when you tap "Start GPS workout". GPS coordinates are used to draw your route and calculate distance/pace. Raw coordinate streams are discarded after the session is saved; only the aggregate route polyline and distance are stored.</li>
     <li><strong>Step count</strong> — read from your device's built-in pedometer (Android: Google Fit platform; iOS: CoreMotion/HealthKit) to populate the steps tile on your dashboard.</li>
@@ -110,12 +111,16 @@
     </thead>
     <tbody>
       <tr><td>Steps</td><td>Read</td><td>Dashboard step counter</td></tr>
+      <tr><td>Heart rate &amp; resting heart rate</td><td>Read</td><td>Rest &amp; heart summary on the Wearables and Progress screens</td></tr>
+      <tr><td>Heart rate variability (HRV)</td><td>Read</td><td>Rest score</td></tr>
+      <tr><td>Sleep (duration and stages)</td><td>Read</td><td>Sleep and rest summary</td></tr>
       <tr><td>Active energy burned</td><td>Write</td><td>Record calories burned during workouts</td></tr>
     </tbody>
   </table>
   <p>
-    Health platform data is processed locally on your device and synced to our servers only to
-    power your personal dashboard. It is <strong>never</strong> used for advertising, sold, or
+    Heart-rate, sleep and HRV data from the health platform is read on your device to build the rest
+    summary and is <strong>not uploaded to our servers</strong>. Other health platform data is processed
+    locally and synced only to power your personal dashboard. It is <strong>never</strong> used for advertising, sold, or
     shared with third parties for their independent use.
     You can revoke Health permissions at any time in your device Settings.
   </p>

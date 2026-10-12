@@ -17,6 +17,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/metric_list_card.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/pastel_card.dart';
+import '../../../core/services/ble_heart_rate_service.dart';
+import '../../../core/widgets/pastel_chip.dart';
 
 SetInputMode _inputModeFor(Exercise exercise) {
   if (exercise.timedOnly) return SetInputMode.durationOnly;
@@ -168,6 +170,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(workoutSessionProvider);
     final exercise = session.currentExercise;
+    final liveBpm = ref.watch(bleHeartRateProvider.select((s) => s.bpm));
 
     return Scaffold(
       appBar: PageAppBar(
@@ -194,6 +197,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       body: exercise == null
           ? const Center(child: CircularProgressIndicator())
           : _WorkoutBody(
+              liveBpm: liveBpm,
               session: session,
               onSwitchExercise: _switchExercise,
               onToggleOutdoor: () => ref
@@ -222,6 +226,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
 class _WorkoutBody extends StatelessWidget {
   const _WorkoutBody({
+    required this.liveBpm,
     required this.session,
     required this.onSwitchExercise,
     required this.onToggleOutdoor,
@@ -235,6 +240,7 @@ class _WorkoutBody extends StatelessWidget {
     required this.onTimerStop,
   });
 
+  final int? liveBpm;
   final WorkoutSessionState session;
   final VoidCallback onSwitchExercise;
   final VoidCallback onToggleOutdoor;
@@ -290,6 +296,18 @@ class _WorkoutBody extends StatelessWidget {
             ],
           ),
         ),
+
+        if (liveBpm != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: PastelChip(
+              label: '$liveBpm bpm',
+              icon: PhosphorIconsFill.heartbeat,
+              background: AppColors.salmon,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
 
         // ── Workout timer ──────────────────────────────────────────────────
         WorkoutTimerWidget(
