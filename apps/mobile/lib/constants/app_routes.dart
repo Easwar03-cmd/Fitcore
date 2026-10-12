@@ -37,6 +37,21 @@ abstract final class AppRoutes {
 
   // Top-level features (outside bottom nav)
   static const community = '/community';
+  static const communityCreate = '/community/create';
+  static const communitySearch = '/community/search';
+  static const communityTodo = '/community/todo';
+  static String communityJoinPath(String code) => '/community/join/$code';
+  static String communityChatPath(String id) => '/community/$id';
+  static String communityInfoPath(String id) => '/community/$id/info';
+  static String communityAdminPath(String id) => '/community/$id/admin';
+  static String communityMemberPath(String id, String userId) =>
+      '/community/$id/member/$userId';
+  static String communityChallengesPath(String id) =>
+      '/community/$id/challenges';
+  static String communityNewChallengePath(String id) =>
+      '/community/$id/challenges/new';
+  static String communityChallengePath(String id, String challengeId) =>
+      '/community/$id/challenge/$challengeId';
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
   static const wearableIntegrations = '/profile/wearables';

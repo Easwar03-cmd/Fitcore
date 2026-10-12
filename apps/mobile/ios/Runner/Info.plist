@@ -59,6 +59,10 @@
 		<string>fetch</string>
 		<string>remote-notification</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Revive uses the microphone only while you dictate notes in a challenge notepad.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Revive converts your speech to text when you dictate notes.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Revive uses the camera to scan food barcodes, analyse meals from photos, and monitor your exercise form in real time.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

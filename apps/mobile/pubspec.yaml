@@ -79,6 +79,11 @@ dependencies:
   image_picker_android: ^0.8.13
   image_picker_platform_interface: ^2.10.0
 
+  # Community: voice-to-text notepad, document attachments, invite sharing
+  speech_to_text: ^7.0.0
+  file_picker: ^8.1.2
+  share_plus: ^10.0.2
+
   # In-app purchases — Google Play Billing on Android (iOS uses Stripe web checkout)
   in_app_purchase: ^3.2.3
   # 0.5.x bundles Play Billing Library 8 (required by Google Play)

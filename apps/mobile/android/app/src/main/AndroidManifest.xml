@@ -6,19 +6,20 @@
     <!-- Required for Google Play Billing (in_app_purchase plugin) -->
     <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Voice-to-text in the community notepad (speech_to_text). Audio is only
+         captured while the user holds the mic button; the camera never records audio. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <!-- ── Play policy: permissions the app must NOT ship ───────────────────── -->
     <!-- Gallery goes through the Android photo picker (enabled in main.dart), so
-         no broad media/storage access. Camera never records audio (enableAudio:
-         false). Reminders use inexact alarms. Removed even if a plugin adds them. -->
+         no broad media/storage access. Reminders use inexact alarms. Removed even if a plugin adds them. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
-    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove"/>
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove"/>
@@ -120,6 +121,10 @@
     </application>
 
     <queries>
+        <!-- speech_to_text needs to see the device speech recognition service -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
         <!-- Required to detect and launch Health Connect -->
         <package android:name="com.google.android.apps.healthdata"/>
         <!-- Required to query activities that can process text -->

@@ -24,6 +24,17 @@ import '../features/settings/screens/wearable_integrations_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/subscription/screens/subscription_screen.dart';
 import '../features/community/screens/community_screen.dart';
+import '../features/community/screens/challenge_detail_screen.dart';
+import '../features/community/screens/challenges_screen.dart';
+import '../features/community/screens/community_admin_screen.dart';
+import '../features/community/screens/community_chat_screen.dart';
+import '../features/community/screens/community_info_screen.dart';
+import '../features/community/screens/community_search_screen.dart';
+import '../features/community/screens/create_challenge_screen.dart';
+import '../features/community/screens/create_community_screen.dart';
+import '../features/community/screens/join_preview_screen.dart';
+import '../features/community/screens/member_report_screen.dart';
+import '../features/community/screens/todo_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
@@ -176,6 +187,74 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.community,
             name: 'community',
             builder: (context, state) => const CommunityScreen(),
+          ),
+        ],
+      ),
+
+      // ── Community (full-screen, outside bottom nav) ──────────────────────
+      // Static paths are declared before '/community/:id'.
+      GoRoute(
+        path: AppRoutes.communityCreate,
+        name: 'community-create',
+        builder: (context, state) => const CreateCommunityScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communitySearch,
+        name: 'community-search',
+        builder: (context, state) => const CommunitySearchScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityTodo,
+        name: 'community-todo',
+        builder: (context, state) => const TodoScreen(),
+      ),
+      GoRoute(
+        path: '/community/join/:code',
+        name: 'community-join',
+        builder: (context, state) =>
+            JoinPreviewScreen(code: state.pathParameters['code']!),
+      ),
+      GoRoute(
+        path: '/community/:id',
+        name: 'community-chat',
+        builder: (context, state) =>
+            CommunityChatScreen(communityId: state.pathParameters['id']!),
+        routes: [
+          GoRoute(
+            path: 'info',
+            builder: (context, state) =>
+                CommunityInfoScreen(communityId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'admin',
+            builder: (context, state) =>
+                CommunityAdminScreen(communityId: state.pathParameters['id']!),
+          ),
+          GoRoute(
+            path: 'member/:uid',
+            builder: (context, state) => MemberReportScreen(
+              communityId: state.pathParameters['id']!,
+              userId: state.pathParameters['uid']!,
+            ),
+          ),
+          GoRoute(
+            path: 'challenges',
+            builder: (context, state) =>
+                ChallengesScreen(communityId: state.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => CreateChallengeScreen(
+                    communityId: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'challenge/:cid',
+            builder: (context, state) => ChallengeDetailScreen(
+              communityId: state.pathParameters['id']!,
+              challengeId: state.pathParameters['cid']!,
+            ),
           ),
         ],
       ),
