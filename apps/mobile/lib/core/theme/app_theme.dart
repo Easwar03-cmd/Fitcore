@@ -93,7 +93,6 @@ abstract final class AppTheme {
       cardTheme: CardThemeData(
         color: AppColors.surface,
         elevation: 0,
-        margin: EdgeInsets.zero,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.card),

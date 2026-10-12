@@ -12,6 +12,12 @@ import '../providers/workout_provider.dart';
 import '../providers/workout_recommendation_provider.dart';
 import '../widgets/locked_feature_card.dart';
 import '../widgets/recommendation_card.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/skeleton.dart';
 
 class HomeWorkoutListScreen extends ConsumerStatefulWidget {
   const HomeWorkoutListScreen({super.key, this.pickMode = false});
@@ -62,67 +68,53 @@ class _HomeWorkoutListScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final exercises = _filtered;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.pickMode ? 'Switch Exercise' : 'Home Workouts'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: TextField(
-              onChanged: (v) => setState(() => _search = v),
-              decoration: InputDecoration(
-                hintText: 'Search exercises…',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
-          ),
-        ),
+      appBar: PageAppBar(
+        title: widget.pickMode ? 'Switch Exercise' : 'Home Workouts',
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: TextField(
+              onChanged: (v) => setState(() => _search = v),
+              decoration: const InputDecoration(
+                hintText: 'Search exercises…',
+                prefixIcon: Icon(PhosphorIconsRegular.magnifyingGlass),
+              ),
+            ),
+          ),
+
           // ── AI home recommendation ───────────────────────────────────────
           if (!widget.pickMode) const _HomeRecommendationSection(),
 
           // ── Category filter ──────────────────────────────────────────────
           _CategoryBar(
             selected: _selectedCategory,
-            onSelect: (c) =>
-                setState(() => _selectedCategory = c == _selectedCategory ? null : c),
+            onSelect: (c) => setState(
+                () => _selectedCategory = c == _selectedCategory ? null : c),
           ),
 
           // ── Difficulty filter ────────────────────────────────────────────
           _DifficultyBar(
             selected: _selectedDifficulty,
-            onSelect: (d) =>
-                setState(() => _selectedDifficulty = d == _selectedDifficulty ? null : d),
+            onSelect: (d) => setState(() =>
+                _selectedDifficulty = d == _selectedDifficulty ? null : d),
           ),
 
           // ── Exercise list ────────────────────────────────────────────────
           Expanded(
             child: exercises.isEmpty
-                ? Center(
-                    child: Text(
-                      'No exercises match your filters.',
-                      style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
+                ? const EmptyState(
+                    icon: PhosphorIconsRegular.magnifyingGlass,
+                    title: 'No exercises match your filters.',
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     itemCount: exercises.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, i) => _ExerciseCard(
                       exercise: exercises[i],
                       onStart: () => _start(exercises[i]),
@@ -138,7 +130,58 @@ class _HomeWorkoutListScreenState
   }
 }
 
-// ── Category filter bar ───────────────────────────────────────────────────────
+// ── Filter pills ──────────────────────────────────────────────────────────────
+
+class _Pill extends StatelessWidget {
+  const _Pill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.icon,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? Colors.white : AppColors.ink;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.ink : AppColors.surface,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 16, color: fg),
+                    const SizedBox(width: 6),
+                  ],
+                  Text(label,
+                      style: AppTextStyles.micro
+                          .copyWith(fontSize: 13, color: fg)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _CategoryBar extends StatelessWidget {
   const _CategoryBar({required this.selected, required this.onSelect});
@@ -148,46 +191,26 @@ class _CategoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SizedBox(
-      height: 44,
-      child: ListView(
+      height: 48,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        children: HomeWorkoutCategory.values.map((cat) {
-          final isSelected = selected == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(cat.label),
-              avatar: Icon(cat.icon,
-                  size: 16,
-                  color: isSelected
-                      ? cat.color
-                      : theme.colorScheme.onSurfaceVariant),
-              selected: isSelected,
-              onSelected: (_) => onSelect(cat),
-              side: BorderSide.none,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              selectedColor: cat.color.withValues(alpha: 0.18),
-              showCheckmark: false,
-              labelStyle: TextStyle(
-                color: isSelected
-                    ? cat.color
-                    : theme.colorScheme.onSurfaceVariant,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 13,
-              ),
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: HomeWorkoutCategory.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final cat = HomeWorkoutCategory.values[i];
+          return _Pill(
+            label: cat.label,
+            icon: cat.icon,
+            selected: selected == cat,
+            onTap: () => onSelect(cat),
           );
-        }).toList(),
+        },
       ),
     );
   }
 }
-
-// ── Difficulty filter bar ─────────────────────────────────────────────────────
 
 class _DifficultyBar extends StatelessWidget {
   const _DifficultyBar({required this.selected, required this.onSelect});
@@ -197,35 +220,21 @@ class _DifficultyBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return SizedBox(
-      height: 40,
-      child: ListView(
+      height: 48,
+      child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        children: HomeDifficulty.values.map((diff) {
-          final isSelected = selected == diff;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(diff.label),
-              selected: isSelected,
-              onSelected: (_) => onSelect(diff),
-              side: BorderSide.none,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              selectedColor: diff.color.withValues(alpha: 0.18),
-              showCheckmark: false,
-              labelStyle: TextStyle(
-                color: isSelected
-                    ? diff.color
-                    : theme.colorScheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: HomeDifficulty.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final diff = HomeDifficulty.values[i];
+          return _Pill(
+            label: diff.label,
+            selected: selected == diff,
+            onTap: () => onSelect(diff),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -241,120 +250,92 @@ class _ExerciseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final cat = exercise.category;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onStart,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // ── Colour icon ──────────────────────────────────────────────
-              CircleAvatar(
-                backgroundColor: cat.color.withValues(alpha: 0.12),
-                child: Icon(cat.icon, color: cat.color, size: 20),
-              ),
-              const SizedBox(width: 14),
-
-              // ── Name + description ───────────────────────────────────────
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return PastelCard(
+      onTap: onStart,
+      radius: 24,
+      padding: const EdgeInsets.all(14),
+      semanticLabel:
+          '${exercise.name}, ${exercise.difficulty.label}, ${exercise.muscleGroup.label}',
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: cat.color,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(cat.icon, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            exercise.name,
-                            style: theme.textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        if (exercise.timedOnly)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 4),
-                            child: Icon(Icons.timer_outlined, size: 14),
-                          ),
-                      ],
+                    Expanded(
+                      child: Text(exercise.name, style: AppTextStyles.heading),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      exercise.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _DiffBadge(difficulty: exercise.difficulty),
-                        const SizedBox(width: 6),
-                        _MuscleChip(label: exercise.muscleGroup.label),
-                      ],
-                    ),
+                    if (exercise.timedOnly)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Icon(PhosphorIconsRegular.timer, size: 16),
+                      ),
                   ],
                 ),
-              ),
-
-              // ── Start arrow ──────────────────────────────────────────────
-              Icon(Icons.play_arrow_rounded,
-                  color: theme.colorScheme.primary),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  exercise.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.caption,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _Tag(
+                        label: exercise.difficulty.label,
+                        color: exercise.difficulty.color),
+                    const SizedBox(width: 6),
+                    _Tag(
+                        label: exercise.muscleGroup.label,
+                        color: AppColors.surfaceMuted),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+                color: AppColors.ink, shape: BoxShape.circle),
+            child: const Icon(PhosphorIconsFill.play,
+                size: 16, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DiffBadge extends StatelessWidget {
-  const _DiffBadge({required this.difficulty});
-  final HomeDifficulty difficulty;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: difficulty.color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        difficulty.label,
-        style: TextStyle(
-          color: difficulty.color,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _MuscleChip extends StatelessWidget {
-  const _MuscleChip({required this.label});
+class _Tag extends StatelessWidget {
+  const _Tag({required this.label, required this.color});
   final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        color: color,
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
+      child: Text(label, style: AppTextStyles.micro),
     );
   }
 }
@@ -374,58 +355,42 @@ class _HomeRecommendationSection extends ConsumerWidget {
 
     if (!canUseAiFeatures) {
       return const Padding(
-        padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+        padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
         child: LockedFeatureCard(featureName: 'AI Workout Recommendations'),
       );
     }
 
     final recAsync =
         ref.watch(workoutRecommendationProvider(WorkoutType.home));
-    final theme = Theme.of(context);
+    void generate() => ref
+        .read(workoutRecommendationProvider(WorkoutType.home).notifier)
+        .generate();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: recAsync.when(
         data: (rec) => rec != null
-            ? RecommendationCard(
-                recommendation: rec,
-                onRefresh: () => ref
-                    .read(workoutRecommendationProvider(WorkoutType.home)
-                        .notifier)
-                    .generate(),
-              )
-            : _GenerateTile(
-                onTap: () => ref
-                    .read(workoutRecommendationProvider(WorkoutType.home)
-                        .notifier)
-                    .generate(),
+            ? RecommendationCard(recommendation: rec, onRefresh: generate)
+            : _GenerateTile(onTap: generate),
+        loading: () => const PastelCard(
+          tint: PastelTint.sky,
+          radius: 24,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-        loading: () => Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: theme.colorScheme.primary),
-                ),
-                const SizedBox(width: 14),
-                Text('Generating home workout recommendation…',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
+              SizedBox(width: 14),
+              Expanded(
+                child: Text('Generating home workout recommendation…'),
+              ),
+            ],
           ),
         ),
-        error: (e, __) => _GenerateTile(
-          errorMessage: apiErrorMessage(e),
-          onTap: () => ref
-              .read(
-                  workoutRecommendationProvider(WorkoutType.home).notifier)
-              .generate(),
-        ),
+        error: (e, __) =>
+            _GenerateTile(errorMessage: apiErrorMessage(e), onTap: generate),
       ),
     );
   }
@@ -439,41 +404,32 @@ class _GenerateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(
-                  isError
-                      ? Icons.refresh_rounded
-                      : Icons.auto_awesome_rounded,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isError
-                      ? '${errorMessage!} Tap to retry.'
-                      : 'Get AI Home Workout Recommendation',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w500),
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant),
-            ],
+    final text = isError
+        ? '${errorMessage!} Tap to retry.'
+        : 'Get AI Home Workout Recommendation';
+    return PastelCard(
+      tint: isError ? PastelTint.salmon : PastelTint.sky,
+      radius: 24,
+      onTap: onTap,
+      semanticLabel: text,
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle),
+            child: Icon(
+              isError
+                  ? PhosphorIconsRegular.arrowClockwise
+                  : PhosphorIconsRegular.sparkle,
+              size: 20,
+            ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: AppTextStyles.bodyStrong)),
+          const Icon(PhosphorIconsRegular.caretRight, size: 18),
+        ],
       ),
     );
   }

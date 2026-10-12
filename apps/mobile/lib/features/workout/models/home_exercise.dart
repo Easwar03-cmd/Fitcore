@@ -1,3 +1,6 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
+import '../../../core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import 'exercise.dart';
@@ -15,21 +18,21 @@ extension HomeWorkoutCategoryX on HomeWorkoutCategory {
       };
 
   IconData get icon => switch (this) {
-        HomeWorkoutCategory.push => Icons.fitness_center,
-        HomeWorkoutCategory.pull => Icons.arrow_upward_rounded,
-        HomeWorkoutCategory.legs => Icons.directions_run_rounded,
-        HomeWorkoutCategory.core => Icons.rotate_90_degrees_ccw_rounded,
-        HomeWorkoutCategory.fullBody => Icons.sports_gymnastics_rounded,
-        HomeWorkoutCategory.skill => Icons.stars_rounded,
+        HomeWorkoutCategory.push => PhosphorIconsRegular.barbell,
+        HomeWorkoutCategory.pull => PhosphorIconsRegular.arrowFatUp,
+        HomeWorkoutCategory.legs => PhosphorIconsRegular.personSimpleRun,
+        HomeWorkoutCategory.core => PhosphorIconsRegular.target,
+        HomeWorkoutCategory.fullBody => PhosphorIconsRegular.personSimpleTaiChi,
+        HomeWorkoutCategory.skill => PhosphorIconsRegular.star,
       };
 
   Color get color => switch (this) {
-        HomeWorkoutCategory.push => const Color(0xFFE53E3E),
-        HomeWorkoutCategory.pull => const Color(0xFF3182CE),
-        HomeWorkoutCategory.legs => const Color(0xFFD69E2E),
-        HomeWorkoutCategory.core => const Color(0xFF319795),
-        HomeWorkoutCategory.fullBody => const Color(0xFF805AD5),
-        HomeWorkoutCategory.skill => const Color(0xFFDD6B20),
+        HomeWorkoutCategory.push => AppColors.salmon,
+        HomeWorkoutCategory.pull => AppColors.sky,
+        HomeWorkoutCategory.legs => AppColors.butter,
+        HomeWorkoutCategory.core => AppColors.lime,
+        HomeWorkoutCategory.fullBody => AppColors.sky,
+        HomeWorkoutCategory.skill => AppColors.butter,
       };
 }
 
@@ -43,9 +46,9 @@ extension HomeDifficultyX on HomeDifficulty {
       };
 
   Color get color => switch (this) {
-        HomeDifficulty.beginner => const Color(0xFF38A169),
-        HomeDifficulty.intermediate => const Color(0xFFD69E2E),
-        HomeDifficulty.advanced => const Color(0xFFE53E3E),
+        HomeDifficulty.beginner => AppColors.lime,
+        HomeDifficulty.intermediate => AppColors.butter,
+        HomeDifficulty.advanced => AppColors.salmon,
       };
 }
 
