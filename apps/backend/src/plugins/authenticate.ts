@@ -16,3 +16,20 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     });
   }
 }
+
+/**
+ * Inline variant for handlers that cannot take a preHandler (legacy routes).
+ * Returns false after sending the 401 response.
+ */
+export async function requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+  try {
+    await request.jwtVerify();
+    return true;
+  } catch {
+    await reply.status(401).send({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+    });
+    return false;
+  }
+}

@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 import { GoogleGenerativeAIFetchError } from '@google/generative-ai';
 import {
@@ -53,14 +54,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /api/v1/ai/report — user flags an AI response (Play generative-AI
   // policy). Logged at warn level so reports surface in Cloud Logging.
   fastify.post('/report', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const parsed = reportSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -79,14 +73,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/v1/ai/analyze-food-photo  (20 MB limit — base64 image)
   fastify.post('/analyze-food-photo', { bodyLimit: 20 * 1024 * 1024 }, async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const userId = request.user.userId;
 
@@ -120,14 +107,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/ai/deload-check
   fastify.get('/deload-check', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     try {
       const check = await getDeloadCheck(request.user.userId);
       return reply.send({ success: true, data: check });
@@ -139,16 +119,28 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/ai/workout-recommendation
   fastify.get('/workout-recommendation', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
+    if (!(await requireAuth(request, reply))) return reply;
+
+    const userId = request.user.userId;
+
+    // Same rule the app UI uses (Coach tier only) — enforced here too so the
+    // endpoint cannot be called directly by lower tiers.
+    const sub = await prisma.subscription.findUnique({
+      where: { userId },
+      select: { tier: true, validUntil: true },
+    });
+    const hasCoachTier =
+      sub?.tier === 'coach' && (!sub.validUntil || sub.validUntil > new Date());
+    if (!hasCoachTier) {
+      return reply.status(403).send({
         success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
+        error: {
+          code: 'UPGRADE_REQUIRED',
+          message: 'AI workout recommendations are available on the Coach plan.',
+        },
       });
     }
 
-    const userId = request.user.userId;
     const query = request.query as { type?: string };
     const type = query.type === 'home' ? 'home' : 'gym';
 
@@ -163,14 +155,7 @@ export const aiRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/v1/ai/meal-plan  (Pro / Coach tier only)
   fastify.post('/meal-plan', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const userId = request.user.userId;
 

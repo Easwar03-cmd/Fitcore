@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 import { userRepository } from '../repositories/user.repository';
 import { toUserDto } from '../services/auth.service';
@@ -97,14 +98,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/v1/user/profile
   fastify.post('/profile', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const parsed = createProfileSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -173,14 +167,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.post('/fcm-token', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const parsed = fcmTokenSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -209,14 +196,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
   // DELETE /api/v1/user/account
   // Permanently deletes the authenticated user and all their data.
   fastify.delete('/account', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
-      });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const userId = request.user.userId;
 

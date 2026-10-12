@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { GoogleAuth, Impersonated, type AuthClient } from 'google-auth-library';
 import Stripe from 'stripe';
 import { z } from 'zod';
@@ -113,11 +114,7 @@ async function verifyGooglePlayPurchase(
 export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
   // ── GET /api/v1/payments/subscription ────────────────────────────────────────
   fastify.get('/subscription', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const { userId } = request.user;
 
@@ -169,11 +166,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ── POST /api/v1/payments/checkout ───────────────────────────────────────────
   fastify.post('/checkout', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const { userId } = request.user;
     const parsed = z.object({
@@ -221,11 +214,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ── POST /api/v1/payments/portal ─────────────────────────────────────────────
   fastify.post('/portal', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     const { userId } = request.user;
     const sub = await prisma.subscription.findUnique({ where: { userId }, select: { stripeCustomerId: true } });
@@ -251,11 +240,7 @@ export const paymentsRoutes: FastifyPluginAsync = async (fastify) => {
   // Verifies the purchase token with the Google Play Developer API and updates
   // the user's subscription tier in the database.
   fastify.post('/google-play/verify', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
 
     if (!config.GOOGLE_PLAY_PACKAGE_NAME || !isGooglePlayConfigured()) {
       return reply.status(503).send({

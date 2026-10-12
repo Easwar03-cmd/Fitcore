@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { requireAuth } from '../plugins/authenticate';
 import { z } from 'zod';
 import { nutritionRepository } from '../repositories/nutrition.repository';
 
@@ -22,9 +23,7 @@ export const nutritionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // POST /api/v1/nutrition/food-logs
   fastify.post('/food-logs', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
 
     const parsed = createFoodLogSchema.safeParse(request.body);
@@ -41,9 +40,7 @@ export const nutritionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/v1/nutrition/food-logs?date=YYYY-MM-DD
   fastify.get('/food-logs', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
 
     const { date } = request.query as { date?: string };
@@ -72,9 +69,7 @@ export const nutritionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // DELETE /api/v1/nutrition/food-logs/:id
   fastify.delete('/food-logs/:id', async (request, reply) => {
-    try { await request.jwtVerify(); } catch {
-      return reply.status(401).send({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } });
-    }
+    if (!(await requireAuth(request, reply))) return reply;
     const userId = request.user.userId;
     const { id } = request.params as { id: string };
 
