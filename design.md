@@ -1,6 +1,6 @@
 # Revive — UI/UX Redesign Spec (`design.md`)
 
-**Status:** DRAFT for review — no app code has been changed.
+**Status:** APPROVED — implementation in progress on branch `redesign/pastel-bento` (see §12 build status).
 **Source of truth:** the 6-screen reference image (`images/1.jpg`). This document turns it into a tokenised design system and maps every Revive screen onto it.
 **Rule:** features, data and copy stay the same. Only layout, cards, navigation, icons, charts and imagery change.
 
@@ -295,19 +295,35 @@ DeloadBanner → butter/lime Chip-card
 
 The reference's depth comes from **cut-out photos and 3D renders overflowing cards**. Revive needs its own equivalents.
 
-| Asset | Used on | Spec | Source options |
-|---|---|---|---|
-| Athlete cut-out (ropes / lifting) | Home hero, Workout hero | PNG/WebP, transparent bg, ~900×900, subject bleeds off one edge | Licensed stock cut-out, commissioned shoot, or generated with consistent style |
-| Runner cut-out + motion swoosh | Active outdoor workout card | 900×1200 transparent | same |
-| Anatomy front/back (muscle groups) | Workout hub, Progress heat-map | SVG, 12 selectable regions (chest, back, shoulders, arms, legs, core…) | commission SVG or licensed set |
-| 3D food objects (plate, apple, bowl) | Home hero alt, Nutrition, empty states | 3 × 512² transparent | 3D renders (Blender / Spline) |
-| 3D objects: dumbbell, scale, trophy, water glass, flame | Cards, empty states, challenge complete | 5 × 512² | 3D renders |
-| Group avatars illustration | Community empty / create | 600×400 | illustration |
-| Device / band render | Wearables (hidden today) | optional | skip until feature returns |
+> I will not copy the photographs from the reference screenshot into the app. Use the images you own / have licensed.
 
-Rules: transparent background, soft contact shadow baked in, tinted to sit on `sky / lime / butter`; deliver `@1x/2x/3x` WebP < 80 KB each. Until delivered the card shows a flat tinted shape in the same position so layout is already final.
+### 7.1 File contract (already wired in code)
 
-> I will not copy the photographs from the reference screenshot into the app.
+Drop files into `apps/mobile/assets/images/`. Until a file exists the card shows a white disc with an icon in the same position, so nothing breaks.
+**Format:** transparent PNG or WebP · subject cut out · soft contact shadow optional · keep < 150 KB each.
+
+| File name | Where it shows | Card tint behind it | Subject to supply | Size (px) | Status in code |
+|---|---|---|---|---|---|
+| `hero_home_plate.png` | Home → top hero card (right side, overflows top) | sky | Healthy plate / bowl / apple, 3D-render or photo cut-out | 900 × 900 | ✅ wired |
+| `hero_gym_athlete.png` | Workout → "Gym Workout" hero | sky | Person lifting / battle ropes (like reference A) | 900 × 1000 | ✅ wired |
+| `hero_home_workout.png` | Workout → "Home Workout" hero | lime | Person doing bodyweight / yoga / push-up | 900 × 1000 | ✅ wired |
+| `workout_runner.png` | Active workout → outdoor GPS metric card | sky | Runner mid-stride (like reference C) | 700 × 900 | ✅ wired |
+| `hero_progress.png` | Progress → top value card | sky | Scale / body-measure render or athlete | 800 × 800 | step 5 |
+| `hero_community.png` | Community → create/empty states | lime | Group of people / friends high-five | 900 × 700 | step 5 |
+| `challenge_trophy.png` | Challenges → hero + "completed" | butter | 3D trophy / medal | 600 × 600 | step 5 |
+| `empty_workout.png`, `empty_food.png`, `empty_chat.png` | Empty states | sky | Simple 3D object (dumbbell / apple / chat bubble) | 512 × 512 | step 5 |
+| `onboarding_goal.png`, `onboarding_body.png`, `onboarding_activity.png` | Onboarding screens | sky / lime / butter | One subject each | 900 × 900 | step 6 |
+| `auth_hero.png` | Login / signup header | sky | Athlete or abstract 3D | 1000 × 800 | step 6 |
+| `anatomy_front.svg`, `anatomy_back.svg` | Muscle tiles (Progress heat-map) | grey | Body outline with separable muscle paths (chest, back, shoulders, arms, legs, core) | vector | step 5 |
+
+### 7.2 What I can do with your photos
+- Remove backgrounds → transparent PNG (I'll use `rembg`/Pillow locally; you review each result).
+- Crop, resize, compress, rename to the file names above.
+- Tint-match edges to the pastel card colours.
+I **cannot** invent photographic assets; if a photo is missing the placeholder stays.
+
+### 7.3 How to hand them over
+Put the originals in `apps/mobile/assets/images/source/` (any names) **or** re-attach them in chat. Tell me which photo is for which row above (or leave it to me and I will propose a mapping for your approval).
 
 ---
 
@@ -375,17 +391,33 @@ Branch `redesign/pastel-bento`, one commit per step, `flutter analyze` + tests g
 
 ---
 
-## 12. Decisions I need
+## 12. Decisions (resolved)
 
-| ID | Question | Recommendation |
-|---|---|---|
-| **U1** | Dark theme: keep a derived dark palette, or ship light-only like the reference? | ★ Light is the "100 % match" theme; keep an auto/dark variant (ink cards `#1B1B1B`, pastel tints at 18 % opacity) so existing user preference isn't removed. |
-| **U2** | Font | ★ Plus Jakarta Sans (bundled). Alternative: Satoshi / General Sans if you have a licence. |
-| **U3** | Icon set | ★ Phosphor Regular. |
-| **U4** | 3D / photo assets | You supply, or I generate placeholder 3D-style renders to be replaced later? ★ Ship flat placeholders now, drop real assets in step 7. |
-| **U5** | Nav labels | ★ Icon-only exactly as reference (+ accessibility labels). Alternative: show label under the active circle. |
-| **U6** | Accessibility darkening (§10) | ★ Apply (differences are barely visible). |
-| **U7** | Scope of first pass | ★ Steps 1–4 (tokens, components, nav, Home / Nutrition / Workout) for you to review on device, then the rest. |
+| ID | Decision |
+|---|---|
+| U1 | **Light-only.** Dark theme and the Appearance toggle were removed. |
+| U2 | **Plus Jakarta Sans**, bundled as a variable font (`assets/fonts/`, OFL). |
+| U3 | **Phosphor Regular** (`phosphor_flutter`), Fill variant for the active nav glyph and tiny status icons. |
+| U4 | Real photos/3D images: user supplies; wiring is done with placeholders (see §7.1). |
+| U5 | **Icon-only** bottom nav with screen-reader labels + tooltips. |
+| U6 | Accessibility colour adjustments **applied** (§10). |
+| U7 | First pass = steps 1–4 (tokens, components, nav, Home / Nutrition / Workout). |
+
+### Build status
+| Step | Status |
+|---|---|
+| 1 Tokens, theme, font | ✅ |
+| 2 Shared components | ✅ (`core/widgets/*`) |
+| 3 Floating nav shell | ✅ |
+| 4 Home, Nutrition, Workout (hub, lists, picker, active, summary, history) | ✅ |
+| 4b Nutrition sub-screens (search, barcode, photo, meal plan, log sheet) | ⏳ themed by global theme only — full restyle in step 5 |
+| 5 Progress, Community, Profile, Subscription | ⏳ |
+| 6 Auth, onboarding, splash | ⏳ |
+| 7 Assets drop-in, goldens, TalkBack pass | ⏳ |
+
+### Deliberate deviations (feature parity wins over pixel parity)
+- Reference screen A's **"Muscles workload" body-tile picker** is not added to the Workout hub: Revive has no feature behind it (it would be a new feature). The anatomy tiles are used where Revive already has a muscle heat-map (Progress).
+- Reference screen D/E **heart / battery / ECG** content has no Revive equivalent; the layouts (bento grid, slide action, value-hero card, ruler chart) are reused for calories, steps, water and workout metrics.
 
 ---
 
