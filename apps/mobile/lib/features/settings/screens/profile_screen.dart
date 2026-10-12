@@ -44,11 +44,6 @@ class ProfileScreen extends ConsumerWidget {
                 onTap: () => context.push(AppRoutes.notificationPrefs),
               ),
               _TileData(
-                icon: Icons.watch_rounded,
-                label: 'Wearable Integrations',
-                onTap: () => context.push(AppRoutes.wearableIntegrations),
-              ),
-              _TileData(
                 icon: Icons.workspace_premium_rounded,
                 label: 'Subscription',
                 onTap: () => context.push(AppRoutes.subscription),

@@ -23,11 +23,7 @@ import '../features/settings/screens/profile_screen.dart';
 import '../features/settings/screens/wearable_integrations_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/subscription/screens/subscription_screen.dart';
-import '../features/social/screens/challenges_screen.dart';
-import '../features/social/screens/friend_search_screen.dart';
-import '../features/social/screens/leaderboard_screen.dart';
-import '../features/social/screens/social_screen.dart';
-import '../features/wellness/screens/wellness_screen.dart';
+import '../features/community/screens/community_screen.dart';
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
@@ -177,36 +173,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: AppRoutes.wellness,
-            name: 'wellness',
-            builder: (context, state) => const WellnessScreen(),
+            path: AppRoutes.community,
+            name: 'community',
+            builder: (context, state) => const CommunityScreen(),
           ),
         ],
       ),
 
       // ── Top-level features (outside bottom nav) ──────────────────────────
-      GoRoute(
-        path: AppRoutes.social,
-        name: 'social',
-        builder: (context, state) => const SocialScreen(),
-        routes: [
-          GoRoute(
-            path: 'search',
-            name: 'friend-search',
-            builder: (context, state) => const FriendSearchScreen(),
-          ),
-          GoRoute(
-            path: 'challenges',
-            name: 'challenges',
-            builder: (context, state) => const ChallengesScreen(),
-          ),
-          GoRoute(
-            path: 'leaderboard',
-            name: 'leaderboard',
-            builder: (context, state) => const LeaderboardScreen(),
-          ),
-        ],
-      ),
       GoRoute(
         path: AppRoutes.profile,
         name: 'profile',

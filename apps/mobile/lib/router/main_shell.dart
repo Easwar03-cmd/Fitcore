@@ -21,7 +21,7 @@ class _MainShellState extends ConsumerState<MainShell>
     AppRoutes.nutrition,
     AppRoutes.workout,
     AppRoutes.progress,
-    AppRoutes.wellness,
+    AppRoutes.community,
   ];
 
   @override
@@ -89,9 +89,9 @@ class _MainShellState extends ConsumerState<MainShell>
             label: 'Progress',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.self_improvement_outlined),
-            activeIcon: Icon(Icons.self_improvement),
-            label: 'Wellness',
+            icon: Icon(Icons.groups_outlined),
+            activeIcon: Icon(Icons.groups),
+            label: 'Community',
           ),
         ],
       ),

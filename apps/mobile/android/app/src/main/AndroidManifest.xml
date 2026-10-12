@@ -31,9 +31,6 @@
 
     <!-- ── Health Connect permissions (only what health_service.dart uses) ───── -->
     <uses-permission android:name="android.permission.health.READ_STEPS"/>
-    <uses-permission android:name="android.permission.health.READ_HEART_RATE"/>
-    <!-- Covers SLEEP_ASLEEP, SLEEP_AWAKE, SLEEP_DEEP, SLEEP_LIGHT, SLEEP_REM -->
-    <uses-permission android:name="android.permission.health.READ_SLEEP"/>
     <!-- Push workout calorie burn back to Health Connect -->
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED"/>
 

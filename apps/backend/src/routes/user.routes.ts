@@ -245,12 +245,4 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       });
     }
   });
-
-  // GET /api/v1/user/stats
-  fastify.get('/stats', async (_request, reply) => {
-    return reply.status(501).send({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Coming soon' },
-    });
-  });
 };

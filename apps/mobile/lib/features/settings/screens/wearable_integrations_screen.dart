@@ -31,7 +31,7 @@ const _kOAuthUrls = <String, String>{
       '?response_type=code'
       '&client_id=YOUR_FITBIT_CLIENT_ID'
       '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
-      '&scope=activity+heartrate+sleep+weight'
+      '&scope=activity+weight'
       '&expires_in=604800',
   'garmin':
       'https://connect.garmin.com/oauthConfirm'
@@ -41,13 +41,13 @@ const _kOAuthUrls = <String, String>{
       '?response_type=code'
       '&client_id=YOUR_WHOOP_CLIENT_ID'
       '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
-      '&scope=read%3Abody_measurement+read%3Acycles+read%3Asleep',
+      '&scope=read%3Abody_measurement+read%3Acycles',
   'oura':
       'https://cloud.ouraring.com/oauth/authorize'
       '?response_type=code'
       '&client_id=YOUR_OURA_CLIENT_ID'
       '&redirect_uri=revive%3A%2F%2Foauth%2Fcallback'
-      '&scope=personal+daily+heartrate+workout+session',
+      '&scope=personal+workout+session',
 };
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -256,8 +256,8 @@ class _InfoBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Connect wearables to automatically sync sleep, heart rate, '
-              'and activity data into your Wellness and Progress tabs.',
+              'Connect wearables to automatically sync activity data '
+              'into your Progress tab.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),

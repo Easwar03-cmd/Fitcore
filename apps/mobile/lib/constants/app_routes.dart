@@ -35,14 +35,8 @@ abstract final class AppRoutes {
   // Progress sub-routes
   static const bodyLog = '/progress/body';
 
-  // Social (accessed from AppBar, outside bottom nav)
-  static const social = '/social';
-  static const friendSearch = '/social/search';
-  static const challenges = '/social/challenges';
-  static const leaderboard = '/social/leaderboard';
-
   // Top-level features (outside bottom nav)
-  static const wellness = '/wellness';
+  static const community = '/community';
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
   static const wearableIntegrations = '/profile/wearables';
