@@ -122,7 +122,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/zenfit_icon.png"
+  image_path: "assets/icons/revive_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "assets/icons/adaptive_background.png"
   adaptive_icon_foreground: "assets/icons/adaptive_foreground.png"

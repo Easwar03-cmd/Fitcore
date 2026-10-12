@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +7,7 @@ import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_widgets.dart';
 
 class BodyStatsScreen extends ConsumerStatefulWidget {
   const BodyStatsScreen({super.key});
@@ -42,28 +43,22 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _StepIndicator(current: 2, total: 3),
-                const SizedBox(height: 32),
-                Text(
-                  'Your body stats',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                const OnboardingStepBar(current: 2, total: 3),
+                const SizedBox(height: 20),
+                const OnboardingHeader(
+                  title: 'Your body stats',
+                  subtitle: 'Used to calculate your personalised calorie target.',
+                  imageName: 'obj_scale.png',
+                  fallbackIcon: Icons.monitor_weight_outlined,
+                  tint: PastelTint.lime,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Used to calculate your personalised calorie target.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
                 // Height
                 TextFormField(
@@ -199,32 +194,5 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
           );
       context.go(AppRoutes.activityLevel);
     }
-  }
-}
-
-// ─── Step indicator (shared across onboarding screens) ───────────────────────
-
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.current, required this.total});
-  final int current;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(total, (i) {
-        final active = i + 1 <= current;
-        return Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
-            decoration: BoxDecoration(
-              color: active ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        );
-      }),
-    );
   }
 }

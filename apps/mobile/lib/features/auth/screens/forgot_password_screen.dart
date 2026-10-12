@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_constants.dart';
 import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/brand_mark.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 enum _Step { email, code, success }
 
@@ -162,15 +164,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (!didPop) _handleBackPress();
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(_appBarTitle),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              final consumed = _handleBackPress();
-              if (!consumed) context.pop();
-            },
-          ),
+        appBar: PageAppBar(
+          title: _appBarTitle,
+          onBack: () {
+            final consumed = _handleBackPress();
+            if (!consumed) context.pop();
+          },
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -199,7 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
-        const Icon(Icons.lock_reset, size: 56, color: AppColors.primary),
+        const Center(child: BrandMark(size: 88)),
         const SizedBox(height: 24),
         Text('Forgot your password?',
             style: Theme.of(context).textTheme.headlineSmall,
@@ -245,7 +244,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
-        const Icon(Icons.key, size: 56, color: AppColors.primary),
+        const Center(child: BrandMark(size: 88)),
         const SizedBox(height: 24),
         Text('Check your email',
             style: Theme.of(context).textTheme.headlineSmall,

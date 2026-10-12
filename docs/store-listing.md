@@ -177,3 +177,11 @@ Welcome to Revive 1.0!
 • Apple Health & Google Fit sync
 • Weekly AI-generated meal plans (Pro)
 ```
+
+---
+
+## Brand assets
+- **Play Store icon (512×512):** `apps/mobile/assets/icons/play_store_icon_512.png`
+- **iOS App Store icon (1024×1024):** `apps/mobile/assets/icons/revive_icon.png`
+- Source / regenerate: `python apps/mobile/assets/icons/gen_revive_logo.py`, then `dart run flutter_launcher_icons` in `apps/mobile`.
+- Palette: sky `#B8E3EE`, lime `#CFE8B8`, butter `#FBE28C`, salmon `#E1A38A`, ink `#111111`.

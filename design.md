@@ -413,8 +413,8 @@ Branch `redesign/pastel-bento`, one commit per step, `flutter analyze` + tests g
 | 4 Home, Nutrition, Workout (hub, lists, picker, active, summary, history) | ✅ |
 | 4b Nutrition sub-screens (search, barcode, photo, meal plan, log sheet) | ⏳ themed by global theme only — full restyle in step 5 |
 | 4c Images integrated, **Muscles workload picker** (Workout hub + Progress, replaces old heat-map) | ✅ |
-| 5 Progress (rest), Community, Profile, Subscription | ⏳ |
-| 6 Auth, onboarding, splash | ⏳ |
+| 5 Progress (rest), Community, Profile, Subscription, Nutrition sub-screens | ✅ |
+| 6 Auth, onboarding, splash, **new logo** (R mark; launcher, splash, docs) | ✅ |
 | 7 Assets drop-in, goldens, TalkBack pass | ⏳ |
 
 ### Deliberate deviations (feature parity wins over pixel parity)
