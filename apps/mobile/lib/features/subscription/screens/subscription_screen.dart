@@ -291,15 +291,13 @@ class _FeatureSummary extends StatelessWidget {
     final features = sub.isPaid
         ? [
             'Ad-free experience',
-            'Unlimited AI coach',
             'AI meal plans (weekly)',
             'Food photo logging',
             'Advanced analytics',
             'Full wearable sync',
             if (sub.isCoach) 'AI workout recommendations',
-            if (sub.isCoach) 'AI Form Monitor (Beta)',
           ]
-        : ['Calorie & macro tracking', 'Workout logging', 'AI coach (5/day)', 'Contains ads'];
+        : ['Calorie & macro tracking', 'Workout logging', 'Contains ads'];
 
     return Container(
       padding: const EdgeInsets.all(16),

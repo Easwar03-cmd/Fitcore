@@ -7,7 +7,6 @@ import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/signup_screen.dart';
-import '../features/coach/screens/coach_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/nutrition/screens/barcode_screen.dart';
 import '../features/nutrition/screens/food_search_screen.dart';
@@ -192,11 +191,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Top-level features (outside bottom nav) ──────────────────────────
-      GoRoute(
-        path: AppRoutes.coach,
-        name: 'coach',
-        builder: (context, state) => const CoachScreen(),
-      ),
       GoRoute(
         path: AppRoutes.social,
         name: 'social',

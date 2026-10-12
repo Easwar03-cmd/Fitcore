@@ -43,7 +43,6 @@ abstract final class AppRoutes {
   static const leaderboard = '/social/leaderboard';
 
   // Top-level features (outside bottom nav)
-  static const coach = '/coach';
   static const wellness = '/wellness';
   static const profile = '/profile';
   static const notificationPrefs = '/profile/notifications';
