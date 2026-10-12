@@ -4,6 +4,7 @@ import { userRepository } from '../repositories/user.repository';
 import { toUserDto } from '../services/auth.service';
 import { prisma } from '../utils/db';
 import type { UserProfileDto } from '@zenfit/shared';
+import { releaseUserCommunities } from '../services/community-account.service';
 
 // ─── TDEE calculation (Mifflin-St Jeor, matches CLAUDE.md spec) ──────────────
 
@@ -221,20 +222,21 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
 
     try {
       // Delete in FK-safe order: child records first, then the user row.
-      await prisma.$transaction([
-        prisma.exerciseSet.deleteMany({ where: { workoutLog: { userId } } }),
-        prisma.workoutLog.deleteMany({ where: { userId } }),
-        prisma.foodLog.deleteMany({ where: { userId } }),
-        prisma.bodyStat.deleteMany({ where: { userId } }),
-        prisma.goal.deleteMany({ where: { userId } }),
-        prisma.friendship.deleteMany({ where: { OR: [{ userId }, { friendId: userId }] } }),
-        prisma.moodLog.deleteMany({ where: { userId } }),
-        prisma.sleepLog.deleteMany({ where: { userId } }),
-        prisma.wearableConnection.deleteMany({ where: { userId } }),
-        prisma.subscription.deleteMany({ where: { userId } }),
-        prisma.userProfile.deleteMany({ where: { userId } }),
-        prisma.user.delete({ where: { id: userId } }),
-      ]);
+      // Community data (memberships, messages, challenges, todos, blocks,
+      // reports) cascades from the user row; owned communities are handed over
+      // or removed first.
+      await prisma.$transaction(async (tx) => {
+        await releaseUserCommunities(tx, userId);
+        await tx.exerciseSet.deleteMany({ where: { workoutLog: { userId } } });
+        await tx.workoutLog.deleteMany({ where: { userId } });
+        await tx.foodLog.deleteMany({ where: { userId } });
+        await tx.bodyStat.deleteMany({ where: { userId } });
+        await tx.goal.deleteMany({ where: { userId } });
+        await tx.wearableConnection.deleteMany({ where: { userId } });
+        await tx.subscription.deleteMany({ where: { userId } });
+        await tx.userProfile.deleteMany({ where: { userId } });
+        await tx.user.delete({ where: { id: userId } });
+      });
 
       return reply.send({ success: true, data: { message: 'Account deleted.' } });
     } catch (err) {
