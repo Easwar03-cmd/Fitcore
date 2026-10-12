@@ -1,31 +1,74 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../models/food_log.dart';
 import '../providers/nutrition_provider.dart';
 
-const _mealEmoji = {
-  'breakfast': '🌅',
-  'lunch': '☀️',
-  'dinner': '🌙',
-  'snack': '🍎',
+const _mealIcon = {
+  'breakfast': PhosphorIconsRegular.sunHorizon,
+  'lunch': PhosphorIconsRegular.sun,
+  'dinner': PhosphorIconsRegular.moon,
+  'snack': PhosphorIconsRegular.orange,
 };
 
-/// Card-based meal section.
+const _mealTint = {
+  'breakfast': PastelTint.butter,
+  'lunch': PastelTint.sky,
+  'dinner': PastelTint.lime,
+  'snack': PastelTint.salmon,
+};
+
+/// Asks for confirmation, then deletes [log]. Returns true when removed.
+Future<bool> confirmAndDeleteLog(
+  BuildContext context,
+  WidgetRef ref,
+  FoodLog log,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Remove entry?'),
+      content: Text('Remove "${log.foodName}" from your log?'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Remove',
+              style: TextStyle(color: AppColors.coralText)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return false;
+  try {
+    await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
+    ref.read(foodLogsProvider.notifier).removeLogLocally(log.id);
+    return true;
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+    return false;
+  }
+}
+
+/// Tinted meal card.
 ///
-/// - Empty: shows placeholder text; entire card navigates to FoodSearchScreen.
-/// - With food: compact horizontal chip row + "See all" toggle for full list.
-/// - Tapping + always navigates to FoodSearchScreen with [mealType] pre-selected.
+/// - Empty: placeholder text; the whole card opens food search.
+/// - With food: horizontal chip row + "See all" toggle for the full list.
+/// - The + circle always opens food search with [mealType] pre-selected.
 class MealCard extends ConsumerStatefulWidget {
-  const MealCard({
-    super.key,
-    required this.mealType,
-    required this.logs,
-  });
+  const MealCard({super.key, required this.mealType, required this.logs});
 
   final String mealType;
   final List<FoodLog> logs;
@@ -40,187 +83,95 @@ class _MealCardState extends ConsumerState<MealCard> {
   String get _label =>
       widget.mealType[0].toUpperCase() + widget.mealType.substring(1);
 
-  double get _totalKcal =>
-      widget.logs.fold(0.0, (sum, l) => sum + l.calories);
+  int get _totalKcal =>
+      widget.logs.fold(0.0, (sum, l) => sum + l.calories).round();
 
-  void _navigateToSearch() =>
-      context.push(AppRoutes.foodSearch, extra: widget.mealType);
+  void _add() => context.push(AppRoutes.foodSearch, extra: widget.mealType);
 
   @override
   Widget build(BuildContext context) {
     final hasLogs = widget.logs.isNotEmpty;
+    final tint = _mealTint[widget.mealType] ?? PastelTint.grey;
 
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: Material(
+        color: tint.color,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: hasLogs ? null : _navigateToSearch,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _MealHeader(
-                label: _label,
-                mealType: widget.mealType,
-                totalKcal: hasLogs ? _totalKcal.round() : null,
-                onAdd: _navigateToSearch,
-              ),
-              if (!hasLogs)
-                _EmptyPlaceholder(mealType: widget.mealType)
-              else
-                _LoggedBody(
-                  logs: widget.logs,
-                  expanded: _expanded,
-                  onToggle: () => setState(() => _expanded = !_expanded),
+          onTap: hasLogs ? null : _add,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                          color: Colors.white, shape: BoxShape.circle),
+                      child: Icon(
+                          _mealIcon[widget.mealType] ??
+                              PhosphorIconsRegular.forkKnife,
+                          size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_label, style: AppTextStyles.heading),
+                          Text(
+                            hasLogs
+                                ? '$_totalKcal kcal · ${widget.logs.length} item${widget.logs.length == 1 ? '' : 's'}'
+                                : 'Tap + to add ${widget.mealType}',
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.ink),
+                          ),
+                        ],
+                      ),
+                    ),
+                    CircleIconButton(
+                      icon: PhosphorIconsBold.plus,
+                      iconSize: 18,
+                      size: 40,
+                      semanticLabel: 'Add ${widget.mealType}',
+                      onPressed: _add,
+                    ),
+                  ],
                 ),
-            ],
+                if (hasLogs) ...[
+                  const SizedBox(height: 12),
+                  if (!_expanded)
+                    _FoodChipRow(logs: widget.logs)
+                        .animate(key: ValueKey(widget.logs.length))
+                        .fadeIn(duration: 250.ms)
+                  else
+                    for (int i = 0; i < widget.logs.length; i++)
+                      _LogItem(log: widget.logs[i])
+                          .animate(delay: (i * 40).ms)
+                          .fadeIn(duration: 180.ms),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => setState(() => _expanded = !_expanded),
+                      child: Text(_expanded
+                          ? 'Collapse'
+                          : 'See all (${widget.logs.length})'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-// ── Header row ────────────────────────────────────────────────────────────────
-
-class _MealHeader extends StatelessWidget {
-  const _MealHeader({
-    required this.label,
-    required this.mealType,
-    required this.totalKcal,
-    required this.onAdd,
-  });
-
-  final String label;
-  final String mealType;
-  final int? totalKcal;
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 4, 8),
-      child: Row(
-        children: [
-          Text(
-            '${_mealEmoji[mealType]} $label',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const Spacer(),
-          if (totalKcal != null) ...[
-            Text(
-              '$totalKcal kcal',
-              style: const TextStyle(
-                color: AppColors.calories,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: onAdd,
-            iconSize: 22,
-            visualDensity: VisualDensity.compact,
-            color: AppColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyPlaceholder extends StatelessWidget {
-  const _EmptyPlaceholder({required this.mealType});
-  final String mealType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Text(
-        'Tap + to add $mealType',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontStyle: FontStyle.italic,
-            ),
-      ),
-    );
-  }
-}
-
-// ── Body when foods are logged ────────────────────────────────────────────────
-
-class _LoggedBody extends StatelessWidget {
-  const _LoggedBody({
-    required this.logs,
-    required this.expanded,
-    required this.onToggle,
-  });
-
-  final List<FoodLog> logs;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!expanded) ...[
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 4),
-            child: _FoodChipRow(logs: logs)
-                .animate(key: ValueKey(logs.length))
-                .fadeIn(duration: 250.ms)
-                .slideX(begin: -0.05, end: 0),
-          ),
-          _ToggleLink(label: 'See all (${logs.length})', onTap: onToggle),
-        ] else ...[
-          for (int i = 0; i < logs.length; i++)
-            _LogItem(log: logs[i])
-                .animate(delay: (i * 40).ms)
-                .fadeIn(duration: 180.ms)
-                .slideY(begin: 0.06, end: 0),
-          _ToggleLink(label: 'Collapse', onTap: onToggle),
-        ],
-      ],
-    );
-  }
-}
-
-class _ToggleLink extends StatelessWidget {
-  const _ToggleLink({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 12, 12),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: GestureDetector(
-          onTap: onTap,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.primary,
-                  decoration: TextDecoration.underline,
-                  decorationColor: AppColors.primary,
-                ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Horizontal chip row ───────────────────────────────────────────────────────
 
 class _FoodChipRow extends StatelessWidget {
   const _FoodChipRow({required this.logs});
@@ -229,10 +180,9 @@ class _FoodChipRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 32,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(right: 12),
         itemCount: logs.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) => _FoodChip(log: logs[i]),
@@ -245,72 +195,32 @@ class _FoodChip extends ConsumerWidget {
   const _FoodChip({required this.log});
   final FoodLog log;
 
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove entry?'),
-        content: Text('Remove "${log.foodName}" from your log?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Remove',
-                  style: TextStyle(color: AppColors.error))),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
-      ref.read(foodLogsProvider.notifier).removeLogLocally(log.id);
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.only(left: 10, right: 4, top: 5, bottom: 5),
+      padding: const EdgeInsets.only(left: 12, right: 2),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 100),
-            child: Text(
-              log.foodName,
-              style: const TextStyle(fontSize: 12),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            constraints: const BoxConstraints(maxWidth: 110),
+            child: Text(log.foodName,
+                style: AppTextStyles.micro.copyWith(fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1),
           ),
-          const SizedBox(width: 4),
-          Text(
-            '${log.calories.round()} kcal',
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.calories,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 2),
-          GestureDetector(
-            onTap: () => _delete(context, ref),
-            child: Icon(
-              Icons.close,
-              size: 14,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+          const SizedBox(width: 6),
+          Text('${log.calories.round()} kcal',
+              style: AppTextStyles.micro.copyWith(color: AppColors.inkMuted)),
+          IconButton(
+            tooltip: 'Remove ${log.foodName}',
+            onPressed: () => confirmAndDeleteLog(context, ref, log),
+            icon: const Icon(PhosphorIconsRegular.x, size: 14),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -318,8 +228,7 @@ class _FoodChip extends ConsumerWidget {
   }
 }
 
-// ── Full log item with swipe-to-delete ────────────────────────────────────────
-
+/// Full row with swipe-to-delete (expanded card).
 class _LogItem extends ConsumerWidget {
   const _LogItem({required this.log});
   final FoodLog log;
@@ -332,42 +241,16 @@ class _LogItem extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: AppColors.error,
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+        color: AppColors.coral,
+        child: const Icon(PhosphorIconsRegular.trash, color: Colors.white),
       ),
       confirmDismiss: (_) async {
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Remove entry?'),
-            content: Text('Remove "${log.foodName}" from your log?'),
-            actions: [
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel')),
-              TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Remove',
-                      style: TextStyle(color: AppColors.error))),
-            ],
-          ),
-        );
-        if (confirmed != true) return false;
-        try {
-          await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
-          return true;
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(e.toString())));
-          }
-          return false;
-        }
+        // The helper removes the row itself, so never let Dismissible do it.
+        await confirmAndDeleteLog(context, ref, log);
+        return false;
       },
-      onDismissed: (_) =>
-          ref.read(foodLogsProvider.notifier).removeLogLocally(log.id),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 4, 10),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Expanded(
@@ -375,7 +258,7 @@ class _LogItem extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(log.foodName,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: AppTextStyles.bodyStrong,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
@@ -384,51 +267,18 @@ class _LogItem extends ConsumerWidget {
                     'P ${log.proteinG.toStringAsFixed(1)}  '
                     'C ${log.carbsG.toStringAsFixed(1)}  '
                     'F ${log.fatG.toStringAsFixed(1)}',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 12),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.ink),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${log.calories.round()} kcal',
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-            ),
+            Text('${log.calories.round()} kcal',
+                style: AppTextStyles.bodyStrong.copyWith(fontSize: 13)),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18),
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              visualDensity: VisualDensity.compact,
               tooltip: 'Delete',
-              onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Remove entry?'),
-                    content: Text('Remove "${log.foodName}" from your log?'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel')),
-                      TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('Remove',
-                              style: TextStyle(color: AppColors.error))),
-                    ],
-                  ),
-                );
-                if (confirmed != true) return;
-                try {
-                  await ref.read(foodLogsProvider.notifier).deleteLog(log.id);
-                  ref.read(foodLogsProvider.notifier).removeLogLocally(log.id);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(e.toString())));
-                  }
-                }
-              },
+              icon: const Icon(PhosphorIconsRegular.trash, size: 18),
+              onPressed: () => confirmAndDeleteLog(context, ref, log),
             ),
           ],
         ),
