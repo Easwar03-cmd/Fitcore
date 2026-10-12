@@ -1,3 +1,6 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/hero_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,6 +99,17 @@ class _BodyLogScreenState extends ConsumerState<BodyLogScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
+            const HeroCard(
+              tint: PastelTint.lime,
+              chipLabel: 'Body',
+              chipIcon: PhosphorIconsFill.scales,
+              title: 'Track your weight',
+              subtitle: 'One entry a day is plenty',
+              imageName: 'obj_scale.png',
+              fallbackIcon: PhosphorIconsRegular.scales,
+              height: 140,
+            ),
+            const SizedBox(height: 16),
             // ── Input card ────────────────────────────────────────────────
             Card(
               child: Padding(
@@ -138,7 +152,6 @@ class _BodyLogScreenState extends ConsumerState<BodyLogScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Weight (kg)',
                         hintText: '75.0',
-                        border: OutlineInputBorder(),
                         suffixText: 'kg',
                       ),
                     ),
@@ -155,7 +168,6 @@ class _BodyLogScreenState extends ConsumerState<BodyLogScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Body Fat % (optional)',
                         hintText: '18.5',
-                        border: OutlineInputBorder(),
                         suffixText: '%',
                       ),
                     ),
@@ -255,9 +267,7 @@ class _StatRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.monitor_weight_outlined,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant),
+              const Icon(PhosphorIconsRegular.scales, size: 18),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(date,

@@ -44,7 +44,7 @@ class CalorieTrendChart extends StatelessWidget {
             barRods: [
               BarChartRodData(
                 toY: day.calories,
-                color: day.isUnder ? AppColors.success : AppColors.error,
+                color: day.isUnder ? AppColors.tealBright : AppColors.coral,
                 width: 22,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(4),
@@ -101,7 +101,7 @@ class CalorieTrendChart extends StatelessWidget {
           horizontalLines: [
             HorizontalLine(
               y: calorieTarget.toDouble(),
-              color: AppColors.warning,
+              color: AppColors.ink,
               strokeWidth: 1.5,
               dashArray: [6, 4],
               label: HorizontalLineLabel(
@@ -109,7 +109,7 @@ class CalorieTrendChart extends StatelessWidget {
                 alignment: Alignment.topRight,
                 labelResolver: (_) => 'Target',
                 style: theme.textTheme.labelSmall
-                    ?.copyWith(color: AppColors.warning),
+                    ?.copyWith(color: AppColors.ink),
               ),
             ),
           ],

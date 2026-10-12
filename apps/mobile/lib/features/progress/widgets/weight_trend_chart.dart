@@ -40,27 +40,27 @@ class WeightTrendChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: AppColors.primary,
+            color: AppColors.tealBright,
             barWidth: 2.5,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, pct, bar, idx) => FlDotCirclePainter(
                 radius: 3.5,
-                color: AppColors.primary,
+                color: AppColors.tealBright,
                 strokeWidth: 0,
                 strokeColor: Colors.transparent,
               ),
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: AppColors.tealBright.withValues(alpha: 0.08),
             ),
           ),
           if (trendSpots.length >= 2)
             LineChartBarData(
               spots: trendSpots,
               isCurved: false,
-              color: AppColors.warning.withValues(alpha: 0.8),
+              color: AppColors.coral.withValues(alpha: 0.8),
               barWidth: 1.5,
               dashArray: const [8, 4],
               dotData: const FlDotData(show: false),

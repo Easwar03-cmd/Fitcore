@@ -1,4 +1,7 @@
-﻿import '../../../core/widgets/report_ai_button.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/widgets/circle_icon_button.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/report_ai_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,21 +44,15 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen>
     final isGenerating = planState.isLoading;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meal Plan'),
+      appBar: PageAppBar(
+        title: 'Meal Plan',
         actions: [
           if (planState.valueOrNull != null)
             const ReportAiButton(contentLabel: 'AI meal plan'),
           if (planState.valueOrNull != null)
-            IconButton(
-              tooltip: 'Regenerate',
-              icon: isGenerating
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh),
+            CircleIconButton(
+              icon: PhosphorIconsRegular.arrowClockwise,
+              semanticLabel: 'Regenerate meal plan',
               onPressed: isGenerating
                   ? null
                   : () => ref.read(mealPlanProvider.notifier).generate(),
@@ -97,10 +94,17 @@ class _PlanView extends StatelessWidget {
           controller: tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
-          tabs: _days.map((d) => Tab(text: d)).toList(),
+          dividerColor: Colors.transparent,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorPadding: const EdgeInsets.symmetric(vertical: 6),
+          indicator: BoxDecoration(
+            color: AppColors.ink,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          labelColor: Colors.white,
+          unselectedLabelColor: AppColors.ink,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          tabs: _days.map((d) => Tab(text: d, height: 44)).toList(),
         ),
         Expanded(
           child: TabBarView(

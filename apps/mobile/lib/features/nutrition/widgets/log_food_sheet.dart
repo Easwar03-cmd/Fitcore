@@ -126,7 +126,7 @@ class _LogFoodSheetState extends ConsumerState<_LogFoodSheet> {
         padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -315,33 +315,28 @@ class _MacroPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _MacroCol(
-              label: 'kcal',
-              value: calories.round().toString(),
-              color: AppColors.calories),
-          _MacroCol(
-              label: 'Protein',
-              value: '${protein.toStringAsFixed(1)}g',
-              color: AppColors.protein),
-          _MacroCol(
-              label: 'Carbs',
-              value: '${carbs.toStringAsFixed(1)}g',
-              color: AppColors.carbs),
-          _MacroCol(
-              label: 'Fat',
-              value: '${fat.toStringAsFixed(1)}g',
-              color: AppColors.fat),
-        ],
-      ),
+    return Row(
+      children: [
+        _MacroCol(
+            label: 'kcal',
+            value: calories.round().toString(),
+            color: AppColors.lime),
+        const SizedBox(width: 8),
+        _MacroCol(
+            label: 'Protein',
+            value: '${protein.toStringAsFixed(1)}g',
+            color: AppColors.sky),
+        const SizedBox(width: 8),
+        _MacroCol(
+            label: 'Carbs',
+            value: '${carbs.toStringAsFixed(1)}g',
+            color: AppColors.butter),
+        const SizedBox(width: 8),
+        _MacroCol(
+            label: 'Fat',
+            value: '${fat.toStringAsFixed(1)}g',
+            color: AppColors.salmon),
+      ],
     );
   }
 }
@@ -355,17 +350,32 @@ class _MacroCol extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value,
-            style: TextStyle(
-                color: color, fontWeight: FontWeight.w700, fontSize: 16)),
-        const SizedBox(height: 2),
-        Text(label,
-            style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 11)),
-      ],
+    return Expanded(
+      child: Semantics(
+        label: '$label $value',
+        child: ExcludeSemantics(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                Text(value,
+                    style: const TextStyle(
+                        color: AppColors.ink,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15)),
+                const SizedBox(height: 2),
+                Text(label,
+                    style: const TextStyle(
+                        color: AppColors.ink, fontSize: 11)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

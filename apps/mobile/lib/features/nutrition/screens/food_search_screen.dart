@@ -1,9 +1,11 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/skeleton.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../models/food_item.dart';
 import '../providers/nutrition_provider.dart';
 import '../widgets/food_result_card.dart';
@@ -52,37 +54,12 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
     final searchState = ref.watch(foodSearchProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          textInputAction: TextInputAction.search,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-          decoration: InputDecoration(
-            hintText: 'Search food…',
-            hintStyle:
-                TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 16),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-            suffixIcon: _controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: _clearSearch,
-                  )
-                : null,
-          ),
-          onChanged: (v) {
-            _onQueryChanged(v);
-            setState(() {}); // refresh clear button visibility
-          },
-          onSubmitted: (v) {
-            _debounce?.cancel();
-            ref.read(foodSearchProvider.notifier).search(v);
-          },
-        ),
-      ),
-      body: searchState.when(
+      appBar: const PageAppBar(title: 'Search food'),
+      body: Column(
+        children: [
+          _searchField(),
+          Expanded(
+            child: searchState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
           message: e.toString(),
@@ -108,6 +85,39 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             ),
           );
         },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _searchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: TextField(
+        controller: _controller,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search food…',
+          prefixIcon: const Icon(PhosphorIconsRegular.magnifyingGlass),
+          suffixIcon: _controller.text.isNotEmpty
+              ? IconButton(
+                  tooltip: 'Clear',
+                  icon: const Icon(PhosphorIconsRegular.x),
+                  onPressed: _clearSearch,
+                )
+              : null,
+        ),
+        onChanged: (v) {
+          _onQueryChanged(v);
+          setState(() {}); // refresh clear button visibility
+        },
+        onSubmitted: (v) {
+          _debounce?.cancel();
+          ref.read(foodSearchProvider.notifier).search(v);
+        },
       ),
     );
   }
@@ -131,26 +141,11 @@ class _SearchHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search, size: 64, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(height: 16),
-          Text(
-            'Search for food by name',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '"chicken breast", "oats", "banana"',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: PhosphorIconsRegular.magnifyingGlass,
+      imageName: 'obj_apple.png',
+      title: 'Search for food by name',
+      message: '"chicken breast", "oats", "banana"',
     );
   }
 }
@@ -160,23 +155,10 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.search_off, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          const SizedBox(height: 12),
-          Text(
-            'No results found',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 15),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Try a different search term',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: PhosphorIconsRegular.magnifyingGlassMinus,
+      title: 'No results found',
+      message: 'Try a different search term',
     );
   }
 }
@@ -188,29 +170,11 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-            if (onRetry != null) ...[
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: onRetry,
-                child: const Text('Retry'),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return EmptyState(
+      icon: PhosphorIconsRegular.warningCircle,
+      title: message,
+      actionLabel: onRetry == null ? null : 'Retry',
+      onAction: onRetry,
     );
   }
 }

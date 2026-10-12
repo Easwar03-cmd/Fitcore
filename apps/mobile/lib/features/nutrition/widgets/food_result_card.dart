@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/food_item.dart';
@@ -16,7 +16,7 @@ class FoodResultCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Row(
@@ -112,10 +112,10 @@ class _MacroRow extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: [
-        _Badge(label: '${item.caloriesPer100g.round()} kcal', color: AppColors.calories),
-        _Badge(label: 'P ${item.proteinPer100g.toStringAsFixed(1)}g', color: AppColors.protein),
-        _Badge(label: 'C ${item.carbsPer100g.toStringAsFixed(1)}g', color: AppColors.carbs),
-        _Badge(label: 'F ${item.fatPer100g.toStringAsFixed(1)}g', color: AppColors.fat),
+        _Badge(label: '${item.caloriesPer100g.round()} kcal', color: AppColors.lime),
+        _Badge(label: 'P ${item.proteinPer100g.toStringAsFixed(1)}g', color: AppColors.sky),
+        _Badge(label: 'C ${item.carbsPer100g.toStringAsFixed(1)}g', color: AppColors.butter),
+        _Badge(label: 'F ${item.fatPer100g.toStringAsFixed(1)}g', color: AppColors.salmon),
       ],
     );
   }
@@ -131,15 +131,15 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
+        color: color,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: color,
+          color: AppColors.ink,
         ),
       ),
     );

@@ -186,14 +186,14 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceMuted,
-        selectedColor: AppColors.ink,
+        selectedColor: AppColors.sky,
         disabledColor: AppColors.surfaceMuted,
         side: BorderSide.none,
         shape: _pill,
         labelStyle: AppTextStyles.micro.copyWith(fontSize: 12),
         secondaryLabelStyle:
-            AppTextStyles.micro.copyWith(fontSize: 12, color: Colors.white),
-        checkmarkColor: Colors.white,
+            AppTextStyles.micro.copyWith(fontSize: 12, color: AppColors.ink),
+        checkmarkColor: AppColors.ink,
         showCheckmark: false,
       ),
       switchTheme: SwitchThemeData(
