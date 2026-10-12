@@ -1,3 +1,5 @@
+import '../widgets/metric_tiles.dart';
+import '../widgets/trend_chart_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,10 +16,7 @@ import '../../../core/widgets/skeleton.dart';
 import '../../workout/widgets/train_muscle.dart';
 import '../../workout/models/workout_log.dart';
 import '../providers/progress_provider.dart';
-import '../widgets/calorie_trend_chart.dart';
 import '../widgets/strength_curve_chart.dart';
-import '../widgets/weekly_summary_card.dart';
-import '../widgets/weight_trend_chart.dart';
 import '../../wearables/widgets/rest_summary_card.dart';
 
 class ProgressScreen extends ConsumerWidget {
@@ -76,64 +75,49 @@ class ProgressScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // ── Weekly Summary ──────────────────────────────────────────────
-              PastelCard(radius: 28, padding: const EdgeInsets.all(18), 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionHeader(
-                      title: 'Weekly Summary',
-                      subtitle: 'This week vs last week',
-                    ),
-                    const SizedBox(height: 14),
-                    WeeklySummaryCard(
-                      thisWeek: progress.thisWeek,
-                      lastWeek: progress.lastWeek,
-                    ),
-                  ],
-                ),
+              // ── This week vs last week (scrolling metric cards) ─────────────
+              WeeklyMetricStrip(
+                thisWeek: progress.thisWeek,
+                lastWeek: progress.lastWeek,
               ),
               const SizedBox(height: 16),
 
-              // ── 30-Day Weight Trend ─────────────────────────────────────────
-              PastelCard(radius: 28, padding: const EdgeInsets.all(18), 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionHeader(
-                      title: 'Weight Trend',
-                      subtitle: 'Last 30 days  ·  dashed line = trend',
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 220,
-                      child: WeightTrendChart(stats: progress.bodyStats),
-                    ),
-                  ],
-                ),
+              // ── Weight trend ────────────────────────────────────────────────
+              TrendChartCard(
+                title: 'Weight',
+                unit: 'kg',
+                decimals: 1,
+                ranges: const [
+                  TrendRange('7 days', days: 7),
+                  TrendRange('30 days', days: 30),
+                  TrendRange('All'),
+                ],
+                points: [
+                  for (final s in progress.bodyStats)
+                    if (s.weightKg != null) TrendPoint(s.measuredAt, s.weightKg!),
+                ],
+                emptyMessage: 'Log your weight to see the trend',
               ),
               const SizedBox(height: 16),
 
-              // ── 7-Day Calorie Trend ─────────────────────────────────────────
-              PastelCard(radius: 28, padding: const EdgeInsets.all(18), 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionHeader(
-                      title: 'Calorie Trend',
-                      subtitle: '7 days  ·  green = under target  ·  red = over',
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 200,
-                      child: CalorieTrendChart(
-                        days: progress.calorieTrend,
-                        calorieTarget: progress.calorieTarget,
-                      ),
-                    ),
-                  ],
-                ),
+              // ── Calories (7 days) ───────────────────────────────────────────
+              TrendChartCard(
+                title: 'Calories',
+                unit: 'kcal',
+                target: progress.calorieTarget > 0
+                    ? progress.calorieTarget.toDouble()
+                    : null,
+                points: [
+                  for (final d in progress.calorieTrend)
+                    TrendPoint(d.date, d.calories),
+                ],
+                ranges: const [TrendRange('7 days')],
+                emptyMessage: 'Log meals to see your calorie trend',
               ),
+              const SizedBox(height: 16),
+
+              // ── Sleep & rest / body weight tiles ────────────────────────────
+              const RestSummaryCard(),
               const SizedBox(height: 16),
 
               // ── Strength Curves ─────────────────────────────────────────────
@@ -158,10 +142,6 @@ class ProgressScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
               ],
-
-              // ── Rest & heart (wearables) ────────────────────────────────────
-              const RestSummaryCard(),
-              const SizedBox(height: 16),
 
               // ── Muscles workload ────────────────────────────────────────────
               MuscleWorkloadCard(

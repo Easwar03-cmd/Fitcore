@@ -41,7 +41,8 @@ class CutoutImage extends StatelessWidget {
         height: height,
         child: Image.asset(
           'assets/images/$name',
-          cacheWidth: 900,
+          filterQuality: FilterQuality.high,
+          isAntiAlias: true,
           fit: fit ?? (isPhotoName(name) ? BoxFit.cover : BoxFit.contain),
           alignment: alignment,
           errorBuilder: (_, __, ___) => Center(

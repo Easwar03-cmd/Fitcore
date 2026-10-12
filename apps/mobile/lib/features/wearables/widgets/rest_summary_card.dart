@@ -10,8 +10,8 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/pastel_card.dart';
 import '../providers/vitals_provider.dart';
 
-/// Compact "Rest & heart" card for the Progress screen. Opens the full
-/// wearables screen.
+/// Two action tiles for the Progress screen (reference "Sleep quality" /
+/// "IBM"): rest & heart (opens Wearables) and body weight (opens the log).
 class RestSummaryCard extends ConsumerWidget {
   const RestSummaryCard({super.key});
 
@@ -21,54 +21,97 @@ class RestSummaryCard extends ConsumerWidget {
     final bpm = ref.watch(bleHeartRateProvider.select((s) => s.bpm));
 
     final score = v?.restScore;
-    final night = v?.night;
-    final connected = (v?.hasAnyData ?? false) || bpm != null;
-
-    final title = !connected
-        ? 'Connect your watch'
+    final subtitle = bpm != null
+        ? 'Live heart rate $bpm bpm'
         : score != null
             ? '${v!.restLabel} · $score'
-            : bpm != null
-                ? 'Live heart rate $bpm bpm'
-                : 'Rest & heart';
-    final subtitle = !connected
-        ? 'Track heart rate, sleep and rest'
-        : [
-            if (night != null)
-              '${night.totalMinutes ~/ 60}h ${night.totalMinutes % 60}m sleep',
-            if (v?.restingHeartRate != null) 'Resting ${v!.restingHeartRate} bpm',
-          ].join(' · ');
+            : 'Check your sleep quality';
 
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _ActionTile(
+              tint: PastelTint.salmon,
+              icon: PhosphorIconsRegular.bed,
+              title: 'Sleep & rest',
+              subtitle: subtitle,
+              cta: 'Check',
+              onTap: () => context.push(AppRoutes.wearableIntegrations),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _ActionTile(
+              tint: PastelTint.sky,
+              icon: PhosphorIconsRegular.scales,
+              title: 'Body weight',
+              subtitle: 'Control your weight and body fat',
+              cta: 'Log',
+              onTap: () => context.push(AppRoutes.bodyLog),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.tint,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.cta,
+    required this.onTap,
+  });
+
+  final PastelTint tint;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String cta;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return PastelCard(
-      tint: PastelTint.lime,
-      radius: 28,
-      padding: const EdgeInsets.all(18),
-      onTap: () => context.push(AppRoutes.wearableIntegrations),
-      semanticLabel: '$title. $subtitle',
+      tint: tint,
+      radius: 24,
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      semanticLabel: '$title. $subtitle. $cta.',
       child: ExcludeSemantics(
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                  color: Colors.white, shape: BoxShape.circle),
-              child: const Icon(PhosphorIconsRegular.heartbeat, size: 24),
+            Row(
+              children: [
+                Expanded(child: Text(title, style: AppTextStyles.heading)),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle),
+                  child: Icon(icon, size: 18),
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.heading),
-                  if (subtitle.isNotEmpty)
-                    Text(subtitle,
-                        style: AppTextStyles.caption
-                            .copyWith(color: AppColors.ink)),
-                ],
-              ),
+            const SizedBox(height: 6),
+            Text(subtitle,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.caption.copyWith(color: AppColors.ink)),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Text(cta, style: AppTextStyles.bodyStrong),
+                const Spacer(),
+                const Icon(PhosphorIconsBold.arrowRight, size: 16),
+              ],
             ),
-            const Icon(PhosphorIconsRegular.caretRight, size: 18),
           ],
         ),
       ),

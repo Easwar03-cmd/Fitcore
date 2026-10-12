@@ -35,66 +35,91 @@ class MessageBubble extends StatelessWidget {
             ? AppColors.sky
             : Colors.white;
 
+    final maxW = MediaQuery.of(context).size.width * 0.78;
+    final nameColor = isMine ? AppColors.ink : _nameColor(m.author.id);
+
+    // IntrinsicWidth makes the bubble exactly as wide as its content (up to
+    // 78 % of the screen) instead of stretching to the maximum width.
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: m.deleted ? null : onLongPress,
-        child: Container(
-          constraints:
-              BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
-          margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(14),
-              topRight: const Radius.circular(14),
-              bottomLeft: Radius.circular(isMine ? 14 : 3),
-              bottomRight: Radius.circular(isMine ? 3 : 14),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!isMine && !m.deleted)
-                Text(
-                  m.author.name,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 12),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxW),
+          child: GestureDetector(
+            onLongPress: m.deleted ? null : onLongPress,
+            child: IntrinsicWidth(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 7, 10, 5),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(isMine ? 16 : 4),
+                    bottomRight: Radius.circular(isMine ? 4 : 16),
                   ),
                 ),
-              if (m.replyTo != null) _replyQuote(context),
-              if (m.deleted)
-                Text(
-                  'This message was deleted',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
-                )
-              else ...[
-                if (m.kind == 'notepad_share') _notepadHeader(context),
-                if (m.mediaType != null) _media(context),
-                if (m.body != null && m.body!.isNotEmpty)
-                  Text(m.body!, style: theme.textTheme.bodyMedium),
-              ],
-              const SizedBox(height: 2),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Text(
-                  DateFormat.jm().format(m.createdAt),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Sender name on top of every message.
+                    Text(
+                      isMine ? 'You' : m.author.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: nameColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (m.replyTo != null) _replyQuote(context),
+                    if (m.deleted)
+                      Text(
+                        'This message was deleted',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: cs.onSurface.withValues(alpha: 0.5),
+                        ),
+                      )
+                    else ...[
+                      if (m.kind == 'notepad_share') _notepadHeader(context),
+                      if (m.mediaType != null) _media(context),
+                      if (m.body != null && m.body!.isNotEmpty)
+                        Text(m.body!, style: theme.textTheme.bodyMedium),
+                    ],
+                    const SizedBox(height: 2),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Text(
+                        DateFormat.jm().format(m.createdAt),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Stable, AA-readable colour per sender (like WhatsApp group names).
+  static Color _nameColor(String userId) {
+    const palette = [
+      Color(0xFF2F7E94),
+      Color(0xFFC94A3F),
+      Color(0xFF5E7D2F),
+      Color(0xFF8A5A00),
+      Color(0xFF6B4FA0),
+      Color(0xFF1F6B80),
+    ];
+    return palette[userId.hashCode.abs() % palette.length];
   }
 
   Widget _replyQuote(BuildContext context) {

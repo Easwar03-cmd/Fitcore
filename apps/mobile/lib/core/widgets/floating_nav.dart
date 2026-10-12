@@ -56,19 +56,24 @@ class FloatingNav extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, c) {
                 final slot = c.maxWidth / items.length;
+                // Snap to whole pixels so the circle edge stays crisp.
+                final dpr = MediaQuery.of(context).devicePixelRatio;
+                double snap(double v) => (v * dpr).roundToDouble() / dpr;
                 return Stack(
                   children: [
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 220),
                       curve: Curves.easeInOut,
-                      left: slot * currentIndex + (slot - _circle) / 2,
-                      top: (_barH - _circle) / 2,
-                      child: Container(
-                        width: _circle,
-                        height: _circle,
-                        decoration: const BoxDecoration(
-                          color: AppColors.ink,
-                          shape: BoxShape.circle,
+                      left: snap(slot * currentIndex + (slot - _circle) / 2),
+                      top: snap((_barH - _circle) / 2),
+                      width: _circle,
+                      height: _circle,
+                      child: const RepaintBoundary(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: AppColors.ink,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
                     ),
@@ -82,9 +87,9 @@ class FloatingNav extends StatelessWidget {
                               label: items[i].label,
                               child: Tooltip(
                                 message: items[i].label,
-                                child: InkResponse(
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
                                   onTap: () => onTap(i),
-                                  radius: 30,
                                   child: SizedBox(
                                     height: _barH,
                                     child: Center(

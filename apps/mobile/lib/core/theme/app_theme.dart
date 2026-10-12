@@ -84,7 +84,6 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: AppColors.bg,
       colorScheme: scheme,
       textTheme: _textTheme,
-      splashFactory: InkRipple.splashFactory,
       dividerTheme: const DividerThemeData(
         color: AppColors.hairline,
         thickness: 1,
