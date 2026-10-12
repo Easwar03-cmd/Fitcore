@@ -3,9 +3,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/stat_row.dart';
 import '../providers/interstitial_ad_provider.dart';
 import '../providers/workout_provider.dart';
 
@@ -19,18 +26,20 @@ class WorkoutSummaryScreen extends ConsumerWidget {
     return m == 0 ? '${h}h' : '${h}h ${m}m';
   }
 
+  String _distanceLabel(double km) =>
+      km < 1.0 ? '${(km * 1000).round()} m' : '${km.toStringAsFixed(2)} km';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Pre-warm the interstitial so the ad has time to load before Done is tapped.
     ref.watch(interstitialAdProvider);
 
     final summary = ref.watch(workoutSessionProvider).summary;
-    final theme = Theme.of(context);
 
     if (summary == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Workout Summary')),
-        body: const Center(child: Text('No workout data.')),
+      return const Scaffold(
+        appBar: PageAppBar(title: 'Workout Summary'),
+        body: Center(child: Text('No workout data.')),
       );
     }
 
@@ -38,224 +47,124 @@ class WorkoutSummaryScreen extends ConsumerWidget {
         summary.routePoints.length >= 2 && summary.distanceKm != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workout Complete'),
-        automaticallyImplyLeading: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
-        child: Column(
-          children: [
-            // ── Trophy + heading ─────────────────────────────────────────
-            Icon(
-              Icons.emoji_events_rounded,
-              size: 88,
-              color: theme.colorScheme.primary,
-            )
-                .animate()
-                .scale(
-                    duration: 600.ms,
-                    curve: Curves.elasticOut,
-                    begin: const Offset(0.4, 0.4)),
-            const SizedBox(height: 8),
-            Text(
-              'Great Work!',
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ).animate().fadeIn(delay: 200.ms),
-            const SizedBox(height: 4),
-            Text(
-              summary.workoutName,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 300.ms),
-            const SizedBox(height: 32),
-
-            // ── Stats row ────────────────────────────────────────────────
-            Row(
+      appBar: const PageAppBar(title: 'Workout Complete', showBack: false),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        children: [
+          // ── Title block ────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.timer_rounded,
-                    label: 'Duration',
-                    value: _formatDuration(summary.durationMin),
-                  ),
+                Semantics(
+                  header: true,
+                  child: Text('Great Work!', style: AppTextStyles.title),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.format_list_numbered_rounded,
-                    label: 'Total Sets',
-                    value: '${summary.totalSets}',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.local_fire_department_rounded,
-                    label: 'Calories',
-                    value: '~${summary.caloriesBurned}',
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  '${summary.workoutName} · '
+                  '${DateFormat('d MMMM, y').format(DateTime.now())}',
+                  style: AppTextStyles.caption,
                 ),
               ],
-            )
-                .animate()
-                .slideY(begin: 0.3, delay: 400.ms, duration: 400.ms)
-                .fadeIn(delay: 400.ms),
+            ),
+          ).animate().fadeIn(duration: 300.ms),
 
-            // ── Distance card (outdoor workouts only) ────────────────────
-            if (summary.distanceKm != null) ...[
-              const SizedBox(height: 12),
-              _DistanceCard(distanceKm: summary.distanceKm!)
-                  .animate()
-                  .slideY(begin: 0.3, delay: 440.ms, duration: 400.ms)
-                  .fadeIn(delay: 440.ms),
-            ],
+          // ── Stat rows (reference "Today's Activity") ──────────────────
+          PastelCard(
+            radius: 28,
+            padding: const EdgeInsets.fromLTRB(18, 6, 18, 6),
+            child: Column(
+              children: [
+                StatRow(
+                  tint: PastelTint.lime,
+                  icon: PhosphorIconsRegular.timer,
+                  value: _formatDuration(summary.durationMin),
+                  label: 'Duration',
+                ),
+                StatRow(
+                  tint: PastelTint.sky,
+                  icon: PhosphorIconsRegular.listNumbers,
+                  value: '${summary.totalSets}',
+                  label: 'Total sets',
+                ),
+                StatRow(
+                  tint: PastelTint.salmon,
+                  icon: PhosphorIconsRegular.flame,
+                  value: '~${summary.caloriesBurned} kcal',
+                  label: 'Calories',
+                  showDivider: summary.distanceKm != null,
+                ),
+                if (summary.distanceKm != null)
+                  StatRow(
+                    tint: PastelTint.butter,
+                    icon: PhosphorIconsRegular.path,
+                    value: _distanceLabel(summary.distanceKm!),
+                    label: 'Distance covered',
+                    showDivider: false,
+                  ),
+              ],
+            ),
+          )
+              .animate()
+              .slideY(begin: 0.15, delay: 150.ms, duration: 400.ms)
+              .fadeIn(delay: 150.ms),
 
-            const SizedBox(height: 28),
+          // ── Route map (outdoor workouts with GPS data) ─────────────────
+          if (hasRoute) ...[
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Text('Route', style: AppTextStyles.heading),
+            ),
+            _RouteMap(points: summary.routePoints).animate().fadeIn(delay: 300.ms),
+          ],
 
-            // ── Route map (outdoor workouts with GPS data) ───────────────
-            if (hasRoute) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Route', style: theme.textTheme.titleSmall),
+          // ── Exercises list ─────────────────────────────────────────────
+          if (summary.exerciseNames.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            PastelCard(
+              radius: 28,
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Exercises', style: AppTextStyles.heading),
+                  const SizedBox(height: 6),
+                  ...summary.exerciseNames.indexed.map(
+                    ((int, String) pair) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          const Icon(PhosphorIconsFill.checkCircle, size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                              child: Text(pair.$2, style: AppTextStyles.body)),
+                        ],
+                      ),
+                    ).animate().fadeIn(
+                        delay: Duration(milliseconds: 350 + pair.$1 * 60)),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              _RouteMap(points: summary.routePoints)
-                  .animate()
-                  .fadeIn(delay: 500.ms),
-              const SizedBox(height: 28),
-            ],
+            ),
+          ],
 
-            // ── Exercises list ───────────────────────────────────────────
-            if (summary.exerciseNames.isNotEmpty) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Exercises',
-                    style: theme.textTheme.titleSmall),
-              ),
-              const SizedBox(height: 8),
-              ...summary.exerciseNames.indexed.map(
-                ((int, String) pair) => ListTile(
-                  leading: const Icon(Icons.check_circle_outline_rounded),
-                  title: Text(pair.$2),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                )
-                    .animate()
-                    .fadeIn(delay: Duration(milliseconds: 500 + pair.$1 * 60)),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            // ── Done button ──────────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  ref.read(workoutSessionProvider.notifier).resetSession();
-                  // Show interstitial for free users; navigate after it closes.
-                  ref.read(interstitialAdProvider.notifier).showIfReady(
+          // ── Done button ────────────────────────────────────────────────
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(workoutSessionProvider.notifier).resetSession();
+              // Show interstitial for free users; navigate after it closes.
+              ref.read(interstitialAdProvider.notifier).showIfReady(
                     context,
                     () => context.go(AppRoutes.workout),
                   );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Done'),
-              ),
-            ).animate().fadeIn(delay: 600.ms),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Shared stat card ──────────────────────────────────────────────────────────
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        child: Column(
-          children: [
-            Icon(icon, color: theme.colorScheme.primary, size: 22),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Distance card (wide, shown for outdoor workouts) ─────────────────────────
-
-class _DistanceCard extends StatelessWidget {
-  const _DistanceCard({required this.distanceKm});
-
-  final double distanceKm;
-
-  String get _label {
-    if (distanceKm < 1.0) return '${(distanceKm * 1000).round()} m';
-    return '${distanceKm.toStringAsFixed(2)} km';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        child: Row(
-          children: [
-            Icon(Icons.straighten_rounded,
-                color: theme.colorScheme.primary, size: 26),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _label,
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Distance covered',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ],
-        ),
+            },
+            child: const Text('Done'),
+          ).animate().fadeIn(delay: 500.ms),
+        ],
       ),
     );
   }
@@ -296,7 +205,7 @@ class _RouteMap extends StatelessWidget {
     final bounds = _bounds;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(28),
       child: SizedBox(
         height: 220,
         child: FlutterMap(
@@ -321,7 +230,7 @@ class _RouteMap extends StatelessWidget {
               polylines: [
                 Polyline(
                   points: points,
-                  color: theme.colorScheme.primary,
+                  color: AppColors.ink,
                   strokeWidth: 4.0,
                 ),
               ],
