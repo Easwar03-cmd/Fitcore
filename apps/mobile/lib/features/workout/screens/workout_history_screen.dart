@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/pastel_chip.dart';
+import '../../../core/widgets/skeleton.dart';
 
 import '../models/workout_log.dart';
 import '../providers/workout_history_provider.dart';
@@ -33,15 +41,21 @@ class _WorkoutHistoryScreenState extends ConsumerState<WorkoutHistoryScreen> {
     final historyAsync = ref.watch(workoutHistoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout History')),
+      appBar: const PageAppBar(title: 'Workout History'),
       body: historyAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorView(
-          message: e.toString().replaceAll('Exception: ', ''),
-          onRetry: () => ref.read(workoutHistoryProvider.notifier).refresh(),
+        error: (e, _) => EmptyState(
+          icon: PhosphorIconsRegular.warningCircle,
+          title: e.toString().replaceAll('Exception: ', ''),
+          actionLabel: 'Retry',
+          onAction: () => ref.read(workoutHistoryProvider.notifier).refresh(),
         ),
         data: (logs) => logs.isEmpty
-            ? const _EmptyView()
+            ? const EmptyState(
+                icon: PhosphorIconsRegular.barbell,
+                title: 'No workouts yet',
+                message: 'Finish your first workout to see it here.',
+              )
             : RefreshIndicator(
                 onRefresh: () =>
                     ref.read(workoutHistoryProvider.notifier).refresh(),
@@ -67,35 +81,35 @@ class _WorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final grouped = log.setsByExercise;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        title: Text(
-          log.name,
-          style: theme.textTheme.titleMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            _formatDate(log.startedAt),
-            style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: PastelCard(
+        radius: 24,
+        padding: EdgeInsets.zero,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(log.name, style: AppTextStyles.heading),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: _StatChips(log: log),
+            ),
+            trailing: Text(_formatDate(log.startedAt),
+                style: AppTextStyles.caption),
+            children: grouped.entries
+                .map((entry) => _ExerciseGroup(
+                      exerciseName: entry.key,
+                      sets: entry.value,
+                    ))
+                .toList(),
           ),
         ),
-        trailing: _StatChips(log: log),
-        children: grouped.entries
-            .map((entry) => _ExerciseGroup(
-                  exerciseName: entry.key,
-                  sets: entry.value,
-                ))
-            .toList(),
       ),
     );
   }
@@ -116,31 +130,27 @@ class _StatChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final dimStyle = theme.textTheme.labelSmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
       children: [
-        if (log.durationMin != null) ...[
-          Icon(Icons.timer_outlined, size: 13,
-              color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 2),
-          Text('${log.durationMin}m', style: dimStyle),
-          const SizedBox(width: 8),
-        ],
-        Icon(Icons.format_list_numbered, size: 13,
-            color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 2),
-        Text('${log.sets.length}', style: dimStyle),
-        if (log.caloriesBurned != null) ...[
-          const SizedBox(width: 8),
-          Icon(Icons.local_fire_department_outlined, size: 13,
-              color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 2),
-          Text('~${log.caloriesBurned}', style: dimStyle),
-        ],
+        if (log.durationMin != null)
+          PastelChip(
+            label: '${log.durationMin} min',
+            icon: PhosphorIconsRegular.timer,
+            background: AppColors.sky,
+          ),
+        PastelChip(
+          label: '${log.sets.length} sets',
+          icon: PhosphorIconsRegular.listNumbers,
+          background: AppColors.lime,
+        ),
+        if (log.caloriesBurned != null)
+          PastelChip(
+            label: '~${log.caloriesBurned} kcal',
+            icon: PhosphorIconsRegular.flame,
+            background: AppColors.salmon,
+          ),
       ],
     );
   }
@@ -154,18 +164,11 @@ class _ExerciseGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: 20),
-        Text(
-          exerciseName,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.primary,
-          ),
-        ),
+        Text(exerciseName, style: AppTextStyles.bodyStrong),
         const SizedBox(height: 6),
         ...sets.map(
           (s) => Padding(
@@ -176,68 +179,17 @@ class _ExerciseGroup extends StatelessWidget {
                   width: 20,
                   child: Text(
                     '${s.setNumber}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant),
+                    style: AppTextStyles.caption,
                     textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(s.detail, style: theme.textTheme.bodySmall),
+                Text(s.detail, style: AppTextStyles.body),
               ],
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-// ── Empty / error states ──────────────────────────────────────────────────────
-
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.fitness_center_rounded,
-              size: 64, color: Theme.of(context).colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-          Text('No workouts yet',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text('Finish your first workout to see it here.',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
     );
   }
 }
