@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/services/ble_heart_rate_service.dart';
+import '../../../core/services/wearable_hints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/pastel_card.dart';
 import '../../../core/widgets/pastel_chip.dart';
+import '../providers/vitals_provider.dart';
 
 /// Bluetooth LE section: live heart rate when connected, otherwise scan +
 /// device list.
@@ -21,6 +23,13 @@ class BleSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (s.fallbackHint != null) ...[
+          _FallbackCard(
+            hint: s.fallbackHint!,
+            onConnect: () => ref.read(vitalsProvider.notifier).connect(),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (s.isConnected)
           _LiveCard(
             name: s.connectedName ?? 'Device',
@@ -123,6 +132,39 @@ class BleSection extends ConsumerWidget {
           ],
         ],
       ],
+    );
+  }
+}
+
+/// Shown when the watch cannot (or does not) stream heart rate directly:
+/// names the watch's app and sends the user to Health Connect.
+class _FallbackCard extends StatelessWidget {
+  const _FallbackCard({required this.hint, required this.onConnect});
+  final WearableHint hint;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    return PastelCard(
+      tint: PastelTint.butter,
+      radius: 24,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Use Health Connect for ${hint.brand}',
+              style: AppTextStyles.heading),
+          const SizedBox(height: 6),
+          Text(hint.steps,
+              style: AppTextStyles.caption.copyWith(color: AppColors.ink)),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onConnect,
+            icon: const Icon(PhosphorIconsBold.heartbeat, size: 18),
+            label: const Text('Sync with Health Connect'),
+          ),
+        ],
+      ),
     );
   }
 }

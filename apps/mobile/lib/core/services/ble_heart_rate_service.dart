@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'wearable_hints.dart';
+
 final _log = Logger();
 
 /// Bluetooth SIG assigned numbers used by the standard Heart Rate Profile.
@@ -60,6 +62,7 @@ class BleHeartRateState {
     this.batteryPct,
     this.message,
     this.rememberedName,
+    this.fallbackHint,
   });
 
   final bool adapterOn;
@@ -74,6 +77,10 @@ class BleHeartRateState {
   final String? message;
   final String? rememberedName;
 
+  /// Set when this watch cannot stream heart rate over standard Bluetooth
+  /// and the user should use Health Connect instead.
+  final WearableHint? fallbackHint;
+
   bool get isConnected => status == BleStatus.connected;
 
   BleHeartRateState copyWith({
@@ -86,6 +93,8 @@ class BleHeartRateState {
     int? batteryPct,
     String? message,
     String? rememberedName,
+    WearableHint? fallbackHint,
+    bool clearFallback = false,
     bool clearConnection = false,
     bool clearMessage = false,
   }) =>
@@ -100,6 +109,8 @@ class BleHeartRateState {
         batteryPct: clearConnection ? null : (batteryPct ?? this.batteryPct),
         message: clearMessage ? null : (message ?? this.message),
         rememberedName: rememberedName ?? this.rememberedName,
+        fallbackHint:
+            clearFallback ? null : (fallbackHint ?? this.fallbackHint),
       );
 }
 
@@ -117,6 +128,7 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
   StreamSubscription<List<int>>? _hrSub;
   StreamSubscription<List<int>>? _battSub;
   BluetoothDevice? _device;
+  Timer? _silentTimer;
 
   @override
   BleHeartRateState build() {
@@ -208,13 +220,15 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
       status: BleStatus.connecting,
       connectedName: name,
       clearMessage: true,
+      clearFallback: true,
     );
+    _silentTimer?.cancel();
     final device = BluetoothDevice.fromId(id);
     try {
       await device.connect(timeout: const Duration(seconds: 15));
       await _ensureBonded(device);
       final services = await device.discoverServices();
-      await _logDeviceProfile(device, services);
+      final manufacturer = await _logDeviceProfile(device, services);
       final hrService = services
           .where((s) => s.uuid == kHeartRateService)
           .cast<BluetoothService?>()
@@ -229,9 +243,10 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
         state = state.copyWith(
           status: BleStatus.idle,
           clearConnection: true,
-          message: '$name does not share heart rate over Bluetooth. Turn on '
-              '"heart rate broadcast" in your watch settings, or use health '
-              'sync below to read data your watch app saves.',
+          fallbackHint: hintFor(name, manufacturer: manufacturer),
+          message: '$name uses its own private Bluetooth protocol, so Revive '
+              'cannot read it directly. Use Health Connect instead: your '
+              "watch's app writes the data there.",
         );
         return;
       }
@@ -240,7 +255,10 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
       await _hrSub?.cancel();
       _hrSub = hrChar.onValueReceived.listen((v) {
         final bpm = parseHeartRateMeasurement(v);
-        if (bpm != null && bpm > 0) state = state.copyWith(bpm: bpm);
+        if (bpm != null && bpm > 0) {
+          _silentTimer?.cancel();
+          state = state.copyWith(bpm: bpm, clearFallback: true);
+        }
       });
       await hrChar.setNotifyValue(true);
       await _subscribeBattery(services);
@@ -260,6 +278,16 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
         connectedName: name,
         rememberedName: name,
       );
+
+      // Connected but silent: many watches only stream during a workout or
+      // when broadcast is on. After 20 s offer the Health Connect route.
+      _silentTimer = Timer(const Duration(seconds: 20), () {
+        if (state.isConnected && state.bpm == null) {
+          state = state.copyWith(
+            fallbackHint: hintFor(name, manufacturer: manufacturer),
+          );
+        }
+      });
     } catch (e) {
       _log.w('BLE connect failed', error: e);
       try {
@@ -292,11 +320,12 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
 
   /// Logs every service / characteristic and the Device Information strings so
   /// a watch that streams over a vendor protocol can be identified.
-  Future<void> _logDeviceProfile(
+  Future<String?> _logDeviceProfile(
     BluetoothDevice device,
     List<BluetoothService> services,
   ) async {
     final lines = <String>[];
+    String? manufacturer;
     for (final svc in services) {
       lines.add('service ${svc.uuid}');
       for (final c in svc.characteristics) {
@@ -312,12 +341,15 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
         if (svc.uuid == Guid('180A') && p.read) {
           try {
             final v = await c.read();
-            lines.add('    = ${String.fromCharCodes(v.where((b) => b >= 32 && b < 127))}');
+            final text = String.fromCharCodes(v.where((b) => b >= 32 && b < 127));
+            lines.add('    = $text');
+            if (c.uuid == Guid('2A29')) manufacturer = text;
           } catch (_) {}
         }
       }
     }
     _log.i('BLE profile for ${device.remoteId.str}: ${lines.join(' | ')}');
+    return manufacturer;
   }
 
   Future<void> _subscribeBattery(List<BluetoothService> services) async {
@@ -364,6 +396,7 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
   }
 
   void _handleDisconnected() {
+    _silentTimer?.cancel();
     _hrSub?.cancel();
     _battSub?.cancel();
     _connSub?.cancel();
@@ -373,6 +406,7 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
   }
 
   void _disposeAll() {
+    _silentTimer?.cancel();
     _scanSub?.cancel();
     _adapterSub?.cancel();
     _connSub?.cancel();
