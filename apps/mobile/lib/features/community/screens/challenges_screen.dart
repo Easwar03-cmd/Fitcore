@@ -5,77 +5,73 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_routes.dart';
 import '../models/community_models.dart';
 import '../providers/challenge_provider.dart';
+import '../providers/community_provider.dart' show communityListProvider;
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/hero_card.dart';
 import '../../../core/widgets/page_app_bar.dart';
 
 class ChallengesScreen extends ConsumerWidget {
-  const ChallengesScreen({super.key, required this.communityId});
-  final String communityId;
+  const ChallengesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final challenges = ref.watch(challengeListProvider(communityId));
+    final challenges = ref.watch(allChallengesProvider);
 
     return Scaffold(
       appBar: const PageAppBar(title: 'Challenges'),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await context.push(AppRoutes.communityNewChallengePath(communityId));
-          ref.invalidate(challengeListProvider(communityId));
+          await context.push(AppRoutes.communityNewChallenge);
+          ref.invalidate(allChallengesProvider);
         },
         icon: const Icon(Icons.add_rounded),
         label: const Text('New challenge'),
       ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.refresh(challengeListProvider(communityId).future),
+        onRefresh: () async {
+          ref.invalidate(communityListProvider);
+          ref.invalidate(allChallengesProvider);
+          await ref.read(allChallengesProvider.future);
+        },
         child: challenges.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => ListView(children: [
             Padding(padding: const EdgeInsets.all(24), child: Text(e.toString())),
           ]),
-          data: (list) {
-            if (list.isEmpty) {
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                children: [
-                  _ChallengeHero(),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      'No challenges yet.\nStart a 21-day or 90-day challenge '
-                      'and mark each day complete.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5),
-                      ),
+          data: (list) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+            children: [
+              _ChallengeHero(),
+              const SizedBox(height: 16),
+              if (list.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Text(
+                    'No challenges yet.\nStart a 21-day or 90-day challenge '
+                    'and mark each day complete.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
                     ),
                   ),
-                ],
-              );
-            }
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-              children: [
-                _ChallengeHero(),
-                const SizedBox(height: 16),
-                for (final c in list)
-                  _ChallengeCard(
-                    challenge: c,
-                    onTap: () async {
-                      await context.push(
-                          AppRoutes.communityChallengePath(communityId, c.id));
-                      ref.invalidate(challengeListProvider(communityId));
-                    },
-                  ),
-              ],
-            );
-          },
+                ),
+              for (final item in list)
+                _ChallengeCard(
+                  challenge: item.challenge,
+                  communityName: item.community.name,
+                  onTap: () async {
+                    await context.push(AppRoutes.communityChallengePath(
+                        item.community.id, item.challenge.id));
+                    ref.invalidate(allChallengesProvider);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -98,8 +94,13 @@ class _ChallengeHero extends StatelessWidget {
 }
 
 class _ChallengeCard extends StatelessWidget {
-  const _ChallengeCard({required this.challenge, required this.onTap});
+  const _ChallengeCard({
+    required this.challenge,
+    required this.communityName,
+    required this.onTap,
+  });
   final ChallengeSummary challenge;
+  final String communityName;
   final VoidCallback onTap;
 
   @override
@@ -130,7 +131,7 @@ class _ChallengeCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '${c.totalDays} days · by ${c.creatorName}'
+                '$communityName · ${c.totalDays} days · by ${c.creatorName}'
                 '${c.isGroup ? ' · ${c.participantCount} joined' : ''}'
                 '${c.status == 'closed' ? ' · closed' : ''}',
                 style: theme.textTheme.bodySmall,

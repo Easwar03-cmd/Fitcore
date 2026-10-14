@@ -203,12 +203,6 @@ class _CommunityChatScreenState extends ConsumerState<CommunityChatScreen> {
             : '${detail.value!.memberCount} members',
         actions: [
           CircleIconButton(
-            icon: PhosphorIconsRegular.trophy,
-            semanticLabel: 'Challenges',
-            onPressed: () => context.push(AppRoutes.communityChallengesPath(id)),
-          ),
-          const SizedBox(width: 4),
-          CircleIconButton(
             icon: PhosphorIconsRegular.info,
             semanticLabel: 'Community info',
             onPressed: () => context.push(AppRoutes.communityInfoPath(id)),

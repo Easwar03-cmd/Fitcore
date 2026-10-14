@@ -46,10 +46,8 @@ abstract final class AppRoutes {
   static String communityAdminPath(String id) => '/community/$id/admin';
   static String communityMemberPath(String id, String userId) =>
       '/community/$id/member/$userId';
-  static String communityChallengesPath(String id) =>
-      '/community/$id/challenges';
-  static String communityNewChallengePath(String id) =>
-      '/community/$id/challenges/new';
+  static const communityChallenges = '/community/challenges';
+  static const communityNewChallenge = '/community/challenges/new';
   static String communityChallengePath(String id, String challengeId) =>
       '/community/$id/challenge/$challengeId';
   static const profile = '/profile';

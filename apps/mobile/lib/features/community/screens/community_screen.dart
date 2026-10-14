@@ -119,6 +119,37 @@ class CommunityScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             PastelCard(
+              tint: PastelTint.sky,
+              radius: 24,
+              onTap: () => context.push(AppRoutes.communityChallenges),
+              semanticLabel: 'Challenges across your communities',
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                        color: Colors.white, shape: BoxShape.circle),
+                    child: const Icon(PhosphorIconsRegular.trophy, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Challenges', style: AppTextStyles.heading),
+                        Text('Personal and group, across your communities',
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.ink)),
+                      ],
+                    ),
+                  ),
+                  const Icon(PhosphorIconsRegular.caretRight, size: 18),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            PastelCard(
               tint: PastelTint.butter,
               radius: 24,
               onTap: () => context.push(AppRoutes.communityTodo),

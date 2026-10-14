@@ -213,6 +213,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TodoScreen(),
       ),
       GoRoute(
+        path: AppRoutes.communityChallenges,
+        name: 'community-challenges',
+        builder: (context, state) => const ChallengesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityNewChallenge,
+        name: 'community-new-challenge',
+        builder: (context, state) => const CreateChallengeScreen(),
+      ),
+      GoRoute(
         path: '/community/join/:code',
         name: 'community-join',
         builder: (context, state) =>
@@ -240,18 +250,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               communityId: state.pathParameters['id']!,
               userId: state.pathParameters['uid']!,
             ),
-          ),
-          GoRoute(
-            path: 'challenges',
-            builder: (context, state) =>
-                ChallengesScreen(communityId: state.pathParameters['id']!),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => CreateChallengeScreen(
-                    communityId: state.pathParameters['id']!),
-              ),
-            ],
           ),
           GoRoute(
             path: 'challenge/:cid',

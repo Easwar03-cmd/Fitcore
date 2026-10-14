@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_response.dart' show apiErrorMessage;
 import '../models/community_models.dart';
-import 'community_provider.dart' show CommunityException;
+import 'community_provider.dart'
+    show CommunityException, communityListProvider;
 
 Map<String, dynamic> _data(Response<dynamic> res) =>
     (res.data as Map<String, dynamic>)['data'] as Map<String, dynamic>;
@@ -23,6 +24,32 @@ final challengeListProvider = FutureProvider.autoDispose
   } on DioException catch (e) {
     throw CommunityException(apiErrorMessage(e));
   }
+});
+
+/// A challenge together with the community it belongs to.
+class CommunityChallenge {
+  const CommunityChallenge(this.community, this.challenge);
+  final CommunitySummary community;
+  final ChallengeSummary challenge;
+}
+
+/// Challenges from every joined (approved) community, newest activity first
+/// by open status then title.
+final allChallengesProvider =
+    FutureProvider.autoDispose<List<CommunityChallenge>>((ref) async {
+  final communities = await ref.watch(communityListProvider.future);
+  final active = communities.where((c) => !c.isPending).toList();
+  final lists = await Future.wait(active.map((c) async {
+    final items = await ref.watch(challengeListProvider(c.id).future);
+    return [for (final ch in items) CommunityChallenge(c, ch)];
+  }));
+  final all = lists.expand((l) => l).toList()
+    ..sort((a, b) {
+      final ao = a.challenge.status == 'open' ? 0 : 1;
+      final bo = b.challenge.status == 'open' ? 0 : 1;
+      return ao != bo ? ao - bo : a.challenge.title.compareTo(b.challenge.title);
+    });
+  return all;
 });
 
 final challengeDetailProvider = FutureProvider.autoDispose

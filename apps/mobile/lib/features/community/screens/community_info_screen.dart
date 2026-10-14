@@ -167,15 +167,7 @@ class CommunityInfoScreen extends ConsumerWidget {
             ],
 
             // ── Navigation rows ────────────────────────────────────────────
-            _NavRow(
-              icon: PhosphorIconsRegular.trophy,
-              tint: PastelTint.sky,
-              title: 'Challenges',
-              onTap: () =>
-                  context.push(AppRoutes.communityChallengesPath(communityId)),
-            ),
             if (c.isAdmin) ...[
-              const SizedBox(height: 10),
               _NavRow(
                 icon: PhosphorIconsRegular.gearSix,
                 tint: PastelTint.lime,
