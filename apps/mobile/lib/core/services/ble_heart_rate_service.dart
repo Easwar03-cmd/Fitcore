@@ -212,7 +212,9 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
     final device = BluetoothDevice.fromId(id);
     try {
       await device.connect(timeout: const Duration(seconds: 15));
+      await _ensureBonded(device);
       final services = await device.discoverServices();
+      await _logDeviceProfile(device, services);
       final hrService = services
           .where((s) => s.uuid == kHeartRateService)
           .cast<BluetoothService?>()
@@ -270,6 +272,52 @@ class BleHeartRateController extends Notifier<BleHeartRateState> {
             'it is not connected to another app, and try again.',
       );
     }
+  }
+
+  /// Watches normally pair (bond) with their phone before they stream health
+  /// data. This shows the system pairing prompt when the watch asks for it.
+  Future<void> _ensureBonded(BluetoothDevice device) async {
+    try {
+      final current = await device.bondState.first;
+      if (current == BluetoothBondState.bonded) return;
+      await device.createBond();
+      await device.bondState
+          .firstWhere((b) =>
+              b == BluetoothBondState.bonded || b == BluetoothBondState.none)
+          .timeout(const Duration(seconds: 25));
+    } catch (e) {
+      _log.w('BLE bonding skipped', error: e);
+    }
+  }
+
+  /// Logs every service / characteristic and the Device Information strings so
+  /// a watch that streams over a vendor protocol can be identified.
+  Future<void> _logDeviceProfile(
+    BluetoothDevice device,
+    List<BluetoothService> services,
+  ) async {
+    final lines = <String>[];
+    for (final svc in services) {
+      lines.add('service ${svc.uuid}');
+      for (final c in svc.characteristics) {
+        final p = c.properties;
+        final props = [
+          if (p.read) 'read',
+          if (p.write) 'write',
+          if (p.writeWithoutResponse) 'writeNoResp',
+          if (p.notify) 'notify',
+          if (p.indicate) 'indicate',
+        ].join(',');
+        lines.add('  char ${c.uuid} [$props]');
+        if (svc.uuid == Guid('180A') && p.read) {
+          try {
+            final v = await c.read();
+            lines.add('    = ${String.fromCharCodes(v.where((b) => b >= 32 && b < 127))}');
+          } catch (_) {}
+        }
+      }
+    }
+    _log.i('BLE profile for ${device.remoteId.str}: ${lines.join(' | ')}');
   }
 
   Future<void> _subscribeBattery(List<BluetoothService> services) async {
