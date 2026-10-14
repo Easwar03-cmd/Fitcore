@@ -53,7 +53,7 @@
 
   <img src="revive-icon.png" alt="Revive" width="56" height="56" style="border-radius:14px;display:block;margin-bottom:12px">
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Revive Fitness App &nbsp;·&nbsp; Last updated: 15 May 2026 &nbsp;·&nbsp; Effective: 15 May 2026</p>
+  <p class="subtitle">Revive Fitness App &nbsp;·&nbsp; Last updated: 14 October 2026 &nbsp;·&nbsp; Effective: 14 October 2026</p>
 
   <p>
     Revive ("we", "our", or "us") is a fitness application available on Android and iOS.
@@ -76,9 +76,9 @@
     <li><strong>Fitness goals</strong> — goal type (lose weight, build muscle, maintain, endurance) and activity level.</li>
     <li><strong>Food logs</strong> — meals and snacks you add, including food name, serving size, and macro-nutrient breakdown.</li>
     <li><strong>Workout logs</strong> — exercises performed, sets, reps, weight lifted, duration, GPS route, and perceived effort.</li>
-    <li><strong>Community content</strong> — community names, messages, photos, videos and documents you post, challenges you create (title, duration, daily check-ins) and the notes you write in a challenge notepad. Messages and media are visible to the members of that community. Voice dictation text you choose to share is posted as a normal message.</li>
+    <li><strong>Community content</strong> — community names, messages, photos, videos and documents you post, challenges you create (title, duration, daily check-ins) and the notes you write on each day's sheet of a challenge notepad. Messages and media are visible to the members of that community. <em>Personal</em> challenges are not attached to any community and are visible only to you; <em>group</em> challenges are visible to the members of the community you choose. Voice dictation text you choose to share is posted as a normal message.</li>
     <li><strong>Private to-do list</strong> — tasks you add in the Community tab. Stored against your account so it follows you to a new device; it is never visible to any other user or community admin.</li>
-    <li><strong>Profile photo</strong> — if you choose to add one.</li>
+    <li><strong>Profile photo and name</strong> — an optional photo you take or pick, resized on your device and stored on our servers so it follows you to a new device. It is shown only on your own profile; it is not displayed to other users or community admins.</li>
     <li><strong>Support messages</strong> — if you contact us by email.</li>
   </ul>
 
@@ -87,7 +87,8 @@
     <li><strong>Device identifiers</strong> — Firebase installation ID, advertising ID (used for ad personalisation if consent is given).</li>
     <li><strong>Usage analytics</strong> — screens viewed, features used, session length, button taps (via Firebase Analytics and Amplitude). No individual food or workout content is sent to analytics providers.</li>
     <li><strong>Crash reports</strong> — stack traces, device model, OS version, and app version collected by Firebase Crashlytics and Sentry when the app crashes. These reports do not contain health data.</li>
-    <li><strong>Push notification token</strong> — a Firebase Cloud Messaging token generated on first launch, used only to deliver reminders you have opted into.</li>
+    <li><strong>Push notification token</strong> — a Firebase Cloud Messaging token generated on first launch, used only to deliver notifications you have opted into.</li>
+    <li><strong>Reminder settings</strong> — the reminders you switch on and the times you choose are stored on your device only. Reminders are scheduled locally by your phone and are not sent to our servers.</li>
   </ul>
 
   <h3>1.3 Information From Your Device Hardware</h3>
@@ -118,6 +119,14 @@
     </tbody>
   </table>
   <p>
+    On Android, Revive uses Health Connect. Revive's use and transfer of information received
+    from Health Connect and Google APIs adheres to the
+    <a href="https://developer.android.com/health-and-fitness/guides/health-connect/develop/user-data-policy" target="_blank">Google Play User Data Policy</a>,
+    including the Limited Use requirements: health data is used only to provide and improve the
+    features described here, is not used for advertising or sold, and is not transferred except as
+    needed to provide the feature, for security or legal reasons, or with your consent.
+  </p>
+  <p>
     Heart-rate, sleep and HRV data from the health platform is read on your device to build the rest
     summary and is <strong>not uploaded to our servers</strong>. Other health platform data is processed
     locally and synced only to power your personal dashboard. It is <strong>never</strong> used for advertising, sold, or
@@ -137,7 +146,7 @@
     <li>If you leave a community, the admin stops receiving new data from you. The admin may keep the summary covering the period up to the day you left until they delete it.</li>
     <li>An admin can put your tracking on hold (the summary stops at that date) or permanently delete the tracking record, which removes it entirely.</li>
     <li>Your private to-do list and the notes in your notepad (unless you choose to share them) are never shown to admins or other members.</li>
-    <li>You can report or block users and report communities from within the app.</li>
+    <li>You can report or block users and report communities from within the app. Reported content is reviewed and may be removed; accounts that repeatedly break the <a href="terms.html">Terms of Service</a> may be suspended.</li>
   </ul>
 
   <!-- 2 -->
@@ -145,7 +154,7 @@
   <ul>
     <li>Provide and personalise the Revive service (calorie targets, workout recommendations, meal plans).</li>
     <li>Send push notifications you have opted into (workout reminders, streak warnings, weekly summaries).</li>
-    <li>Power AI features via Google Gemini API — your fitness context (goals, recent logs, body stats) is sent to Gemini to generate meal plans, workout suggestions and food-photo analysis. Gemini processes this data under <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
+    <li>Power AI features (generated content is machine-produced and can be wrong — use the flag button on any AI result to report it) via Google Gemini API — your fitness context (goals, recent logs, body stats) is sent to Gemini to generate meal plans, workout suggestions and food-photo analysis. Gemini processes this data under <a href="https://policies.google.com/privacy" target="_blank">Google's Privacy Policy</a>.</li>
     <li>Display relevant ads via Google AdMob. Ad personalisation requires your consent (shown on first launch). You may opt out at any time in Settings → Privacy.</li>
     <li>Monitor app stability via Firebase Crashlytics and Sentry.</li>
     <li>Understand feature usage in aggregate via Firebase Analytics and Amplitude to improve the app.</li>
@@ -182,7 +191,7 @@
       <tr><td>Google AdMob</td><td>Advertising ID (with consent); approximate location</td><td>Contextual / personalised ads</td></tr>
       <tr><td>Amplitude</td><td>Anonymised usage events (no PII, no health data)</td><td>Product analytics</td></tr>
       <tr><td>Sentry</td><td>Crash stack traces, device/OS version</td><td>Error monitoring</td></tr>
-      <tr><td>Google Cloud Platform</td><td>All account and fitness data (encrypted at rest)</td><td>Backend infrastructure (Cloud Run, Cloud SQL, Cloud Storage)</td></tr>
+      <tr><td>Google Cloud Platform</td><td>All account and fitness data, profile photo and community media (encrypted at rest)</td><td>Backend infrastructure (Cloud Run, Cloud SQL, Cloud Storage)</td></tr>
       <tr><td>Open Food Facts / USDA</td><td>Search query text only</td><td>Food database lookup</td></tr>
       <tr><td>Law enforcement / courts</td><td>As required by applicable law</td><td>Legal compliance</td></tr>
     </tbody>
@@ -192,7 +201,7 @@
   <h2>5. Data Retention</h2>
   <ul>
     <li>Your account data and fitness logs are retained for as long as your account is active.</li>
-    <li>If you delete your account, all personal data is permanently deleted within <strong>30 days</strong>, except where retention is required by law.</li>
+    <li>If you delete your account (Profile → Delete Account, or via <a href="delete-account.html">the web page</a>), your profile, photo, food and workout logs, challenges and notes, to-do list, community memberships and tracking records are permanently deleted within <strong>30 days</strong>, except where retention is required by law. Messages you posted in communities are removed with your account.</li>
     <li>Anonymised, aggregated analytics data may be retained indefinitely (it cannot be linked back to you).</li>
     <li>Crash report data is retained for 90 days by Firebase Crashlytics and Sentry.</li>
   </ul>
@@ -210,8 +219,8 @@
   <!-- 7 -->
   <h2>7. Children's Privacy</h2>
   <p>
-    Revive is not directed at children under the age of 13 (or 16 in the EEA).
-    We do not knowingly collect personal data from children.
+    Revive is intended for people aged 18 and over and is not directed at children.
+    We do not knowingly collect personal data from anyone under 18.
     If you believe a child has provided us with personal data, please contact us and we will
     delete it promptly.
   </p>

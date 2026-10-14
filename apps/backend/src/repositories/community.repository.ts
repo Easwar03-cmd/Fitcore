@@ -139,7 +139,7 @@ export const communityRepository = {
           ...(asAdmin ? [{ status: 'pending' }, { status: 'left', shareReport: true }] : []),
         ],
       },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true } } },
       orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
     }),
 };

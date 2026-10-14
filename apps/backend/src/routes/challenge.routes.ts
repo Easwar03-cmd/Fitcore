@@ -251,7 +251,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
         ? prisma.challengeParticipant.findMany({
             where: { challengeId: cid },
             include: {
-              user: { select: { id: true, name: true, avatarUrl: true } },
+              user: { select: { id: true, name: true } },
               _count: { select: { checkins: true } },
             },
             orderBy: { startDate: 'asc' },
@@ -283,7 +283,6 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
         participants: participants.map((p) => ({
           userId: p.userId,
           name: p.user.name,
-          avatarUrl: p.user.avatarUrl,
           startDate: p.startDate,
           status: p.status,
           completedDays: p._count.checkins,

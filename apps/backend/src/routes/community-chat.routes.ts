@@ -75,7 +75,7 @@ export const communityChatRoutes: FastifyPluginAsync = async (fastify) => {
         ...(before ? { createdAt: { lt: new Date(before) } } : {}),
         ...(after ? { createdAt: { gt: new Date(after) } } : {}),
       },
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { author: { select: { id: true, name: true } } },
       orderBy: { createdAt: after ? 'asc' : 'desc' },
       take: limit,
     });
@@ -155,7 +155,7 @@ export const communityChatRoutes: FastifyPluginAsync = async (fastify) => {
           mediaType: d.mediaType,
           mediaName: d.mediaName,
         },
-        include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+        include: { author: { select: { id: true, name: true } } },
       });
 
       void notifyMembers(id, me.userId, me.community.name, msg.author.name, d.body ?? 'sent an attachment');

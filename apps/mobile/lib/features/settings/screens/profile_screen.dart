@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/pastel_card.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../widgets/profile_header.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -19,21 +20,13 @@ class ProfileScreen extends ConsumerWidget {
     final user = authAsync.valueOrNull?.user;
     final isLoading = authAsync.isLoading;
 
-    final initial = user != null && user.name.isNotEmpty
-        ? user.name[0].toUpperCase()
-        : '?';
-
     return Scaffold(
       appBar: const PageAppBar(title: 'Profile'),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
         children: [
           // ── Avatar header ─────────────────────────────────────────────
-          _AvatarHeader(
-            initial: initial,
-            name: user?.name ?? '',
-            email: user?.email ?? '',
-          ),
+          ProfileHeader(user: user),
           const SizedBox(height: 24),
 
           // ── Settings group ────────────────────────────────────────────
@@ -122,60 +115,6 @@ class ProfileScreen extends ConsumerWidget {
             },
             child: const Text('Log Out',
                 style: TextStyle(color: AppColors.coralText)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Avatar header (sky card) ──────────────────────────────────────────────────
-
-class _AvatarHeader extends StatelessWidget {
-  const _AvatarHeader({
-    required this.initial,
-    required this.name,
-    required this.email,
-  });
-
-  final String initial;
-  final String name;
-  final String email;
-
-  @override
-  Widget build(BuildContext context) {
-    return PastelCard(
-      tint: PastelTint.sky,
-      radius: 28,
-      padding: const EdgeInsets.all(20),
-      semanticLabel: '$name, $email',
-      child: Row(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-                color: Colors.white, shape: BoxShape.circle),
-            child: Text(initial, style: AppTextStyles.title),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.metricM),
-                const SizedBox(height: 4),
-                Text(email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        AppTextStyles.caption.copyWith(color: AppColors.ink)),
-              ],
-            ),
           ),
         ],
       ),

@@ -29,6 +29,7 @@ Each answer maps directly to a question in the form.
 | Email address | Yes | No | Required | Account management |
 | User IDs | Yes | No | Required | App functionality |
 | Other personal info (date of birth, biological sex) | Yes | No | Optional | App functionality (calorie calculation) |
+| Photos (profile photo) — see Photos and videos | Yes | No | Optional | Account management (shown on your own profile only) |
 
 ### Financial info
 | Sub-type | Collected | Shared | Required or optional | Processing purpose |
@@ -57,6 +58,7 @@ Each answer maps directly to a question in the form.
 |---|---|---|---|---|
 | Photos (meal photos for nutritional analysis) | Yes | Yes — Google Gemini API (transient, not stored) | Optional | App functionality (food photo logging) |
 | Photos and videos (attached to community messages) | Yes | Yes — visible to members of that community | Optional | App functionality (community chat) |
+| Photos (profile photo) | Yes | No | Optional | Account management (stored on our servers, visible only to the user) |
 | Files and docs (PDF/text attached to community messages) | Yes | Yes — visible to members of that community | Optional | App functionality (community chat) |
 
 ### Camera
@@ -152,3 +154,17 @@ Requested only for voice-to-text in the challenge notepad (user taps "Dictate").
 - In-app: report message / report community / block user, admin can delete messages and remove members
 - Terms of Service section on community content; delete-account URL covers community data
 - Required moderation answers: users are told how to report; reports are logged and reviewed (`[community report]` log entries in Cloud Logging)
+
+
+---
+
+## Update 2026-10-14
+
+- **Profile photo:** collected (optional), not shared, stored on our servers (Cloud SQL), deleted with the account.
+- **Challenges:** personal challenges and per-day notes belong to the user and are not tied to a community. Group challenges are visible to the chosen community.
+- **Reminders:** reminder on/off state and times stay on the device (SharedPreferences) — not collected.
+- **Health Connect declaration:** the Play "Health apps" form requires the privacy policy to state Limited Use compliance — present in section 1.4 of the policy.
+- **Privacy policy URL (Play Console → App content):** `https://easwar03-cmd.github.io/Fitcore/privacy-policy.html`
+- **Target audience:** 18+ — the policy now says the same (it previously said 13/16).
+- **AI-generated content:** flag button on every AI result posts to `/ai/report`.
+- Publish the updated `docs/` folder (GitHub Pages) **before** submitting the new release so the policy URL matches the app.
