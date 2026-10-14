@@ -223,6 +223,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CreateChallengeScreen(),
       ),
       GoRoute(
+        path: '/community/challenges/:cid',
+        name: 'personal-challenge',
+        builder: (context, state) => ChallengeDetailScreen(
+          communityId: null,
+          challengeId: state.pathParameters['cid']!,
+        ),
+      ),
+      GoRoute(
         path: '/community/join/:code',
         name: 'community-join',
         builder: (context, state) =>

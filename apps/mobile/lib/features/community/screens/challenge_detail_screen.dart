@@ -16,7 +16,7 @@ class ChallengeDetailScreen extends ConsumerWidget {
     required this.challengeId,
   });
 
-  final String communityId;
+  final String? communityId;
   final String challengeId;
 
   Future<void> _run(
@@ -39,7 +39,9 @@ class ChallengeDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(challengeDetailProvider(challengeId));
-    final communityAsync = ref.watch(communityDetailProvider(communityId));
+    final cid = communityId;
+    final communityAsync =
+        cid == null ? null : ref.watch(communityDetailProvider(cid));
     final myId = ref.watch(authProvider).valueOrNull?.user.id;
     final actions = ref.read(challengeActionsProvider);
 
@@ -49,7 +51,7 @@ class ChallengeDetailScreen extends ConsumerWidget {
         actions: [
           if (detail.valueOrNull != null &&
               (detail.value!.creatorId == myId ||
-                  (communityAsync.valueOrNull?.isAdmin ?? false)))
+                  (communityAsync?.valueOrNull?.isAdmin ?? false)))
             PopupMenuButton<String>(
               onSelected: (v) async {
                 if (v == 'close') {
@@ -111,7 +113,7 @@ class _Body extends ConsumerWidget {
   });
 
   final ChallengeDetail challenge;
-  final String communityId;
+  final String? communityId;
   final String? myId;
   final _Runner onRun;
 
@@ -238,17 +240,18 @@ class _Body extends ConsumerWidget {
             onSave: (text) => actions.saveNotes(c.id, text),
           ),
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => onRun(
-                () => actions.shareNotes(c.id),
-                success: 'Notepad shared in the community chat.',
+          if (communityId != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => onRun(
+                  () => actions.shareNotes(c.id),
+                  success: 'Notepad shared in the community chat.',
+                ),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: const Text('Share notepad in community'),
               ),
-              icon: const Icon(Icons.ios_share_rounded),
-              label: const Text('Share notepad in community'),
             ),
-          ),
         ],
       ],
     );

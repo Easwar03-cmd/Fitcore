@@ -63,10 +63,13 @@ class ChallengesScreen extends ConsumerWidget {
               for (final item in list)
                 _ChallengeCard(
                   challenge: item.challenge,
-                  communityName: item.community.name,
+                  communityName: item.community?.name ?? 'Personal',
                   onTap: () async {
-                    await context.push(AppRoutes.communityChallengePath(
-                        item.community.id, item.challenge.id));
+                    final community = item.community;
+                    await context.push(community == null
+                        ? AppRoutes.personalChallengePath(item.challenge.id)
+                        : AppRoutes.communityChallengePath(
+                            community.id, item.challenge.id));
                     ref.invalidate(allChallengesProvider);
                   },
                 ),

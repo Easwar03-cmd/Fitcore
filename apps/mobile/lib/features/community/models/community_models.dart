@@ -327,7 +327,8 @@ class ChallengeDetail {
   });
 
   final String id;
-  final String communityId;
+  /// Null for personal challenges (they belong to the user, not a community).
+  final String? communityId;
   final String kind;
   final String title;
   final String description;
@@ -351,7 +352,7 @@ class ChallengeDetail {
         .toSet();
     return ChallengeDetail(
       id: j['id'] as String,
-      communityId: j['communityId'] as String,
+      communityId: j['communityId'] as String?,
       kind: j['kind'] as String,
       title: j['title'] as String,
       description: j['description'] as String,
