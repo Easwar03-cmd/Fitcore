@@ -134,7 +134,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           create: {
             userId,
             startDate: parseDateOnly(d.clientDate)!,
-            notes: d.notes ?? '',
+            ...(d.notes?.trim() ? { dayNotes: { create: { dayNumber: 1, notes: d.notes } } } : {}),
           },
         },
       },
@@ -211,7 +211,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           create: {
             userId: me.userId,
             startDate: parseDateOnly(d.clientDate)!,
-            notes: d.notes ?? '',
+            ...(d.notes?.trim() ? { dayNotes: { create: { dayNumber: 1, notes: d.notes } } } : {}),
           },
         },
       },
@@ -242,7 +242,10 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     const [mine, participants] = await Promise.all([
       prisma.challengeParticipant.findUnique({
         where: { challengeId_userId: { challengeId: cid, userId } },
-        include: { checkins: { select: { dayNumber: true, date: true }, orderBy: { dayNumber: 'asc' } } },
+        include: {
+          checkins: { select: { dayNumber: true, date: true }, orderBy: { dayNumber: 'asc' } },
+          dayNotes: { select: { dayNumber: true, notes: true }, orderBy: { dayNumber: 'asc' } },
+        },
       }),
       challenge.kind === 'group'
         ? prisma.challengeParticipant.findMany({
@@ -271,7 +274,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           ? {
               startDate: mine.startDate,
               status: mine.status,
-              notes: mine.notes,
+              dayNotes: mine.dayNotes.filter((n) => n.notes.trim() !== ''),
               checkins: mine.checkins,
               completedDays: mine.checkins.length,
             }
@@ -384,18 +387,45 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, data: { removed: true } });
   });
 
-  // PATCH /community/challenges/:cid/notes  { notes }
+  // PATCH /community/challenges/:cid/notes/:day  { notes } — one day's sheet
+  fastify.patch('/challenges/:cid/notes/:day', async (request, reply) => {
+    const { cid, day } = dayParam.parse(request.params);
+    const parsed = z.object({ notes: z.string().max(20000) }).safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const userId = request.user.userId;
+    const ctx = await loadChallenge(reply, cid, userId);
+    if (!ctx) return;
+    if (day > ctx.challenge.totalDays) {
+      return fail(reply, 400, 'OUT_OF_RANGE', 'That day is outside this challenge');
+    }
+    const p = await prisma.challengeParticipant.findUnique({
+      where: { challengeId_userId: { challengeId: cid, userId } },
+    });
+    if (!p) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    await prisma.challengeDayNote.upsert({
+      where: { participantId_dayNumber: { participantId: p.id, dayNumber: day } },
+      create: { participantId: p.id, dayNumber: day, notes: parsed.data.notes },
+      update: { notes: parsed.data.notes },
+    });
+    return reply.send({ success: true, data: { saved: true } });
+  });
+
+  // PATCH /community/challenges/:cid/notes  { notes } — legacy: day 1 sheet
   fastify.patch('/challenges/:cid/notes', async (request, reply) => {
     const { cid } = cidParam.parse(request.params);
     const parsed = z.object({ notes: z.string().max(20000) }).safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const userId = request.user.userId;
     if (!(await loadChallenge(reply, cid, userId))) return;
-    const r = await prisma.challengeParticipant.updateMany({
-      where: { challengeId: cid, userId },
-      data: { notes: parsed.data.notes },
+    const p = await prisma.challengeParticipant.findUnique({
+      where: { challengeId_userId: { challengeId: cid, userId } },
     });
-    if (r.count === 0) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    if (!p) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    await prisma.challengeDayNote.upsert({
+      where: { participantId_dayNumber: { participantId: p.id, dayNumber: 1 } },
+      create: { participantId: p.id, dayNumber: 1, notes: parsed.data.notes },
+      update: { notes: parsed.data.notes },
+    });
     return reply.send({ success: true, data: { saved: true } });
   });
 
@@ -415,11 +445,18 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
       if (member.role !== 'admin' && !member.community.membersCanChat) {
         return fail(reply, 403, 'CHAT_DISABLED', 'Only the admin can post in this community');
       }
+      const body = z.object({ day: z.number().int().min(1).max(365).optional() }).safeParse(request.body ?? {});
       const p = await prisma.challengeParticipant.findUnique({
         where: { challengeId_userId: { challengeId: cid, userId } },
-        include: { _count: { select: { checkins: true } } },
+        include: {
+          _count: { select: { checkins: true } },
+          dayNotes: { orderBy: { dayNumber: 'desc' } },
+        },
       });
-      if (!p || p.notes.trim() === '') {
+      const sheet = p?.dayNotes.find(
+        (n) => n.notes.trim() !== '' && (!body.success || body.data.day === undefined || n.dayNumber === body.data.day),
+      );
+      if (!p || !sheet) {
         return fail(reply, 400, 'EMPTY', 'Your notepad is empty');
       }
       const msg = await prisma.communityMessage.create({
@@ -427,10 +464,11 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           communityId: challenge.communityId,
           authorId: userId,
           kind: 'notepad_share',
-          body: p.notes.slice(0, 4000),
+          body: sheet.notes.slice(0, 4000),
           payload: {
             challengeId: cid,
             title: challenge.title,
+            day: sheet.dayNumber,
             completedDays: p._count.checkins,
             totalDays: challenge.totalDays,
           },

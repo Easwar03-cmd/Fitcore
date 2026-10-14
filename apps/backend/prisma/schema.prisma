@@ -249,9 +249,23 @@ model ChallengeParticipant {
   challenge Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   checkins  ChallengeCheckin[]
+  dayNotes  ChallengeDayNote[]
 
   @@unique([challengeId, userId])
   @@index([userId])
+}
+
+// One notepad sheet per challenge day, per participant (private to its owner).
+model ChallengeDayNote {
+  id            String   @id @default(cuid())
+  participantId String
+  dayNumber     Int
+  notes         String   @default("")
+  updatedAt     DateTime @updatedAt
+
+  participant ChallengeParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, dayNumber])
 }
 
 model ChallengeCheckin {

@@ -181,13 +181,15 @@ class ChallengeActions {
         _refresh(communityId, challengeId);
       });
 
-  Future<void> saveNotes(String challengeId, String notes) => _run(() async {
-        await _dio.patch('/community/challenges/$challengeId/notes',
+  Future<void> saveDayNote(String challengeId, int day, String notes) =>
+      _run(() async {
+        await _dio.patch('/community/challenges/$challengeId/notes/$day',
             data: {'notes': notes});
       });
 
-  Future<void> shareNotes(String challengeId) => _run(() async {
-        await _dio.post('/community/challenges/$challengeId/share');
+  Future<void> shareNotes(String challengeId, int day) => _run(() async {
+        await _dio.post('/community/challenges/$challengeId/share',
+            data: {'day': day});
       });
 
   Future<void> close(String? communityId, String challengeId) => _run(() async {

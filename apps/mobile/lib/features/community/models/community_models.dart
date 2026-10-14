@@ -321,7 +321,7 @@ class ChallengeDetail {
     required this.creatorId,
     this.startDate,
     this.myStatus,
-    required this.notes,
+    required this.dayNotes,
     required this.completedDayNumbers,
     required this.participants,
   });
@@ -337,7 +337,9 @@ class ChallengeDetail {
   final String creatorId;
   final DateTime? startDate; // null when the caller is not participating
   final String? myStatus;
-  final String notes;
+
+  /// Notepad text per challenge day (1-based); missing = nothing written.
+  final Map<int, String> dayNotes;
   final Set<int> completedDayNumbers;
   final List<ParticipantInfo> participants;
 
@@ -361,7 +363,11 @@ class ChallengeDetail {
       creatorId: j['creatorId'] as String,
       startDate: mine == null ? null : _dateOnly(mine['startDate']),
       myStatus: mine?['status'] as String?,
-      notes: (mine?['notes'] as String?) ?? '',
+      dayNotes: {
+        for (final e in (mine?['dayNotes'] as List<dynamic>? ?? const []))
+          ((e as Map<String, dynamic>)['dayNumber'] as num).toInt():
+              e['notes'] as String,
+      },
       completedDayNumbers: checkins,
       participants: (j['participants'] as List<dynamic>)
           .map((e) {
