@@ -1,9 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
 
-/// Displays the user's current activity streak with a shield indicator.
+/// Current activity streak with a shield indicator.
 ///
 /// Pure StatelessWidget — receives [streak] and [graceUsed] from parent.
 class StreakCard extends StatelessWidget {
@@ -18,87 +20,66 @@ class StreakCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasStreak = streak > 0;
+    final unit = streak == 1 ? 'day' : 'days';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return PastelCard(
+      tint: PastelTint.butter,
+      padding: const EdgeInsets.all(14),
+      semanticLabel:
+          'Streak $streak $unit, shield ${graceUsed ? 'used' : 'ready'}',
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.local_fire_department_rounded,
-              color: hasStreak ? AppColors.warning : Theme.of(context).colorScheme.onSurfaceVariant,
-              size: 18,
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle),
+                  child: const Icon(PhosphorIconsRegular.flame, size: 18),
+                ),
+                const Spacer(),
+                Icon(
+                  graceUsed
+                      ? PhosphorIconsRegular.shield
+                      : PhosphorIconsFill.shieldCheck,
+                  size: 18,
+                ),
+              ],
             ),
-            const SizedBox(width: 6),
+            const SizedBox(height: 10),
+            Text('Streak', style: AppTextStyles.caption.copyWith(color: AppColors.ink)),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.8, end: 1.0),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.elasticOut,
+              builder: (_, scale, child) => Transform.scale(
+                scale: scale,
+                alignment: Alignment.centerLeft,
+                child: child,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text('$streak', style: AppTextStyles.metricM),
+                  const SizedBox(width: 4),
+                  Text(unit,
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.ink)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 2),
             Text(
-              'Streak',
-              style: AppTextStyles.titleMedium
-                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
+              graceUsed ? 'Shield used' : 'Shield ready',
+              style: AppTextStyles.micro,
             ),
           ],
         ),
-        const SizedBox(height: 10),
-
-        // Count with bounce-in animation
-        TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0.7, end: 1.0),
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.elasticOut,
-          builder: (_, scale, child) =>
-              Transform.scale(scale: scale, child: child),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '$streak',
-                style: AppTextStyles.headlineLarge.copyWith(
-                  color: hasStreak
-                      ? AppColors.warning
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2, left: 4),
-                child: Text(
-                  streak == 1 ? 'day' : 'days',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-
-        // Shield status
-        Row(
-          children: [
-            Icon(
-              graceUsed
-                  ? Icons.shield_outlined
-                  : Icons.shield_rounded,
-              size: 13,
-              color: graceUsed
-                  ? Theme.of(context).colorScheme.onSurfaceVariant
-                  : AppColors.secondary,
-            ),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                graceUsed ? 'Shield used' : 'Shield ready',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: graceUsed
-                      ? Theme.of(context).colorScheme.onSurfaceVariant
-                      : AppColors.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 }

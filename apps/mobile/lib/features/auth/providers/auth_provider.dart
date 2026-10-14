@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
 import '../../../constants/app_constants.dart';
+import '../../../core/api/api_client.dart' show apiClientProvider;
 import '../../../core/api/token_store.dart';
 import '../../../core/services/notification_service.dart';
 import '../models/auth_state.dart';
@@ -94,6 +95,25 @@ class AuthNotifier extends AsyncNotifier<AuthState?> {
     }
     await _clearSession();
     state = const AsyncData(null);
+  }
+
+  /// Updates the signed-in user's name and/or photo (data URI). Pass
+  /// [removeAvatar] to clear the photo.
+  Future<void> updateMe({
+    String? name,
+    String? avatarDataUri,
+    bool removeAvatar = false,
+  }) async {
+    final current = state.valueOrNull;
+    if (current == null) throw Exception('Not authenticated');
+    final res = await ref.read(apiClientProvider).dio.patch('/user/me', data: {
+      if (name != null) 'name': name,
+      if (avatarDataUri != null) 'avatar': avatarDataUri,
+      if (removeAvatar) 'avatar': null,
+    });
+    final user = UserDto.fromJson(
+        (res.data['data'] as Map<String, dynamic>)['user'] as Map<String, dynamic>);
+    state = AsyncData(AuthState(user: user, accessToken: current.accessToken));
   }
 
   /// Permanently deletes the account and all its data on the server, then

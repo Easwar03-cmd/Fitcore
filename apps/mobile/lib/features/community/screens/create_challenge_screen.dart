@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../providers/challenge_provider.dart';
-import '../providers/community_provider.dart' show CommunityException;
+import '../models/community_models.dart';
+import '../providers/community_provider.dart'
+    show CommunityException, communityListProvider;
 import '../widgets/notepad_field.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class CreateChallengeScreen extends ConsumerStatefulWidget {
-  const CreateChallengeScreen({super.key, required this.communityId});
-  final String communityId;
+  const CreateChallengeScreen({super.key});
 
   @override
   ConsumerState<CreateChallengeScreen> createState() =>
@@ -24,6 +26,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
   final _customDays = TextEditingController();
   final _description = TextEditingController();
   String _kind = 'personal';
+  String? _communityId;
   int _days = 21;
   bool _custom = false;
   String _notes = '';
@@ -39,20 +42,37 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
 
   Future<void> _create() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_kind == 'group' && _communityId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Choose a group first')));
+      return;
+    }
     final days = _custom ? int.parse(_customDays.text) : _days;
     setState(() => _saving = true);
     try {
-      final id = await ref.read(challengeActionsProvider).create(
-            communityId: widget.communityId,
-            kind: _kind,
-            title: _title.text,
-            description: _description.text,
-            totalDays: days,
-            notes: _notes,
-          );
+      final actions = ref.read(challengeActionsProvider);
+      final String id;
+      if (_kind == 'group') {
+        id = await actions.create(
+          communityId: _communityId!,
+          kind: 'group',
+          title: _title.text,
+          description: _description.text,
+          totalDays: days,
+          notes: _notes,
+        );
+      } else {
+        id = await actions.createPersonal(
+          title: _title.text,
+          description: _description.text,
+          totalDays: days,
+          notes: _notes,
+        );
+      }
       if (!mounted) return;
-      context.pushReplacement(
-          AppRoutes.communityChallengePath(widget.communityId, id));
+      context.pushReplacement(_kind == 'group'
+          ? AppRoutes.communityChallengePath(_communityId!, id)
+          : AppRoutes.personalChallengePath(id));
     } on CommunityException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -65,7 +85,7 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('New challenge')),
+      appBar: const PageAppBar(title: 'New challenge'),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -90,13 +110,20 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
             const SizedBox(height: 8),
             Text(
               _kind == 'personal'
-                  ? 'Only you do this challenge. The admin can see your '
-                      'progress only if you share your report.'
+                  ? 'Just for you. It is not attached to any community and nobody '
+                      'else can see it.'
                   : 'Everyone in the community can join. Each person tracks '
                       'their own days and progress is visible to the group.',
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
+            if (_kind == 'group') ...[
+              _CommunityPicker(
+                selected: _communityId,
+                onChanged: (id) => setState(() => _communityId = id),
+              ),
+              const SizedBox(height: 16),
+            ],
             TextFormField(
               controller: _title,
               maxLength: 80,
@@ -183,6 +210,51 @@ class _CreateChallengeScreenState extends ConsumerState<CreateChallengeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Picks which community (group) the challenge is for.
+class _CommunityPicker extends ConsumerWidget {
+  const _CommunityPicker({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(communityListProvider);
+    return async.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => Text(e.toString()),
+      data: (all) {
+        final list = all.where((c) => c.status == 'active').toList();
+        if (list.isEmpty) {
+          return const Text(
+              'Join or create a community first. Challenges belong to a community.');
+        }
+        final value = list.any((c) => c.id == selected) ? selected : null;
+        return DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Group',
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            for (final CommunitySummary c in list)
+              DropdownMenuItem(
+                value: c.id,
+                child: Text(c.name, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+          onChanged: onChanged,
+          validator: (v) => v == null ? 'Choose a group' : null,
+        );
+      },
     );
   }
 }

@@ -10,9 +10,9 @@ class StrengthCurveChart extends StatelessWidget {
   final Map<String, List<ExerciseWeekPoint>> curves;
 
   static const _lineColors = [
-    AppColors.primary,
-    AppColors.secondary,
-    AppColors.warning,
+    AppColors.tealBright,
+    AppColors.coral,
+    AppColors.carbs,
   ];
 
   @override

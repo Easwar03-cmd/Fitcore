@@ -5,6 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../models/community_models.dart';
 import '../providers/community_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/stat_card.dart';
 
 /// Admin view of one member: fitness report + challenge progress, plus the
 /// hold / resume / delete-record / remove actions.
@@ -66,8 +72,8 @@ class MemberReportScreen extends ConsumerWidget {
     final status = member?.status;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(member?.name ?? 'Member'),
+      appBar: PageAppBar(
+        title: member?.name ?? 'Member',
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) async {
@@ -141,97 +147,199 @@ class _ReportBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final r = report;
     final fmt = DateFormat.MMMd();
-
-    Widget stat(String label, String value, IconData icon) => Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Icon(icon, color: theme.colorScheme.primary),
-                  const SizedBox(height: 6),
-                  Text(value, style: theme.textTheme.titleMedium),
-                  Text(label,
-                      style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-          ),
-        );
 
     String weightLine() {
       if (r.latestKg == null) return 'No weight logged';
       final change = r.changeKg;
-      if (change == null || change == 0) return '${r.latestKg!.toStringAsFixed(1)} kg';
+      if (change == null || change == 0) {
+        return '${r.latestKg!.toStringAsFixed(1)} kg';
+      }
       final sign = change > 0 ? '+' : '';
       return '${r.latestKg!.toStringAsFixed(1)} kg ($sign${change.toStringAsFixed(1)})';
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       children: [
         if (r.frozen)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              r.status == 'left'
-                  ? 'This member left the community. Showing data up to ${fmt.format(r.to)}.'
-                  : 'Tracking is on hold. Showing data up to ${fmt.format(r.to)}.',
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: PastelCard(
+              tint: PastelTint.butter,
+              radius: 20,
+              child: Row(
+                children: [
+                  const Icon(PhosphorIconsRegular.snowflake, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      r.status == 'left'
+                          ? 'This member left the community. Showing data up to ${fmt.format(r.to)}.'
+                          : 'Tracking is on hold. Showing data up to ${fmt.format(r.to)}.',
+                      style: AppTextStyles.body,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        Text(
-          'Report for ${fmt.format(r.from)} – ${fmt.format(r.to)}',
-          style: theme.textTheme.titleSmall,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+          child: Text(
+            'Report for ${fmt.format(r.from)} – ${fmt.format(r.to)}',
+            style: AppTextStyles.caption,
+          ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            stat('Workouts', '${r.workoutCount}', Icons.fitness_center_rounded),
-            stat('Minutes', '${r.workoutMinutes}', Icons.timer_outlined),
-            stat('Streak', '${r.streakDays}d', Icons.local_fire_department_outlined),
-          ],
-        ),
-        Row(
-          children: [
-            stat('Days logged food', '${r.loggedDays}', Icons.restaurant_outlined),
-            stat('Avg kcal', r.avgCalories?.toString() ?? '—',
-                Icons.local_fire_department_rounded),
-            stat('Avg protein', r.avgProteinG == null ? '—' : '${r.avgProteinG} g',
-                Icons.egg_alt_outlined),
-          ],
-        ),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.monitor_weight_outlined),
-            title: const Text('Weight'),
-            subtitle: Text(weightLine()),
+
+        // ── Hero value card (reference screen F) ───────────────────────────
+        PastelCard(
+          tint: PastelTint.sky,
+          radius: 28,
+          padding: const EdgeInsets.all(18),
+          semanticLabel:
+              '${r.workoutCount} workouts, ${r.workoutMinutes} minutes',
+          child: ExcludeSemantics(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                          color: Colors.white, shape: BoxShape.circle),
+                      child: const Icon(PhosphorIconsRegular.barbell, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Workouts', style: AppTextStyles.heading),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text('${r.workoutCount}', style: AppTextStyles.metricXL),
+                    const SizedBox(width: 8),
+                    Text('sessions · ${r.workoutMinutes} min',
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.ink)),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 12),
-        Text('Challenges', style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
+
+        // ── Streak (lime) + nutrition tiles ────────────────────────────────
+        PastelCard(
+          tint: PastelTint.lime,
+          radius: 28,
+          padding: const EdgeInsets.all(18),
+          semanticLabel: 'Streak ${r.streakDays} days',
+          child: ExcludeSemantics(
+            child: Row(
+              children: [
+                const Icon(PhosphorIconsRegular.flame, size: 28),
+                const SizedBox(width: 12),
+                Text('${r.streakDays}', style: AppTextStyles.metricL),
+                const SizedBox(width: 8),
+                Text('day streak', style: AppTextStyles.body),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                icon: PhosphorIconsRegular.forkKnife,
+                label: 'Avg calories',
+                value: r.avgCalories?.toString() ?? '—',
+                unit: 'kcal',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                icon: PhosphorIconsRegular.egg,
+                label: 'Avg protein',
+                value: r.avgProteinG?.toString() ?? '—',
+                unit: 'g',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                icon: PhosphorIconsRegular.calendarCheck,
+                label: 'Days logged food',
+                value: '${r.loggedDays}',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                icon: PhosphorIconsRegular.scales,
+                label: 'Weight',
+                value: weightLine(),
+              ),
+            ),
+          ],
+        ),
+
+        // ── Challenges ─────────────────────────────────────────────────────
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('Challenges', style: AppTextStyles.heading),
+        ),
         if (r.challenges.isEmpty)
-          const Text('No challenges yet.')
+          Text('No challenges yet.', style: AppTextStyles.caption)
         else
           for (final c in r.challenges)
-            Card(
-              child: ListTile(
-                title: Text(c.title),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: LinearProgressIndicator(
-                    value: c.totalDays == 0 ? 0 : c.completedDays / c.totalDays,
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: PastelCard(
+                radius: 24,
+                semanticLabel:
+                    '${c.title}, ${c.completedDays} of ${c.totalDays} days',
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                              child: Text(c.title, style: AppTextStyles.heading)),
+                          Text('${c.completedDays}/${c.totalDays}',
+                              style: AppTextStyles.bodyStrong),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          value: c.totalDays == 0
+                              ? 0
+                              : c.completedDays / c.totalDays,
+                          minHeight: 8,
+                          backgroundColor: AppColors.surfaceMuted,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              AppColors.ink),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                trailing: Text('${c.completedDays}/${c.totalDays}'),
               ),
             ),
       ],

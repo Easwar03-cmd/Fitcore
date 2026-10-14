@@ -1,3 +1,8 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +30,7 @@ class GymWorkoutScreen extends ConsumerWidget {
         false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Gym Workout')),
+      appBar: const PageAppBar(title: 'Gym Workout'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -73,8 +78,8 @@ class GymWorkoutScreen extends ConsumerWidget {
 
             // ── Browse & start ─────────────────────────────────────────────
             _ActionCard(
-              icon: Icons.fitness_center_rounded,
-              color: Theme.of(context).colorScheme.primary,
+              icon: PhosphorIconsRegular.barbell,
+              tint: PastelTint.lime,
               title: 'Browse Exercises',
               subtitle: 'Pick any exercise and start logging sets',
               onTap: () => _startFromPicker(context, ref),
@@ -111,51 +116,41 @@ class _GenerateButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: isError
-                      ? theme.colorScheme.errorContainer
-                      : theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    isError
-                        ? Icons.refresh_rounded
-                        : Icons.auto_awesome_rounded,
-                    color: isError
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.primary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(label,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      Text(subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded,
-                    color: theme.colorScheme.onSurfaceVariant),
-              ],
+      child: PastelCard(
+        tint: isError ? PastelTint.salmon : PastelTint.sky,
+        radius: 24,
+        onTap: onTap,
+        semanticLabel: '$label. $subtitle',
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle),
+              child: Icon(
+                isError
+                    ? PhosphorIconsRegular.arrowClockwise
+                    : PhosphorIconsRegular.sparkle,
+                size: 22,
+              ),
             ),
-          ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppTextStyles.heading),
+                  Text(subtitle,
+                      style:
+                          AppTextStyles.caption.copyWith(color: AppColors.ink)),
+                ],
+              ),
+            ),
+            const Icon(PhosphorIconsRegular.caretRight, size: 18),
+          ],
         ),
       ),
     );
@@ -168,34 +163,29 @@ class _LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
+      child: PastelCard(
+        tint: PastelTint.sky,
+        radius: 24,
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: const BoxDecoration(
+                  color: Colors.white, shape: BoxShape.circle),
+              child: const Padding(
+                padding: EdgeInsets.all(12),
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(label,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(label,
+                  style: AppTextStyles.body.copyWith(color: AppColors.ink)),
+            ),
+          ],
         ),
       ),
     );
@@ -205,54 +195,50 @@ class _LoadingCard extends StatelessWidget {
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
     required this.icon,
-    required this.color,
+    required this.tint,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color color;
+  final PastelTint tint;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: color.withValues(alpha: 0.15),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios_rounded,
-                  size: 16, color: theme.colorScheme.onSurfaceVariant),
-            ],
+    return PastelCard(
+      tint: tint,
+      radius: 28,
+      onTap: onTap,
+      padding: const EdgeInsets.all(18),
+      semanticLabel: '$title. $subtitle',
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle),
+            child: Icon(icon, size: 26),
           ),
-        ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.heading),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                    style:
+                        AppTextStyles.caption.copyWith(color: AppColors.ink)),
+              ],
+            ),
+          ),
+          const Icon(PhosphorIconsRegular.caretRight, size: 18),
+        ],
       ),
     );
   }

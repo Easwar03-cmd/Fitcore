@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../providers/community_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class CommunitySearchScreen extends ConsumerStatefulWidget {
   const CommunitySearchScreen({super.key});
@@ -72,7 +73,7 @@ class _CommunitySearchScreenState extends ConsumerState<CommunitySearchScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Find a community')),
+      appBar: const PageAppBar(title: 'Find a community'),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

@@ -30,7 +30,6 @@ export const communityMemberRoutes: FastifyPluginAsync = async (fastify) => {
       data: rows.map((m) => ({
         userId: m.userId,
         name: m.user.name,
-        avatarUrl: m.user.avatarUrl,
         role: m.role,
         status: m.status,
         joinedAt: m.joinedAt,
@@ -187,7 +186,7 @@ export const communityMemberRoutes: FastifyPluginAsync = async (fastify) => {
     }
     const user = await prisma.user.findUnique({
       where: { id: uid },
-      select: { id: true, name: true, avatarUrl: true },
+      select: { id: true, name: true },
     });
     const report = await buildMemberReport(target, win, id);
     return reply.send({

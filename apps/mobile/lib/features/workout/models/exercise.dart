@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
+import '../../../core/theme/app_colors.dart';
 
 enum MuscleGroup { chest, back, shoulders, arms, legs, core, cardio }
 
@@ -14,23 +17,23 @@ extension MuscleGroupX on MuscleGroup {
       };
 
   IconData get icon => switch (this) {
-        MuscleGroup.chest => Icons.fitness_center,
-        MuscleGroup.back => Icons.accessibility_new,
-        MuscleGroup.shoulders => Icons.sports_gymnastics,
-        MuscleGroup.arms => Icons.sports_handball,
-        MuscleGroup.legs => Icons.directions_run,
-        MuscleGroup.core => Icons.rotate_90_degrees_ccw,
-        MuscleGroup.cardio => Icons.directions_bike,
+        MuscleGroup.chest => PhosphorIconsRegular.barbell,
+        MuscleGroup.back => PhosphorIconsRegular.personSimpleTaiChi,
+        MuscleGroup.shoulders => PhosphorIconsRegular.arrowsOutCardinal,
+        MuscleGroup.arms => PhosphorIconsRegular.handFist,
+        MuscleGroup.legs => PhosphorIconsRegular.personSimpleRun,
+        MuscleGroup.core => PhosphorIconsRegular.target,
+        MuscleGroup.cardio => PhosphorIconsRegular.heartbeat,
       };
 
   Color get color => switch (this) {
-        MuscleGroup.chest => const Color(0xFFE53E3E),
-        MuscleGroup.back => const Color(0xFF3182CE),
-        MuscleGroup.shoulders => const Color(0xFF805AD5),
-        MuscleGroup.arms => const Color(0xFF38A169),
-        MuscleGroup.legs => const Color(0xFFD69E2E),
-        MuscleGroup.core => const Color(0xFF319795),
-        MuscleGroup.cardio => const Color(0xFFDD6B20),
+        MuscleGroup.chest => AppColors.salmon,
+        MuscleGroup.back => AppColors.sky,
+        MuscleGroup.shoulders => AppColors.butter,
+        MuscleGroup.arms => AppColors.lime,
+        MuscleGroup.legs => AppColors.sky,
+        MuscleGroup.core => AppColors.lime,
+        MuscleGroup.cardio => AppColors.salmon,
       };
 }
 

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 
 // ─── In-page timer card ───────────────────────────────────────────────────────
 
@@ -33,105 +38,53 @@ class WorkoutTimerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
     if (remainingSeconds == null) {
       return OutlinedButton.icon(
         onPressed: onSetTimer,
-        icon: const Icon(Icons.timer_outlined),
+        icon: const Icon(PhosphorIconsRegular.timer),
         label: const Text('Start Workout Timer'),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          side: BorderSide(color: cs.primary.withValues(alpha: 0.4), width: 1.5),
-          foregroundColor: cs.primary,
-        ),
       );
     }
 
-    final r = remainingSeconds!;
-    final isLastMinute = r <= 60;
-    final activeColor = isLastMinute ? Colors.orange : cs.primary;
-    final timeColor = isPaused ? cs.onSurface.withValues(alpha: 0.4) : activeColor;
+    final isLastMinute = remainingSeconds! <= 60;
+    final tint = isLastMinute ? AppColors.butter : AppColors.sky;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: activeColor.withValues(alpha: isPaused ? 0.05 : 0.08),
-        border: Border.all(
-          color: activeColor.withValues(alpha: isPaused ? 0.2 : 0.35),
-          width: 1.5,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          Icon(
-            isPaused ? Icons.timer_off_rounded : Icons.timer_rounded,
-            color: timeColor,
-            size: 22,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isPaused ? 'Timer Paused' : 'Workout Timer',
-                  style: tt.labelSmall?.copyWith(
-                    color: cs.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-                Text(
-                  _label,
-                  style: tt.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: timeColor,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _ControlBtn(
-            icon: isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-            color: cs.primary,
-            onTap: isPaused ? onResume : onPause,
-          ),
-          const SizedBox(width: 8),
-          _ControlBtn(
-            icon: Icons.stop_rounded,
-            color: cs.error,
-            onTap: onStop,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ControlBtn extends StatelessWidget {
-  const _ControlBtn({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return Semantics(
+      label: '${isPaused ? 'Timer paused' : 'Workout timer'} $_label',
       child: Container(
-        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          color: isPaused ? AppColors.surfaceMuted : tint,
+          borderRadius: BorderRadius.circular(28),
         ),
-        child: Icon(icon, size: 20, color: color),
+        padding: const EdgeInsets.fromLTRB(20, 14, 14, 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isPaused ? 'Timer paused' : 'Workout timer',
+                    style: AppTextStyles.caption.copyWith(color: AppColors.ink),
+                  ),
+                  Text(_label, style: AppTextStyles.metricL),
+                ],
+              ),
+            ),
+            CircleIconButton(
+              icon: isPaused ? PhosphorIconsFill.play : PhosphorIconsFill.pause,
+              semanticLabel: isPaused ? 'Resume timer' : 'Pause timer',
+              onPressed: isPaused ? onResume : onPause,
+            ),
+            const SizedBox(width: 8),
+            CircleIconButton(
+              icon: PhosphorIconsFill.stop,
+              semanticLabel: 'Stop timer',
+              onPressed: onStop,
+              selected: true,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -155,32 +108,23 @@ class WorkoutTimerPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.timer_rounded, color: cs.primary),
+                const Icon(PhosphorIconsRegular.timer),
                 const SizedBox(width: 10),
-                Text(
-                  'Set Workout Timer',
-                  style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
+                Text('Set Workout Timer', style: AppTextStyles.heading),
               ],
             ),
             const SizedBox(height: 6),
-            Text(
-              'Tap a duration to start the countdown.',
-              style: tt.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.5)),
-            ),
+            Text('Tap a duration to start the countdown.',
+                style: AppTextStyles.caption),
             const SizedBox(height: 20),
             GridView.count(
               crossAxisCount: 3,
@@ -214,25 +158,13 @@ class _PresetTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: cs.primary.withValues(alpha: 0.35), width: 1.5),
-          borderRadius: BorderRadius.circular(12),
-          color: cs.primary.withValues(alpha: 0.07),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            color: cs.primary,
-          ),
-        ),
+    return Material(
+      color: AppColors.sky,
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Center(child: Text(label, style: AppTextStyles.bodyStrong)),
       ),
     );
   }

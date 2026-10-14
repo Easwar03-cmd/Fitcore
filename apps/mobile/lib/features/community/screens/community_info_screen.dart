@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../constants/app_routes.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/circle_icon_button.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/pastel_chip.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/community_models.dart';
 import '../providers/community_provider.dart';
@@ -80,52 +87,74 @@ class CommunityInfoScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final detail = ref.watch(communityDetailProvider(communityId));
     final members = ref.watch(communityMembersProvider(communityId));
     final myId = ref.watch(authProvider).valueOrNull?.user.id;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Community info')),
+      appBar: const PageAppBar(title: 'Community info'),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (c) => ListView(
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
           children: [
+            // ── Title block ────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(c.name, style: theme.textTheme.headlineSmall),
+                  Semantics(
+                    header: true,
+                    child: Text(c.name, style: AppTextStyles.title),
+                  ),
                   const SizedBox(height: 4),
-                  Text('${c.memberCount} members'),
+                  Text('${c.memberCount} members',
+                      style: AppTextStyles.caption),
                   if (c.description != null) ...[
                     const SizedBox(height: 8),
-                    Text(c.description!),
+                    Text(c.description!, style: AppTextStyles.body),
                   ],
                 ],
               ),
             ),
-            if (c.inviteCode != null)
-              ListTile(
-                leading: const Icon(Icons.link_rounded),
-                title: const Text('Invite code'),
-                subtitle: Text(c.inviteCode!,
-                    style: const TextStyle(letterSpacing: 2, fontWeight: FontWeight.w700)),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
+
+            // ── Invite code ────────────────────────────────────────────────
+            if (c.inviteCode != null) ...[
+              PastelCard(
+                tint: PastelTint.butter,
+                radius: 24,
+                child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.copy_rounded),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Invite code',
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.ink)),
+                          const SizedBox(height: 2),
+                          Text(
+                            c.inviteCode!,
+                            style: AppTextStyles.metricM
+                                .copyWith(letterSpacing: 3),
+                          ),
+                        ],
+                      ),
+                    ),
+                    CircleIconButton(
+                      icon: PhosphorIconsRegular.copy,
+                      semanticLabel: 'Copy invite code',
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: c.inviteCode!));
                         _toast(context, 'Code copied');
                       },
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.share_rounded),
+                    const SizedBox(width: 6),
+                    CircleIconButton(
+                      icon: PhosphorIconsRegular.shareNetwork,
+                      semanticLabel: 'Share invite',
                       onPressed: () => Share.share(
                         'Join "${c.name}" on Revive — open Community → Search '
                         'and enter code ${c.inviteCode}',
@@ -134,78 +163,114 @@ class CommunityInfoScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            ListTile(
-              leading: const Icon(Icons.emoji_events_outlined),
-              title: const Text('Challenges'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () =>
-                  context.push(AppRoutes.communityChallengesPath(communityId)),
-            ),
-            if (c.isAdmin)
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Admin settings'),
-                trailing: const Icon(Icons.chevron_right_rounded),
+              const SizedBox(height: 12),
+            ],
+
+            // ── Navigation rows ────────────────────────────────────────────
+            if (c.isAdmin) ...[
+              _NavRow(
+                icon: PhosphorIconsRegular.gearSix,
+                tint: PastelTint.lime,
+                title: 'Admin settings',
                 onTap: () =>
                     context.push(AppRoutes.communityAdminPath(communityId)),
-              )
-            else ...[
-              const Divider(),
-              SwitchListTile(
-                secondary: const Icon(Icons.monitor_heart_outlined),
-                title: const Text('Share my fitness report with admin'),
-                subtitle: Text(c.shareReport
-                    ? 'The admin can see your report and challenge progress.'
-                    : 'Off — the admin cannot see your data.'),
-                value: c.shareReport,
-                onChanged: (v) => _toggleConsent(context, ref, v),
+              ),
+            ] else ...[
+              const SizedBox(height: 12),
+              PastelCard(
+                tint: c.shareReport ? PastelTint.lime : PastelTint.white,
+                radius: 24,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                          color: AppColors.surfaceMuted,
+                          shape: BoxShape.circle),
+                      child: const Icon(PhosphorIconsRegular.heartbeat),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Share my fitness report',
+                              style: AppTextStyles.heading),
+                          Text(
+                            c.shareReport
+                                ? 'The admin can see your report and challenges.'
+                                : 'Off — the admin cannot see your data.',
+                            style: AppTextStyles.caption
+                                .copyWith(color: AppColors.ink),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Switch(
+                      value: c.shareReport,
+                      onChanged: (v) => _toggleConsent(context, ref, v),
+                    ),
+                  ],
+                ),
               ),
             ],
-            const Divider(),
+
+            // ── Members ────────────────────────────────────────────────────
+            const SizedBox(height: 20),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text('Members', style: theme.textTheme.titleSmall),
+              padding: const EdgeInsets.only(left: 4, bottom: 8),
+              child: Text('Members', style: AppTextStyles.heading),
             ),
             members.when(
               loading: () => const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(e.toString()),
-              ),
-              data: (list) => Column(
-                children: [
-                  for (final m in list)
-                    _MemberRow(
-                      member: m,
-                      isMe: m.userId == myId,
-                      viewerIsAdmin: c.isAdmin,
-                      onTap: c.isAdmin && m.role != 'admin' && m.status != 'pending'
-                          ? () => context.push(
-                              AppRoutes.communityMemberPath(communityId, m.userId))
-                          : null,
-                      onApprove: c.isAdmin && m.status == 'pending'
-                          ? () => ref
-                              .read(communityActionsProvider)
-                              .memberAction(communityId, m.userId, 'approve')
-                          : null,
-                    ),
-                ],
+              error: (e, _) => Text(e.toString()),
+              data: (list) => PastelCard(
+                radius: 24,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < list.length; i++) ...[
+                      _MemberRow(
+                        member: list[i],
+                        isMe: list[i].userId == myId,
+                        viewerIsAdmin: c.isAdmin,
+                        onTap: c.isAdmin &&
+                                list[i].role != 'admin' &&
+                                list[i].status != 'pending'
+                            ? () => context.push(AppRoutes.communityMemberPath(
+                                communityId, list[i].userId))
+                            : null,
+                        onApprove: c.isAdmin && list[i].status == 'pending'
+                            ? () => ref.read(communityActionsProvider).memberAction(
+                                communityId, list[i].userId, 'approve')
+                            : null,
+                      ),
+                      if (i < list.length - 1)
+                        const Divider(indent: 70, endIndent: 16),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const Divider(),
+
+            // ── Leave / report ─────────────────────────────────────────────
+            const SizedBox(height: 20),
             if (!c.isAdmin)
-              ListTile(
-                leading: Icon(Icons.logout_rounded, color: theme.colorScheme.error),
-                title: Text('Leave community',
-                    style: TextStyle(color: theme.colorScheme.error)),
+              _NavRow(
+                icon: PhosphorIconsRegular.signOut,
+                tint: PastelTint.salmon,
+                title: 'Leave community',
                 onTap: () => _leave(context, ref),
               ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: const Text('Report community'),
+            if (!c.isAdmin) const SizedBox(height: 10),
+            _NavRow(
+              icon: PhosphorIconsRegular.flag,
+              tint: PastelTint.grey,
+              title: 'Report community',
               onTap: () async {
                 try {
                   await ref
@@ -221,6 +286,43 @@ class CommunityInfoScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NavRow extends StatelessWidget {
+  const _NavRow({
+    required this.icon,
+    required this.tint,
+    required this.title,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final PastelTint tint;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PastelCard(
+      radius: 24,
+      onTap: onTap,
+      semanticLabel: title,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration:
+                BoxDecoration(color: tint.color, shape: BoxShape.circle),
+            child: Icon(icon, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(child: Text(title, style: AppTextStyles.heading)),
+          const Icon(PhosphorIconsRegular.caretRight, size: 18),
+        ],
       ),
     );
   }
@@ -249,21 +351,63 @@ class _MemberRow extends StatelessWidget {
       if (m.status == 'on_hold') 'On hold',
       if (m.status == 'left') 'Left',
       if (m.status == 'pending') 'Requested',
-      if (viewerIsAdmin && m.role != 'admin' && m.shareReport == true && m.status != 'left')
+      if (viewerIsAdmin &&
+          m.role != 'admin' &&
+          m.shareReport == true &&
+          m.status != 'left')
         'Sharing',
     ];
-    return ListTile(
+    return InkWell(
       onTap: onTap,
-      leading: CircleAvatar(
-        child: Text(m.name.isEmpty ? '?' : m.name[0].toUpperCase()),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.sky,
+                child: Text(
+                  m.name.isEmpty ? '?' : m.name[0].toUpperCase(),
+                  style: AppTextStyles.heading.copyWith(fontSize: 15),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(isMe ? '${m.name} (you)' : m.name,
+                        style: AppTextStyles.bodyStrong),
+                    if (badges.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [
+                            for (final b in badges)
+                              PastelChip(
+                                label: b,
+                                background: b == 'Sharing'
+                                    ? AppColors.lime
+                                    : AppColors.surfaceMuted,
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (onApprove != null)
+                FilledButton.tonal(
+                    onPressed: onApprove, child: const Text('Approve'))
+              else if (onTap != null)
+                const Icon(PhosphorIconsRegular.caretRight, size: 18),
+            ],
+          ),
+        ),
       ),
-      title: Text(isMe ? '${m.name} (you)' : m.name),
-      subtitle: badges.isEmpty ? null : Text(badges.join(' · ')),
-      trailing: onApprove != null
-          ? FilledButton.tonal(onPressed: onApprove, child: const Text('Approve'))
-          : onTap != null
-              ? const Icon(Icons.chevron_right_rounded)
-              : null,
     );
   }
 }

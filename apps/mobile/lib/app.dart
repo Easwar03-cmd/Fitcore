@@ -5,7 +5,6 @@ import 'core/services/consent_service.dart';
 import 'core/services/sync_queue_service.dart' show syncServiceProvider;
 import 'core/services/sync_status_provider.dart';
 import 'core/theme/app_theme.dart';
-import 'core/theme/theme_provider.dart';
 import 'router/app_router.dart';
 
 class ReviveApp extends ConsumerStatefulWidget {
@@ -39,15 +38,11 @@ class _ReviveAppState extends ConsumerState<ReviveApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
-final themeMode = ref.watch(effectiveThemeModeProvider);
     return MaterialApp.router(
       title: 'Revive',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
-      themeAnimationDuration: const Duration(milliseconds: 400),
-      themeAnimationCurve: Curves.easeInOut,
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }

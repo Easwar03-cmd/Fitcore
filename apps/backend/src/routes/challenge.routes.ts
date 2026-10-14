@@ -39,6 +39,14 @@ async function loadChallenge(reply: FastifyReply, cid: string, userId: string) {
     await fail(reply, 404, 'NOT_FOUND', 'Challenge not found');
     return null;
   }
+  // Community-less challenges are personal: visible to their creator only.
+  if (challenge.communityId === null) {
+    if (challenge.creatorId !== userId) {
+      await fail(reply, 404, 'NOT_FOUND', 'Challenge not found');
+      return null;
+    }
+    return { challenge, member: null };
+  }
   const member = await getMembership(challenge.communityId, userId);
   if (!canParticipate(member)) {
     await fail(reply, 403, 'NOT_A_MEMBER', 'You are not a member of this community');
@@ -68,6 +76,71 @@ function progress(
 
 export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.addHook('preHandler', authenticate);
+
+  // GET /community/personal-challenges — my community-less personal challenges
+  fastify.get('/personal-challenges', async (request, reply) => {
+    const userId = request.user.userId;
+    const rows = await prisma.challenge.findMany({
+      where: { communityId: null, creatorId: userId },
+      include: {
+        creator: { select: { id: true, name: true } },
+        _count: { select: { participants: true } },
+        participants: {
+          where: { userId },
+          include: { _count: { select: { checkins: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return reply.send({
+      success: true,
+      data: rows.map((c) => ({
+        id: c.id,
+        kind: c.kind,
+        title: c.title,
+        description: c.description,
+        totalDays: c.totalDays,
+        status: c.status,
+        creator: c.creator,
+        participantCount: c._count.participants,
+        createdAt: c.createdAt,
+        mine: progress(c.participants[0] ?? null, c.totalDays),
+      })),
+    });
+  });
+
+  // POST /community/personal-challenges — personal challenge, no community
+  fastify.post('/personal-challenges', async (request, reply) => {
+    const parsed = createSchema.omit({ kind: true }).safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const userId = request.user.userId;
+    const d = parsed.data;
+
+    const active = await prisma.challengeParticipant.count({
+      where: { userId, status: 'active', challenge: { communityId: null } },
+    });
+    if (active >= 20) {
+      return fail(reply, 409, 'LIMIT_REACHED', 'Finish or leave a challenge before starting another');
+    }
+    const challenge = await prisma.challenge.create({
+      data: {
+        communityId: null,
+        creatorId: userId,
+        kind: 'personal',
+        title: d.title,
+        description: d.description ?? '',
+        totalDays: d.totalDays,
+        participants: {
+          create: {
+            userId,
+            startDate: parseDateOnly(d.clientDate)!,
+            ...(d.notes?.trim() ? { dayNotes: { create: { dayNumber: 1, notes: d.notes } } } : {}),
+          },
+        },
+      },
+    });
+    return reply.status(201).send({ success: true, data: challenge });
+  });
 
   // GET /community/:id/challenges — group challenges + my personal ones
   fastify.get('/:id/challenges', async (request, reply) => {
@@ -112,6 +185,9 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     const { id } = idParam.parse(request.params);
     const parsed = createSchema.safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    if (parsed.data.kind !== 'group') {
+      return fail(reply, 400, 'USE_PERSONAL', 'Personal challenges are created without a community');
+    }
     const me = await requireMember(reply, id, request.user.userId);
     if (!me) return;
     const d = parsed.data;
@@ -135,7 +211,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           create: {
             userId: me.userId,
             startDate: parseDateOnly(d.clientDate)!,
-            notes: d.notes ?? '',
+            ...(d.notes?.trim() ? { dayNotes: { create: { dayNumber: 1, notes: d.notes } } } : {}),
           },
         },
       },
@@ -166,13 +242,16 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     const [mine, participants] = await Promise.all([
       prisma.challengeParticipant.findUnique({
         where: { challengeId_userId: { challengeId: cid, userId } },
-        include: { checkins: { select: { dayNumber: true, date: true }, orderBy: { dayNumber: 'asc' } } },
+        include: {
+          checkins: { select: { dayNumber: true, date: true }, orderBy: { dayNumber: 'asc' } },
+          dayNotes: { select: { dayNumber: true, notes: true }, orderBy: { dayNumber: 'asc' } },
+        },
       }),
       challenge.kind === 'group'
         ? prisma.challengeParticipant.findMany({
             where: { challengeId: cid },
             include: {
-              user: { select: { id: true, name: true, avatarUrl: true } },
+              user: { select: { id: true, name: true } },
               _count: { select: { checkins: true } },
             },
             orderBy: { startDate: 'asc' },
@@ -195,7 +274,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           ? {
               startDate: mine.startDate,
               status: mine.status,
-              notes: mine.notes,
+              dayNotes: mine.dayNotes.filter((n) => n.notes.trim() !== ''),
               checkins: mine.checkins,
               completedDays: mine.checkins.length,
             }
@@ -204,7 +283,6 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
         participants: participants.map((p) => ({
           userId: p.userId,
           name: p.user.name,
-          avatarUrl: p.user.avatarUrl,
           startDate: p.startDate,
           status: p.status,
           completedDays: p._count.checkins,
@@ -308,18 +386,45 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.send({ success: true, data: { removed: true } });
   });
 
-  // PATCH /community/challenges/:cid/notes  { notes }
+  // PATCH /community/challenges/:cid/notes/:day  { notes } — one day's sheet
+  fastify.patch('/challenges/:cid/notes/:day', async (request, reply) => {
+    const { cid, day } = dayParam.parse(request.params);
+    const parsed = z.object({ notes: z.string().max(20000) }).safeParse(request.body);
+    if (!parsed.success) return validationError(reply, parsed.error.flatten());
+    const userId = request.user.userId;
+    const ctx = await loadChallenge(reply, cid, userId);
+    if (!ctx) return;
+    if (day > ctx.challenge.totalDays) {
+      return fail(reply, 400, 'OUT_OF_RANGE', 'That day is outside this challenge');
+    }
+    const p = await prisma.challengeParticipant.findUnique({
+      where: { challengeId_userId: { challengeId: cid, userId } },
+    });
+    if (!p) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    await prisma.challengeDayNote.upsert({
+      where: { participantId_dayNumber: { participantId: p.id, dayNumber: day } },
+      create: { participantId: p.id, dayNumber: day, notes: parsed.data.notes },
+      update: { notes: parsed.data.notes },
+    });
+    return reply.send({ success: true, data: { saved: true } });
+  });
+
+  // PATCH /community/challenges/:cid/notes  { notes } — legacy: day 1 sheet
   fastify.patch('/challenges/:cid/notes', async (request, reply) => {
     const { cid } = cidParam.parse(request.params);
     const parsed = z.object({ notes: z.string().max(20000) }).safeParse(request.body);
     if (!parsed.success) return validationError(reply, parsed.error.flatten());
     const userId = request.user.userId;
     if (!(await loadChallenge(reply, cid, userId))) return;
-    const r = await prisma.challengeParticipant.updateMany({
-      where: { challengeId: cid, userId },
-      data: { notes: parsed.data.notes },
+    const p = await prisma.challengeParticipant.findUnique({
+      where: { challengeId_userId: { challengeId: cid, userId } },
     });
-    if (r.count === 0) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    if (!p) return fail(reply, 404, 'NOT_FOUND', 'Not participating');
+    await prisma.challengeDayNote.upsert({
+      where: { participantId_dayNumber: { participantId: p.id, dayNumber: 1 } },
+      create: { participantId: p.id, dayNumber: 1, notes: parsed.data.notes },
+      update: { notes: parsed.data.notes },
+    });
     return reply.send({ success: true, data: { saved: true } });
   });
 
@@ -333,14 +438,24 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
       const ctx = await loadChallenge(reply, cid, userId);
       if (!ctx) return;
       const { challenge, member } = ctx;
+      if (!member || challenge.communityId === null) {
+        return fail(reply, 400, 'NO_COMMUNITY', 'Personal challenges cannot be shared to a community');
+      }
       if (member.role !== 'admin' && !member.community.membersCanChat) {
         return fail(reply, 403, 'CHAT_DISABLED', 'Only the admin can post in this community');
       }
+      const body = z.object({ day: z.number().int().min(1).max(365).optional() }).safeParse(request.body ?? {});
       const p = await prisma.challengeParticipant.findUnique({
         where: { challengeId_userId: { challengeId: cid, userId } },
-        include: { _count: { select: { checkins: true } } },
+        include: {
+          _count: { select: { checkins: true } },
+          dayNotes: { orderBy: { dayNumber: 'desc' } },
+        },
       });
-      if (!p || p.notes.trim() === '') {
+      const sheet = p?.dayNotes.find(
+        (n) => n.notes.trim() !== '' && (!body.success || body.data.day === undefined || n.dayNumber === body.data.day),
+      );
+      if (!p || !sheet) {
         return fail(reply, 400, 'EMPTY', 'Your notepad is empty');
       }
       const msg = await prisma.communityMessage.create({
@@ -348,10 +463,11 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
           communityId: challenge.communityId,
           authorId: userId,
           kind: 'notepad_share',
-          body: p.notes.slice(0, 4000),
+          body: sheet.notes.slice(0, 4000),
           payload: {
             challengeId: cid,
             title: challenge.title,
+            day: sheet.dayNumber,
             completedDays: p._count.checkins,
             totalDays: challenge.totalDays,
           },
@@ -367,7 +483,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     const userId = request.user.userId;
     const ctx = await loadChallenge(reply, cid, userId);
     if (!ctx) return;
-    if (ctx.challenge.creatorId !== userId && ctx.member.role !== 'admin') {
+    if (ctx.challenge.creatorId !== userId && ctx.member?.role !== 'admin') {
       return fail(reply, 403, 'FORBIDDEN', 'Only the creator or admin can close this');
     }
     await prisma.challenge.update({ where: { id: cid }, data: { status: 'closed' } });
@@ -380,7 +496,7 @@ export const challengeRoutes: FastifyPluginAsync = async (fastify) => {
     const userId = request.user.userId;
     const ctx = await loadChallenge(reply, cid, userId);
     if (!ctx) return;
-    if (ctx.challenge.creatorId !== userId && ctx.member.role !== 'admin') {
+    if (ctx.challenge.creatorId !== userId && ctx.member?.role !== 'admin') {
       return fail(reply, 403, 'FORBIDDEN', 'Only the creator or admin can delete this');
     }
     await prisma.challenge.delete({ where: { id: cid } });

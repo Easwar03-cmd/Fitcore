@@ -221,7 +221,7 @@ model CommunityMessage {
 
 model Challenge {
   id          String   @id @default(cuid())
-  communityId String
+  communityId String?  // null = personal challenge, owned by the user alone
   creatorId   String
   kind        String   // personal | group
   title       String
@@ -230,7 +230,7 @@ model Challenge {
   status      String   @default("open") // open | closed
   createdAt   DateTime @default(now())
 
-  community    Community              @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  community    Community?             @relation(fields: [communityId], references: [id], onDelete: Cascade)
   creator      User                   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   participants ChallengeParticipant[]
 
@@ -249,9 +249,23 @@ model ChallengeParticipant {
   challenge Challenge          @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   checkins  ChallengeCheckin[]
+  dayNotes  ChallengeDayNote[]
 
   @@unique([challengeId, userId])
   @@index([userId])
+}
+
+// One notepad sheet per challenge day, per participant (private to its owner).
+model ChallengeDayNote {
+  id            String   @id @default(cuid())
+  participantId String
+  dayNumber     Int
+  notes         String   @default("")
+  updatedAt     DateTime @updatedAt
+
+  participant ChallengeParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, dayNumber])
 }
 
 model ChallengeCheckin {

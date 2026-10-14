@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -15,11 +15,15 @@ class CalorieRing extends StatefulWidget {
     required this.consumed,
     required this.target,
     this.size = 200,
+    this.trackColor,
+    this.strokeWidth = 14,
   });
 
   final double consumed;
   final int target;
   final double size;
+  final Color? trackColor;
+  final double strokeWidth;
 
   @override
   State<CalorieRing> createState() => _CalorieRingState();
@@ -84,7 +88,9 @@ class _CalorieRingState extends State<CalorieRing>
           painter: _RingPainter(
             progress: _progressAnim.value,
             isOver: isOver,
-            trackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            trackColor: widget.trackColor ??
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+            strokeWidth: widget.strokeWidth,
           ),
           child: Center(
             child: Column(
@@ -92,34 +98,19 @@ class _CalorieRingState extends State<CalorieRing>
               children: [
                 Text(
                   widget.consumed.toInt().toString(),
-                  style: AppTextStyles.displayMedium.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AppTextStyles.metricL.copyWith(fontWeight: FontWeight.w700),
                 ),
                 Text(
                   'kcal eaten',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.ink),
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color:
-                        (isOver ? AppColors.error : AppColors.primary)
-                            .withAlpha(38),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    isOver
-                        ? '${(widget.consumed - widget.target).toInt()} over'
-                        : '${remaining.toInt()} left',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: isOver ? AppColors.error : AppColors.primary,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  isOver
+                      ? '${(widget.consumed - widget.target).toInt()} over'
+                      : '${remaining.toInt()} left',
+                  style: AppTextStyles.micro.copyWith(
+                    color: isOver ? AppColors.coralText : AppColors.ink,
                   ),
                 ),
               ],
@@ -136,13 +127,15 @@ class _RingPainter extends CustomPainter {
     required this.progress,
     required this.isOver,
     required this.trackColor,
+    required this.strokeWidth,
   });
 
   final double progress;
   final bool isOver;
   final Color trackColor;
+  final double strokeWidth;
 
-  static const double _strokeWidth = 16.0;
+  double get _strokeWidth => strokeWidth;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -169,7 +162,7 @@ class _RingPainter extends CustomPainter {
       2 * pi * progress.clamp(0.0, 1.0),
       false,
       Paint()
-        ..color = isOver ? AppColors.error : AppColors.primary
+        ..color = isOver ? AppColors.coral : AppColors.ink
         ..strokeWidth = _strokeWidth
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round,
@@ -178,5 +171,8 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.progress != progress || old.isOver != isOver || old.trackColor != trackColor;
+      old.progress != progress ||
+      old.isOver != isOver ||
+      old.trackColor != trackColor ||
+      old.strokeWidth != strokeWidth;
 }

@@ -355,6 +355,7 @@ Update this table as features are completed. Use: `[ ]` todo, `[~]` in progress,
 - [x] Food search + logging (Open Food Facts API + USDA + multi-cuisine local database) — three parallel searches; local results surface first; ~280-item multi-cuisine database in `assets/data/local_foods.json` (Indian, American, Italian, Chinese, fruits, vegetables, proteins, beverages, nuts, snacks); USDA name normalizer cleans "Egg, boiled" → "Boiled Egg" style; `isLiquid` flag on FoodItem drives ml unit + 250ml default in log sheet; serving-chip quick-select shown for any food with commonServings (not just Indian); delete option on logged foods: × button on collapsed chips + trash icon on expanded rows; NutritionScreen meal sections redesigned as tappable `MealCard` widgets (emoji + kcal header + `+` button; empty placeholder; collapsed horizontal `FoodChip` scroll + "See all" toggle; expanded full list with swipe-to-delete; flutter_animate entry animations; `mealType` passed via GoRouter `extra` to pre-select meal in `LogFoodSheet`)
 - [x] Barcode scanner
 - [x] Macro/calorie dashboard for the day
+- [x] Wearables & health — Bluetooth LE heart-rate connection (standard HR profile, `flutter_blue_plus`), Health Connect / Apple Health sleep + HR + HRV + rest score (read on-device, never uploaded); live BPM shown in active workout; Rest card on Progress
 - [x] Basic workout logger (exercise picker, set/rep/weight input)
 - [x] Rest timer
 - [x] Workout history list

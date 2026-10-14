@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +6,7 @@ import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_button.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_widgets.dart';
 
 class ActivityLevelScreen extends ConsumerStatefulWidget {
   const ActivityLevelScreen({super.key});
@@ -57,40 +58,34 @@ class _ActivityLevelScreenState extends ConsumerState<ActivityLevelScreen> {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _StepIndicator(current: 3, total: 3),
-              const SizedBox(height: 32),
-              Text(
-                'How active are you?',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+              const OnboardingStepBar(current: 3, total: 3),
+              const SizedBox(height: 20),
+              const OnboardingHeader(
+                title: 'How active are you?',
+                subtitle:
+                    'Your activity level determines your daily calorie needs.',
+                imageName: 'obj_dumbbell.png',
+                fallbackIcon: Icons.fitness_center_rounded,
+                tint: PastelTint.butter,
               ),
-              const SizedBox(height: 8),
-              Text(
-                "Your activity level determines your daily calorie needs.",
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               if (_errorMessage != null) ...[
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withAlpha(30),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.error.withAlpha(80)),
+                    color: AppColors.salmon,
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     _errorMessage!,
                     style: Theme.of(context)
                         .textTheme
                         .bodySmall
-                        ?.copyWith(color: AppColors.error),
+                        ?.copyWith(color: AppColors.ink),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -102,9 +97,11 @@ class _ActivityLevelScreenState extends ConsumerState<ActivityLevelScreen> {
                   itemBuilder: (context, i) {
                     final level = _levels[i];
                     final isSelected = _selected == level.value;
-                    return _LevelCard(
-                      option: level,
-                      isSelected: isSelected,
+                    return OnboardingOptionCard(
+                      icon: level.icon,
+                      label: level.label,
+                      description: level.description,
+                      selected: isSelected,
                       onTap: _isLoading
                           ? null
                           : () => setState(() => _selected = level.value),
@@ -147,107 +144,6 @@ class _ActivityLevelScreenState extends ConsumerState<ActivityLevelScreen> {
         });
       }
     }
-  }
-}
-
-// ─── Sub-widgets ──────────────────────────────────────────────────────────────
-
-class _LevelCard extends StatelessWidget {
-  const _LevelCard({
-    required this.option,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final _LevelOption option;
-  final bool isSelected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(30) : Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withAlpha(50)
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                option.icon,
-                color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                size: 22,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    option.label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface,
-                        ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    option.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.current, required this.total});
-  final int current;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(total, (i) {
-        final active = i + 1 <= current;
-        return Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.only(right: i < total - 1 ? 6 : 0),
-            decoration: BoxDecoration(
-              color: active ? AppColors.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-        );
-      }),
-    );
   }
 }
 

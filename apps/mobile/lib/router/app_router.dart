@@ -20,7 +20,7 @@ import '../features/progress/screens/body_log_screen.dart';
 import '../features/progress/screens/progress_screen.dart';
 import '../features/settings/screens/notification_preferences_screen.dart';
 import '../features/settings/screens/profile_screen.dart';
-import '../features/settings/screens/wearable_integrations_screen.dart';
+import '../features/wearables/screens/wearables_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/subscription/screens/subscription_screen.dart';
 import '../features/community/screens/community_screen.dart';
@@ -35,6 +35,7 @@ import '../features/community/screens/create_community_screen.dart';
 import '../features/community/screens/join_preview_screen.dart';
 import '../features/community/screens/member_report_screen.dart';
 import '../features/community/screens/todo_screen.dart';
+import '../features/workout/models/exercise.dart' show MuscleGroup;
 import '../features/workout/screens/active_workout_screen.dart';
 import '../features/workout/screens/exercise_picker_screen.dart';
 import '../features/workout/screens/gym_workout_screen.dart';
@@ -140,7 +141,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'exercises',
                 name: 'exercise-picker',
-                builder: (context, state) => const ExercisePickerScreen(),
+                builder: (context, state) => ExercisePickerScreen(
+                  initialGroup:
+                      state.extra is MuscleGroup ? state.extra as MuscleGroup : null,
+                ),
               ),
               GoRoute(
                 path: 'active',
@@ -209,6 +213,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TodoScreen(),
       ),
       GoRoute(
+        path: AppRoutes.communityChallenges,
+        name: 'community-challenges',
+        builder: (context, state) => const ChallengesScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.communityNewChallenge,
+        name: 'community-new-challenge',
+        builder: (context, state) => const CreateChallengeScreen(),
+      ),
+      GoRoute(
+        path: '/community/challenges/:cid',
+        name: 'personal-challenge',
+        builder: (context, state) => ChallengeDetailScreen(
+          communityId: null,
+          challengeId: state.pathParameters['cid']!,
+        ),
+      ),
+      GoRoute(
         path: '/community/join/:code',
         name: 'community-join',
         builder: (context, state) =>
@@ -238,18 +260,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: 'challenges',
-            builder: (context, state) =>
-                ChallengesScreen(communityId: state.pathParameters['id']!),
-            routes: [
-              GoRoute(
-                path: 'new',
-                builder: (context, state) => CreateChallengeScreen(
-                    communityId: state.pathParameters['id']!),
-              ),
-            ],
-          ),
-          GoRoute(
             path: 'challenge/:cid',
             builder: (context, state) => ChallengeDetailScreen(
               communityId: state.pathParameters['id']!,
@@ -273,7 +283,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'wearables',
             name: 'wearable-integrations',
-            builder: (context, state) => const WearableIntegrationsScreen(),
+            builder: (context, state) => const WearablesScreen(),
           ),
           GoRoute(
             path: 'subscription',

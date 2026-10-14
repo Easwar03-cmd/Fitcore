@@ -1,3 +1,6 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/widgets/circle_icon_button.dart';
+import '../../../core/widgets/page_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -58,13 +61,17 @@ class _BarcodeScreenState extends ConsumerState<BarcodeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
+      extendBodyBehindAppBar: true,
+      appBar: PageAppBar(
+        title: 'Scan Barcode',
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
-        title: const Text('Scan Barcode'),
         actions: [
-          IconButton(
-            icon: Icon(_torchOn ? Icons.flashlight_on : Icons.flashlight_off),
+          CircleIconButton(
+            icon: _torchOn
+                ? PhosphorIconsFill.flashlight
+                : PhosphorIconsRegular.flashlight,
+            semanticLabel: _torchOn ? 'Turn torch off' : 'Turn torch on',
+            selected: _torchOn,
             onPressed: _toggleTorch,
           ),
         ],

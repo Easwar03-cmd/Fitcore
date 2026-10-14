@@ -67,8 +67,12 @@
 	<string>Revive uses the camera to scan food barcodes, analyse meals from photos, and monitor your exercise form in real time.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Revive can read a photo from your library to log a meal by analysing its contents.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Revive connects to your smartwatch or heart-rate band over Bluetooth to show your live heart rate.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Revive connects to your smartwatch or heart-rate band over Bluetooth to show your live heart rate.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Revive reads your daily steps from Apple Health to personalise your fitness dashboard.</string>
+	<string>Revive reads your steps, heart rate, resting heart rate, heart-rate variability and sleep from Apple Health to show your rest and recovery.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Revive writes your workout energy expenditure to Apple Health so all your activity stays in sync.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -1,9 +1,14 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../providers/community_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 /// Admin-only settings for a community.
 class CommunityAdminScreen extends ConsumerStatefulWidget {
@@ -136,15 +141,18 @@ class _CommunityAdminScreenState extends ConsumerState<CommunityAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(communityDetailProvider(widget.communityId));
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin settings')),
+      appBar: const PageAppBar(title: 'Admin settings'),
       body: detail.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
         data: (c) => ListView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
           children: [
+            PastelCard(
+              radius: 24,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: const Text('Name & description'),
@@ -184,13 +192,18 @@ class _CommunityAdminScreenState extends ConsumerState<CommunityAdminScreen> {
               subtitle: Text(c.inviteCode ?? ''),
               onTap: _regenerate,
             ),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.delete_forever_outlined,
-                  color: theme.colorScheme.error),
-              title: Text('Delete community',
-                  style: TextStyle(color: theme.colorScheme.error)),
-              onTap: _delete,
+              ]),
+            ),
+            const SizedBox(height: 12),
+            PastelCard(
+              tint: PastelTint.salmon,
+              radius: 24,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: ListTile(
+                leading: const Icon(PhosphorIconsRegular.trash),
+                title: Text('Delete community', style: AppTextStyles.heading),
+                onTap: _delete,
+              ),
             ),
           ],
         ),

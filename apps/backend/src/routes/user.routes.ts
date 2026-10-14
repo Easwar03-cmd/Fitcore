@@ -50,6 +50,18 @@ const createProfileSchema = z.object({
   gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']),
 });
 
+const updateMeSchema = z
+  .object({
+    name: z.string().trim().min(1).max(60).optional(),
+    avatar: z
+      .string()
+      .max(150_000)
+      .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/)
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => v.name !== undefined || v.avatar !== undefined, 'Nothing to update');
+
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 export const userRoutes: FastifyPluginAsync = async (fastify) => {
@@ -94,6 +106,33 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
         error: { code: 'UNAUTHORIZED', message: 'Not authenticated' },
       });
     }
+  });
+
+  // PATCH /api/v1/user/me  { name?, avatar? }
+  // `avatar` is a small (client-resized) image as a data URI, or null to remove.
+  fastify.patch('/me', async (request, reply) => {
+    if (!(await requireAuth(request, reply))) return reply;
+    const parsed = updateMeSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request body',
+          details: parsed.error.flatten(),
+        },
+      });
+    }
+    const { name, avatar } = parsed.data;
+    const user = await prisma.user.update({
+      where: { id: request.user.userId },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(avatar !== undefined ? { avatarUrl: avatar } : {}),
+      },
+      include: { profile: true },
+    });
+    return reply.send({ success: true, data: { user: toUserDto(user) } });
   });
 
   // POST /api/v1/user/profile

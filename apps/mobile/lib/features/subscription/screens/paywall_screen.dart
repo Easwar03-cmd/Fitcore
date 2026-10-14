@@ -1,3 +1,8 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/pastel_card.dart';
+import '../../../core/widgets/pastel_chip.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -11,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/iap_service.dart';
 import '../../../core/utils/regional_pricing.dart';
 import '../providers/subscription_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key, this.highlightFeature});
@@ -233,7 +239,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         ref.watch(subscriptionProvider).valueOrNull?.tier ?? 'free';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Upgrade Revive')),
+      appBar: const PageAppBar(title: 'Upgrade Revive'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         child: Column(
@@ -246,22 +252,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
             // IAP load error banner (Android only)
             if (Platform.isAndroid && _iapError != null) ...[
-              Container(
+              PastelCard(
+                tint: PastelTint.salmon,
+                radius: 20,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: cs.errorContainer,
-                  borderRadius: BorderRadius.circular(10),
-                ),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_rounded,
-                        color: cs.onErrorContainer, size: 18),
+                    const Icon(PhosphorIconsRegular.warning, size: 18),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(_iapError!,
-                          style: TextStyle(color: cs.onErrorContainer)),
-                    ),
+                    Expanded(child: Text(_iapError!)),
                     TextButton(
                       onPressed: () {
                         setState(() {
@@ -278,15 +278,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               const SizedBox(height: 16),
             ],
 
-            Text(
-              'Choose your plan',
-              style: tt.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+            Semantics(
+              header: true,
+              child: Text('Choose your plan', style: AppTextStyles.display),
             ).animate().fadeIn(duration: 300.ms),
             const SizedBox(height: 4),
             Text(
               'Unlock the full Revive experience',
-              style: tt.bodyMedium
-                  ?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+              style: AppTextStyles.body.copyWith(color: AppColors.inkMuted),
             ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
             const SizedBox(height: 24),
 
@@ -294,8 +293,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             _TierCard(
               tier: 'Free',
               price: '\$0',
-              color: cs.surfaceContainerHighest,
-              labelColor: cs.onSurface,
+              color: AppColors.surfaceMuted,
               isCurrent: currentTier == 'free',
               features: const [
                 _Feature('Calorie & macro tracking', true),
@@ -317,8 +315,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               tier: 'Pro',
               price: _priceFor(kIapProductPro),
               period: '/mo',
-              color: const Color(0xFF6C63FF),
-              labelColor: Colors.white,
+              color: AppColors.sky,
               badge: 'Most popular',
               isCurrent: currentTier == 'pro',
               features: const [
@@ -355,8 +352,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
               tier: 'Coach',
               price: _priceFor(kIapProductCoach),
               period: '/mo',
-              color: const Color(0xFFFF6B35),
-              labelColor: Colors.white,
+              color: AppColors.butter,
               isCurrent: currentTier == 'coach',
               features: const [
                 _Feature('Everything in Pro', true),
@@ -415,23 +411,23 @@ class _LockedBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: cs.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return PastelCard(
+      tint: PastelTint.butter,
+      radius: 24,
+      semanticLabel: '$feature requires a paid plan.',
       child: Row(
         children: [
-          Icon(Icons.lock_rounded, color: cs.primary, size: 20),
-          const SizedBox(width: 10),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+                color: Colors.white, shape: BoxShape.circle),
+            child: const Icon(PhosphorIconsRegular.lock, size: 20),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              '$feature requires a paid plan.',
-              style: TextStyle(
-                  color: cs.onPrimaryContainer, fontWeight: FontWeight.w600),
-            ),
+            child: Text('$feature requires a paid plan.',
+                style: AppTextStyles.bodyStrong),
           ),
         ],
       ),
@@ -454,7 +450,6 @@ class _TierCard extends StatelessWidget {
     required this.tier,
     required this.price,
     required this.color,
-    required this.labelColor,
     required this.features,
     this.period,
     this.badge,
@@ -466,8 +461,9 @@ class _TierCard extends StatelessWidget {
   final String tier;
   final String price;
   final String? period;
+
+  /// Pastel tint of the whole card.
   final Color color;
-  final Color labelColor;
   final String? badge;
   final List<_Feature> features;
   final Widget? cta;
@@ -476,132 +472,100 @@ class _TierCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(14)),
-            ),
-            child: Row(
+    return Semantics(
+      container: true,
+      label: '$tier plan, $price${period ?? ''}${isCurrent ? ', current plan' : ''}',
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  tier,
-                  style: tt.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800, color: color),
-                ),
+                Text(tier, style: AppTextStyles.title.copyWith(fontSize: 24)),
                 if (badge != null) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      badge!,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700),
-                    ),
-                  ),
+                  const SizedBox(width: 10),
+                  PastelChip(label: badge!, filled: true),
                 ],
                 const Spacer(),
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: price,
-                        style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800, color: color),
-                      ),
-                      if (period != null && price != '...')
-                        TextSpan(
-                          text: period,
-                          style: tt.bodySmall?.copyWith(
-                              color: cs.onSurface.withValues(alpha: 0.5)),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              children: [
-                for (final f in features)
+                Text(price, style: AppTextStyles.metricL),
+                if (period != null && price != '...')
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          f.included
-                              ? Icons.check_circle_rounded
-                              : Icons.cancel_rounded,
-                          size: 18,
-                          color: f.included
-                              ? color
-                              : cs.onSurface.withValues(alpha: 0.25),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          f.label,
-                          style: tt.bodyMedium?.copyWith(
-                            color: f.included
-                                ? cs.onSurface
-                                : cs.onSurface.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ],
-                    ),
+                    padding: const EdgeInsets.only(left: 2, bottom: 2),
+                    child: Text(period!, style: AppTextStyles.caption
+                        .copyWith(color: AppColors.ink)),
                   ),
-                if (cta != null) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: color,
-                        foregroundColor: labelColor,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: onTap,
-                      child: cta,
-                    ),
-                  ),
-                ],
-                if (isCurrent) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Your current plan',
-                    style: tt.bodySmall?.copyWith(
-                        color: cs.onSurface.withValues(alpha: 0.5)),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  for (final f in features)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: f.included
+                                  ? AppColors.lime
+                                  : AppColors.surfaceMuted,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              f.included
+                                  ? PhosphorIconsBold.check
+                                  : PhosphorIconsBold.x,
+                              size: 12,
+                              color: f.included
+                                  ? AppColors.ink
+                                  : AppColors.inkMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              f.label,
+                              style: AppTextStyles.body.copyWith(
+                                color: f.included
+                                    ? AppColors.ink
+                                    : AppColors.inkMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (cta != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(onPressed: onTap, child: cta),
+            ],
+            if (isCurrent) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Your current plan',
+                style: AppTextStyles.caption.copyWith(color: AppColors.ink),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

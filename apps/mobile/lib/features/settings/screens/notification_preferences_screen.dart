@@ -1,9 +1,14 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-import '../../../core/services/notification_service.dart';
+import '../../../core/services/reminder_kind.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
 import '../providers/notification_preferences_provider.dart';
+import '../widgets/quick_set_card.dart';
 
 class NotificationPreferencesScreen extends ConsumerWidget {
   const NotificationPreferencesScreen({super.key});
@@ -13,7 +18,7 @@ class NotificationPreferencesScreen extends ConsumerWidget {
     final prefsAsync = ref.watch(notificationPreferencesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: const PageAppBar(title: 'Notifications'),
       body: prefsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -23,193 +28,120 @@ class NotificationPreferencesScreen extends ConsumerWidget {
   }
 }
 
-// ─── Body ─────────────────────────────────────────────────────────────────────
+const _icons = {
+  ReminderKind.workout: PhosphorIconsRegular.barbell,
+  ReminderKind.breakfast: PhosphorIconsRegular.coffee,
+  ReminderKind.lunch: PhosphorIconsRegular.bowlFood,
+  ReminderKind.dinner: PhosphorIconsRegular.forkKnife,
+  ReminderKind.streak: PhosphorIconsRegular.flame,
+};
 
 class _PrefsBody extends ConsumerWidget {
   const _PrefsBody({required this.prefs});
   final NotificationPreferences prefs;
 
+  Future<void> _save(WidgetRef ref, NotificationPreferences p) =>
+      ref.read(notificationPreferencesProvider.notifier).save(p);
+
+  Future<TimeOfDay?> _pick(BuildContext context, int hour, int minute) =>
+      showTimePicker(
+        context: context,
+        initialTime: TimeOfDay(hour: hour, minute: minute),
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
-        const _SectionHeader('Workout Reminders'),
-        SwitchListTile(
-          secondary: const Icon(Icons.fitness_center_rounded),
-          title: const Text('Daily workout reminder'),
-          subtitle: const Text('Reminds you to work out each day'),
-          value: prefs.workoutReminderEnabled,
-          onChanged: (val) => _update(
+        // ── Quick set: choose a reminder, then its time ────────────────────
+        QuickSetCard(
+          prefs: prefs,
+          onSet: (k, hour, minute) => _save(
             ref,
-            prefs.copyWith(workoutReminderEnabled: val),
-          ),
-        ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 200),
-          crossFadeState: prefs.workoutReminderEnabled
-              ? CrossFadeState.showFirst
-              : CrossFadeState.showSecond,
-          firstChild: _TimePickerTile(
-            label: 'Reminder time',
-            hour: prefs.workoutReminderHour,
-            minute: prefs.workoutReminderMinute,
-            onPicked: (hour, minute) => _update(
-              ref,
-              prefs.copyWith(
-                workoutReminderHour: hour,
-                workoutReminderMinute: minute,
-              ),
+            prefs.withSetting(
+              k,
+              prefs.of(k).copyWith(enabled: true, hour: hour, minute: minute),
             ),
           ),
-          secondChild: const SizedBox.shrink(),
+          onToggleAll: (v) =>
+              _save(ref, prefs.mapAll((r) => r.copyWith(enabled: v))),
         ),
-        const Divider(height: 1),
-        const _SectionHeader('Nutrition Reminders'),
-        SwitchListTile(
-          secondary: const Icon(Icons.free_breakfast_rounded),
-          title: const Text('Breakfast reminder'),
-          subtitle: const Text('Daily at 8:00 AM — log your breakfast'),
-          value: prefs.breakfastReminderEnabled,
-          onChanged: (val) => _update(
-            ref,
-            prefs.copyWith(breakfastReminderEnabled: val),
+        const SizedBox(height: 16),
+
+        // ── One row per reminder, each with its own time ───────────────────
+        PastelCard(
+          radius: 24,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            children: [
+              for (final k in ReminderKind.values)
+                _ReminderTile(
+                  kind: k,
+                  setting: prefs.of(k),
+                  onToggle: (v) => _save(
+                    ref,
+                    prefs.withSetting(k, prefs.of(k).copyWith(enabled: v)),
+                  ),
+                  onPickTime: () async {
+                    final s = prefs.of(k);
+                    final t = await _pick(context, s.hour, s.minute);
+                    if (t == null) return;
+                    await _save(
+                      ref,
+                      prefs.withSetting(
+                          k, s.copyWith(hour: t.hour, minute: t.minute)),
+                    );
+                  },
+                ),
+            ],
           ),
         ),
-        SwitchListTile(
-          secondary: const Icon(Icons.lunch_dining_rounded),
-          title: const Text('Lunch reminder'),
-          subtitle: const Text('Daily at 1:00 PM — log your lunch'),
-          value: prefs.lunchReminderEnabled,
-          onChanged: (val) => _update(
-            ref,
-            prefs.copyWith(lunchReminderEnabled: val),
-          ),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.restaurant_menu_rounded),
-          title: const Text('Dinner log reminder'),
-          subtitle: const Text('Fires at 8 pm if no dinner is logged'),
-          value: prefs.foodLogReminderEnabled,
-          onChanged: (val) => _update(
-            ref,
-            prefs.copyWith(foodLogReminderEnabled: val),
-          ),
-        ),
-        const Divider(height: 1),
-        const _SectionHeader('Streak & Motivation'),
-        SwitchListTile(
-          secondary: const Icon(Icons.local_fire_department_rounded,
-              color: AppColors.warning),
-          title: const Text('Streak at-risk warning'),
-          subtitle: const Text('Fires at 9 pm if your streak would break tonight'),
-          value: prefs.streakWarningEnabled,
-          onChanged: (val) => _update(
-            ref,
-            prefs.copyWith(streakWarningEnabled: val),
-          ),
-        ),
-        const Divider(height: 1),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Text(
             'Weekly summary push notifications are sent every Sunday at 6 pm '
             'and cannot be disabled here — use your device settings to silence them.',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: AppTextStyles.caption,
           ),
         ),
       ],
     );
   }
-
-  Future<void> _update(WidgetRef ref, NotificationPreferences updated) async {
-    await ref.read(notificationPreferencesProvider.notifier).save(updated);
-    // Re-apply schedules whenever a preference changes
-    await _applySchedules(updated);
-  }
-
-  Future<void> _applySchedules(NotificationPreferences p) async {
-    final svc = NotificationService.instance;
-    await Future.wait([
-      svc.scheduleWorkoutReminder(
-        enabled: p.workoutReminderEnabled,
-        hour: p.workoutReminderHour,
-        minute: p.workoutReminderMinute,
-      ),
-      svc.scheduleBreakfastReminder(enabled: p.breakfastReminderEnabled),
-      svc.scheduleLunchReminder(enabled: p.lunchReminderEnabled),
-      svc.scheduleFoodLogReminder(enabled: p.foodLogReminderEnabled),
-      svc.scheduleStreakWarning(enabled: p.streakWarningEnabled),
-    ]);
-  }
 }
 
-// ─── Sub-widgets ──────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-      child: Text(
-        text.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              letterSpacing: 1.2,
-            ),
-      ),
-    );
-  }
-}
-
-class _TimePickerTile extends StatelessWidget {
-  const _TimePickerTile({
-    required this.label,
-    required this.hour,
-    required this.minute,
-    required this.onPicked,
+class _ReminderTile extends StatelessWidget {
+  const _ReminderTile({
+    required this.kind,
+    required this.setting,
+    required this.onToggle,
+    required this.onPickTime,
   });
 
-  final String label;
-  final int hour;
-  final int minute;
-  final void Function(int hour, int minute) onPicked;
-
-  String _formatted() {
-    final h = hour % 12 == 0 ? 12 : hour % 12;
-    final m = minute.toString().padLeft(2, '0');
-    final period = hour < 12 ? 'AM' : 'PM';
-    return '$h:$m $period';
-  }
+  final ReminderKind kind;
+  final ReminderSetting setting;
+  final ValueChanged<bool> onToggle;
+  final VoidCallback onPickTime;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.only(left: 72, right: 16),
-      title: Text(label),
-      trailing: TextButton(
-        onPressed: () async {
-          final picked = await showTimePicker(
-            context: context,
-            initialTime: TimeOfDay(hour: hour, minute: minute),
-          );
-          if (picked != null) {
-            onPicked(picked.hour, picked.minute);
-          }
-        },
-        child: Text(
-          _formatted(),
-          style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
+      leading: Icon(_icons[kind], color: AppColors.ink),
+      title: Text('${kind.label} reminder', style: AppTextStyles.bodyStrong),
+      subtitle: Text(kind.description, style: AppTextStyles.caption),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: setting.enabled ? onPickTime : null,
+            child: Text(
+              formatTime(setting.hour, setting.minute),
+              style: AppTextStyles.bodyStrong,
+            ),
           ),
-        ),
+          Switch(value: setting.enabled, onChanged: onToggle),
+        ],
       ),
     );
   }

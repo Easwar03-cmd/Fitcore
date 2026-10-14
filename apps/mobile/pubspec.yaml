@@ -1,7 +1,7 @@
 name: revive
 description: Revive — cross-platform fitness app (iOS + Android)
 publish_to: 'none'
-version: 1.1.0+9
+version: 1.2.0+10
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -57,6 +57,12 @@ dependencies:
   flutter_local_notifications: ^17.2.4
   timezone: ^0.9.4
   flutter_timezone: ^5.0.0
+
+  # Bluetooth LE — live heart rate from any watch/band exposing the standard HR profile
+  flutter_blue_plus: ^1.35.0
+
+  # Icons (Phosphor Regular — design.md §3.5)
+  phosphor_flutter: ^2.1.0
 
   # Logging
   logger: ^2.4.0
@@ -119,7 +125,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/zenfit_icon.png"
+  image_path: "assets/icons/revive_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "assets/icons/adaptive_background.png"
   adaptive_icon_foreground: "assets/icons/adaptive_foreground.png"
@@ -127,8 +133,13 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-VariableFont_wght.ttf
   assets:
     - .env
     - .env.production
     - assets/data/
     - assets/icons/
+    - assets/images/

@@ -1,11 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/theme_provider.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/page_app_bar.dart';
+import '../../../core/widgets/pastel_card.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../widgets/profile_header.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -16,35 +20,34 @@ class ProfileScreen extends ConsumerWidget {
     final user = authAsync.valueOrNull?.user;
     final isLoading = authAsync.isLoading;
 
-    final initial = user != null && user.name.isNotEmpty
-        ? user.name[0].toUpperCase()
-        : '?';
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: const PageAppBar(title: 'Profile'),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
         children: [
           // ── Avatar header ─────────────────────────────────────────────
-          _AvatarHeader(initial: initial, user: user),
-          const SizedBox(height: 28),
-
-          // ── Appearance group ──────────────────────────────────────────
-          const _GroupLabel('Appearance'),
-          const _ThemeToggleCard(),
-          const SizedBox(height: 20),
+          ProfileHeader(user: user),
+          const SizedBox(height: 24),
 
           // ── Settings group ────────────────────────────────────────────
           const _GroupLabel('Settings'),
           _SettingsCard(
             items: [
               _TileData(
-                icon: Icons.notifications_rounded,
+                icon: PhosphorIconsRegular.bell,
+                tint: PastelTint.sky,
                 label: 'Notifications',
                 onTap: () => context.push(AppRoutes.notificationPrefs),
               ),
               _TileData(
-                icon: Icons.workspace_premium_rounded,
+                icon: PhosphorIconsRegular.watch,
+                tint: PastelTint.lime,
+                label: 'Wearables & health',
+                onTap: () => context.push(AppRoutes.wearableIntegrations),
+              ),
+              _TileData(
+                icon: PhosphorIconsRegular.crown,
+                tint: PastelTint.butter,
                 label: 'Subscription',
                 onTap: () => context.push(AppRoutes.subscription),
               ),
@@ -57,15 +60,15 @@ class ProfileScreen extends ConsumerWidget {
           _SettingsCard(
             items: [
               _TileData(
-                icon: Icons.logout_rounded,
+                icon: PhosphorIconsRegular.signOut,
+                tint: PastelTint.grey,
                 label: 'Log Out',
-                color: AppColors.error,
                 onTap: isLoading ? null : () => _confirmLogout(context, ref),
               ),
               _TileData(
-                icon: Icons.delete_forever_rounded,
+                icon: PhosphorIconsRegular.trash,
+                tint: PastelTint.salmon,
                 label: 'Delete Account',
-                color: AppColors.error,
                 onTap: isLoading ? null : () => _confirmDelete(context, ref),
               ),
             ],
@@ -111,54 +114,10 @@ class ProfileScreen extends ConsumerWidget {
               ref.read(authProvider.notifier).logout();
             },
             child: const Text('Log Out',
-                style: TextStyle(color: AppColors.error)),
+                style: TextStyle(color: AppColors.coralText)),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Avatar header ─────────────────────────────────────────────────────────────
-
-class _AvatarHeader extends StatelessWidget {
-  const _AvatarHeader({required this.initial, required this.user});
-
-  final String initial;
-  final dynamic user;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: AppColors.primary.withAlpha(40),
-          child: Text(
-            initial,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          user?.name ?? '',
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          user?.email ?? '',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
     );
   }
 }
@@ -173,81 +132,9 @@ class _GroupLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        text.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.w600,
-            ),
-      ),
-    );
-  }
-}
-
-// ── Theme toggle card ─────────────────────────────────────────────────────────
-
-class _ThemeToggleCard extends ConsumerWidget {
-  const _ThemeToggleCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pref = ref.watch(themeNotifierProvider);
-    final cs = Theme.of(context).colorScheme;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Material(
-        color: cs.surfaceContainerHighest,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Icon(Icons.palette_rounded, color: cs.onSurface, size: 22),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  'Theme',
-                  style: TextStyle(
-                    color: cs.onSurface,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              SegmentedButton<ThemePreference>(
-                style: SegmentedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  selectedBackgroundColor: AppColors.primary,
-                  selectedForegroundColor: Colors.white,
-                  foregroundColor: cs.onSurfaceVariant,
-                ),
-                segments: const [
-                  ButtonSegment(
-                    value: ThemePreference.auto,
-                    icon: Icon(Icons.brightness_auto_rounded, size: 18),
-                    tooltip: 'Auto',
-                  ),
-                  ButtonSegment(
-                    value: ThemePreference.light,
-                    icon: Icon(Icons.light_mode_rounded, size: 18),
-                    tooltip: 'Light',
-                  ),
-                  ButtonSegment(
-                    value: ThemePreference.dark,
-                    icon: Icon(Icons.dark_mode_rounded, size: 18),
-                    tooltip: 'Dark',
-                  ),
-                ],
-                selected: {pref},
-                onSelectionChanged: (selection) => ref
-                    .read(themeNotifierProvider.notifier)
-                    .setPreference(selection.first),
-              ),
-            ],
-          ),
-        ),
+      child: Semantics(
+        header: true,
+        child: Text(text, style: AppTextStyles.caption.copyWith(fontSize: 13)),
       ),
     );
   }
@@ -258,15 +145,15 @@ class _ThemeToggleCard extends ConsumerWidget {
 class _TileData {
   const _TileData({
     required this.icon,
+    required this.tint,
     required this.label,
     required this.onTap,
-    this.color,
   });
 
   final IconData icon;
+  final PastelTint tint;
   final String label;
   final VoidCallback? onTap;
-  final Color? color;
 }
 
 class _SettingsCard extends StatelessWidget {
@@ -275,24 +162,16 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Material(
-        color: cs.surfaceContainerHighest,
-        child: Column(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              _SettingsTile(data: items[i]),
-              if (i < items.length - 1)
-                Divider(
-                  height: 1,
-                  indent: 56,
-                  color: cs.outline.withAlpha(50),
-                ),
-            ],
+    return PastelCard(
+      radius: 24,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            _SettingsTile(data: items[i]),
+            if (i < items.length - 1) const Divider(indent: 72, endIndent: 16),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -391,32 +270,33 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final color = data.color ?? cs.onSurface;
-    return InkWell(
-      onTap: data.onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(data.icon, color: color, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                data.label,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+    return Semantics(
+      button: true,
+      enabled: data.onTap != null,
+      label: data.label,
+      child: InkWell(
+        onTap: data.onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 64),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                      color: data.tint.color, shape: BoxShape.circle),
+                  child: Icon(data.icon, size: 22),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(data.label, style: AppTextStyles.bodyStrong),
+                ),
+                const Icon(PhosphorIconsRegular.caretRight, size: 18),
+              ],
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: cs.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
+          ),
         ),
       ),
     );

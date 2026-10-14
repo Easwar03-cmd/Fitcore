@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+
 enum AppButtonVariant { primary, secondary, ghost }
 
+/// Pill button: primary = ink, secondary = white, ghost = text.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -20,20 +23,31 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final onDark = variant == AppButtonVariant.primary;
     final child = isLoading
-        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+        ? SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: onDark ? Colors.white : AppColors.ink,
+            ),
+          )
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
-              Text(label),
+              Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
             ],
           );
 
     return switch (variant) {
-      AppButtonVariant.primary => ElevatedButton(onPressed: isLoading ? null : onPressed, child: child),
-      AppButtonVariant.secondary => OutlinedButton(onPressed: isLoading ? null : onPressed, child: child),
-      AppButtonVariant.ghost => TextButton(onPressed: isLoading ? null : onPressed, child: child),
+      AppButtonVariant.primary =>
+        ElevatedButton(onPressed: isLoading ? null : onPressed, child: child),
+      AppButtonVariant.secondary =>
+        OutlinedButton(onPressed: isLoading ? null : onPressed, child: child),
+      AppButtonVariant.ghost =>
+        TextButton(onPressed: isLoading ? null : onPressed, child: child),
     };
   }
 }

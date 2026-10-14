@@ -6,7 +6,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../models/community_models.dart';
 import '../providers/challenge_provider.dart';
 import '../providers/community_provider.dart';
-import '../widgets/notepad_field.dart';
+import '../widgets/challenge_day_sheets.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class ChallengeDetailScreen extends ConsumerWidget {
   const ChallengeDetailScreen({
@@ -15,7 +16,7 @@ class ChallengeDetailScreen extends ConsumerWidget {
     required this.challengeId,
   });
 
-  final String communityId;
+  final String? communityId;
   final String challengeId;
 
   Future<void> _run(
@@ -38,17 +39,19 @@ class ChallengeDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(challengeDetailProvider(challengeId));
-    final communityAsync = ref.watch(communityDetailProvider(communityId));
+    final cid = communityId;
+    final communityAsync =
+        cid == null ? null : ref.watch(communityDetailProvider(cid));
     final myId = ref.watch(authProvider).valueOrNull?.user.id;
     final actions = ref.read(challengeActionsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(detail.valueOrNull?.title ?? 'Challenge'),
+      appBar: PageAppBar(
+        title: detail.valueOrNull?.title ?? 'Challenge',
         actions: [
           if (detail.valueOrNull != null &&
               (detail.value!.creatorId == myId ||
-                  (communityAsync.valueOrNull?.isAdmin ?? false)))
+                  (communityAsync?.valueOrNull?.isAdmin ?? false)))
             PopupMenuButton<String>(
               onSelected: (v) async {
                 if (v == 'close') {
@@ -110,7 +113,7 @@ class _Body extends ConsumerWidget {
   });
 
   final ChallengeDetail challenge;
-  final String communityId;
+  final String? communityId;
   final String? myId;
   final _Runner onRun;
 
@@ -167,8 +170,6 @@ class _Body extends ConsumerWidget {
             borderRadius: BorderRadius.circular(4),
           ),
           const SizedBox(height: 16),
-          _DayGrid(totalDays: c.totalDays, done: done, todayNo: todayNo),
-          const SizedBox(height: 16),
           if (active && !pastEnd)
             todayDone
                 ? OutlinedButton.icon(
@@ -203,6 +204,21 @@ class _Body extends ConsumerWidget {
               '${c.completedDays} of ${c.totalDays}.',
               style: theme.textTheme.bodyMedium,
             ),
+          const SizedBox(height: 20),
+          ChallengeDaySheets(
+            totalDays: c.totalDays,
+            startDate: c.startDate!,
+            todayNo: todayNo,
+            done: done,
+            dayNotes: c.dayNotes,
+            onSave: (day, text) => actions.saveDayNote(c.id, day, text),
+            onShare: communityId == null
+                ? null
+                : (day) => onRun(
+                      () => actions.shareNotes(c.id, day),
+                      success: 'Day $day notes shared in the community chat.',
+                    ),
+          ),
         ],
         if (c.isGroup) ...[
           const SizedBox(height: 24),
@@ -227,27 +243,6 @@ class _Body extends ConsumerWidget {
                   success: 'You left this challenge.'),
               child: const Text('Leave challenge'),
             ),
-        ],
-        if (c.joined) ...[
-          const SizedBox(height: 24),
-          Text('My notepad', style: theme.textTheme.titleSmall),
-          const SizedBox(height: 8),
-          NotepadField(
-            initialText: c.notes,
-            onSave: (text) => actions.saveNotes(c.id, text),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => onRun(
-                () => actions.shareNotes(c.id),
-                success: 'Notepad shared in the community chat.',
-              ),
-              icon: const Icon(Icons.ios_share_rounded),
-              label: const Text('Share notepad in community'),
-            ),
-          ),
         ],
       ],
     );
@@ -282,52 +277,6 @@ class _JoinCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _DayGrid extends StatelessWidget {
-  const _DayGrid({
-    required this.totalDays,
-    required this.done,
-    required this.todayNo,
-  });
-
-  final int totalDays;
-  final Set<int> done;
-  final int? todayNo;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (var d = 1; d <= totalDays; d++)
-          Builder(builder: (_) {
-            final isDone = done.contains(d);
-            final isToday = d == todayNo;
-            final missed = !isDone && todayNo != null && d < todayNo!;
-            return Container(
-              width: 34,
-              height: 34,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isDone
-                    ? cs.primary
-                    : missed
-                        ? cs.errorContainer.withValues(alpha: 0.5)
-                        : cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-                border: isToday ? Border.all(color: cs.primary, width: 2) : null,
-              ),
-              child: isDone
-                  ? Icon(Icons.check_rounded, size: 18, color: cs.onPrimary)
-                  : Text('$d', style: const TextStyle(fontSize: 12)),
-            );
-          }),
-      ],
     );
   }
 }

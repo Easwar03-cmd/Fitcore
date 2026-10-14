@@ -1,3 +1,5 @@
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../../core/widgets/circle_icon_button.dart';
 import '../../../core/widgets/report_ai_button.dart';
 import 'dart:io';
 
@@ -13,6 +15,7 @@ import '../../subscription/providers/subscription_provider.dart';
 import '../providers/food_photo_provider.dart';
 import '../providers/nutrition_provider.dart';
 import '../widgets/detected_food_card.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 const _mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -38,14 +41,14 @@ class _FoodPhotoScreenState extends ConsumerState<FoodPhotoScreen> {
     final sub = ref.watch(subscriptionProvider).valueOrNull;
     if (sub != null && !sub.isPaid) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Log Food by Photo')),
+        appBar: const PageAppBar(title: 'Log Food by Photo'),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lock_rounded, size: 48),
+                const Icon(PhosphorIconsRegular.lock, size: 48),
                 const SizedBox(height: 16),
                 const Text('Food photo logging requires Pro or Coach.',
                     textAlign: TextAlign.center,
@@ -82,17 +85,16 @@ class _FoodPhotoScreenState extends ConsumerState<FoodPhotoScreen> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Log Food by Photo'),
+      appBar: PageAppBar(
+        title: 'Log Food by Photo',
         actions: [
           if (state.hasImage && !state.isAnalyzing)
             const ReportAiButton(contentLabel: 'AI food photo analysis'),
           if (state.hasImage && !state.isAnalyzing)
-            TextButton.icon(
-              onPressed: () =>
-                  ref.read(foodPhotoProvider.notifier).reset(),
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Retake'),
+            CircleIconButton(
+              icon: PhosphorIconsRegular.arrowClockwise,
+              semanticLabel: 'Retake photo',
+              onPressed: () => ref.read(foodPhotoProvider.notifier).reset(),
             ),
         ],
       ),

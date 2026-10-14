@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../constants/app_routes.dart';
 import '../providers/community_provider.dart';
+import '../../../core/widgets/page_app_bar.dart';
 
 class CreateCommunityScreen extends ConsumerStatefulWidget {
   const CreateCommunityScreen({super.key});
@@ -49,7 +50,7 @@ class _CreateCommunityScreenState extends ConsumerState<CreateCommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create community')),
+      appBar: const PageAppBar(title: 'Create community'),
       body: Form(
         key: _formKey,
         child: ListView(
