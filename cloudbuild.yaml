@@ -1,6 +1,6 @@
 steps:
   # ── 1. Build the Docker image ────────────────────────────────────────────────
-  - name: 'gcr.io/ip-builders/docker'
+  - name: 'gcr.io/cloud-builders/docker'
     id: build
     args:
       - build
