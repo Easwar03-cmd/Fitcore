@@ -191,6 +191,16 @@ class _LiveCard extends StatelessWidget {
                         AppTextStyles.caption.copyWith(color: AppColors.ink)),
               ],
             ),
+            if (bpm == null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Connected, but the watch has not sent a heart rate yet. Many '
+                'watches only stream while a workout or heart-rate screen is '
+                'open, or when "heart rate broadcast" is switched on in the '
+                'watch settings.',
+                style: AppTextStyles.caption.copyWith(color: AppColors.ink),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
