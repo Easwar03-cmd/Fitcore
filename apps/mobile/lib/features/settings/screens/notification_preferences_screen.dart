@@ -8,12 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/pastel_card.dart';
 import '../providers/notification_preferences_provider.dart';
-
-String formatTime(int hour, int minute) {
-  final h = hour % 12 == 0 ? 12 : hour % 12;
-  final m = minute.toString().padLeft(2, '0');
-  return '$h:$m ${hour < 12 ? 'AM' : 'PM'}';
-}
+import '../widgets/quick_set_card.dart';
 
 class NotificationPreferencesScreen extends ConsumerWidget {
   const NotificationPreferencesScreen({super.key});
@@ -56,57 +51,21 @@ class _PrefsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final first = prefs.of(ReminderKind.values.first);
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
-        // ── Set every reminder at once ─────────────────────────────────────
-        PastelCard(
-          tint: PastelTint.sky,
-          radius: 24,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Set all reminders at once', style: AppTextStyles.heading),
-              const SizedBox(height: 4),
-              Text(
-                'Pick one time and every reminder is moved to it. You can '
-                'still change each one below.',
-                style: AppTextStyles.caption.copyWith(color: AppColors.ink),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  FilledButton.icon(
-                    onPressed: () async {
-                      final t = await _pick(context, first.hour, first.minute);
-                      if (t == null) return;
-                      await _save(
-                        ref,
-                        prefs.mapAll((r) => r.copyWith(
-                              enabled: true,
-                              hour: t.hour,
-                              minute: t.minute,
-                            )),
-                      );
-                    },
-                    icon: const Icon(PhosphorIconsBold.clock, size: 18),
-                    label: const Text('Choose time'),
-                  ),
-                  const Spacer(),
-                  Text('All on', style: AppTextStyles.bodyStrong),
-                  Switch(
-                    value: prefs.allEnabled,
-                    onChanged: (v) => _save(
-                      ref,
-                      prefs.mapAll((r) => r.copyWith(enabled: v)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        // ── Quick set: choose a reminder, then its time ────────────────────
+        QuickSetCard(
+          prefs: prefs,
+          onSet: (k, hour, minute) => _save(
+            ref,
+            prefs.withSetting(
+              k,
+              prefs.of(k).copyWith(enabled: true, hour: hour, minute: minute),
+            ),
           ),
+          onToggleAll: (v) =>
+              _save(ref, prefs.mapAll((r) => r.copyWith(enabled: v))),
         ),
         const SizedBox(height: 16),
 
