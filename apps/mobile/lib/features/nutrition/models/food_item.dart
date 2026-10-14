@@ -33,6 +33,7 @@ class FoodItem {
     this.commonServings,
     this.isIndian = false,
     this.isLiquid = false,
+    this.mealTags = const [],
   });
 
   final String name;
@@ -49,6 +50,9 @@ class FoodItem {
   final List<ServingOption>? commonServings;
   final bool isIndian;
   final bool isLiquid;
+
+  /// Menus this food belongs to: breakfast | lunch | dinner | snack.
+  final List<String> mealTags;
 
   factory FoodItem.fromOpenFoodFactsJson(Map<String, dynamic> json) {
     final n = json['nutriments'] as Map<String, dynamic>? ?? {};
@@ -103,6 +107,9 @@ class FoodItem {
       cuisine: cuisine,
       isIndian: cuisine == 'indian',
       isLiquid: json['isLiquid'] as bool? ?? false,
+      mealTags:
+          (json['mealTags'] as List<dynamic>?)?.whereType<String>().toList() ??
+              const [],
       caloriesPer100g: _toDouble(p['calories']),
       proteinPer100g: _toDouble(p['proteinG']),
       carbsPer100g: _toDouble(p['carbsG']),

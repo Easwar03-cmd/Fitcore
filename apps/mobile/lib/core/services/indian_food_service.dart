@@ -33,6 +33,18 @@ class IndianFoodService {
     return _cache!;
   }
 
+  /// Bundled foods tagged for [meal] (breakfast | lunch | dinner | snack),
+  /// Indian dishes first, for the one-tap menus on the search screen.
+  Future<List<FoodItem>> menuFor(String meal) async {
+    final all = await _loadAll();
+    final items = all.where((i) => i.mealTags.contains(meal)).toList();
+    items.sort((a, b) {
+      if (a.isIndian != b.isIndian) return a.isIndian ? -1 : 1;
+      return a.name.compareTo(b.name);
+    });
+    return items;
+  }
+
   /// Case-insensitive search on name, nameHindi, category, and cuisine.
   Future<List<FoodItem>> search(String query) async {
     if (query.trim().isEmpty) return [];

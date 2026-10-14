@@ -10,6 +10,7 @@ import '../models/food_item.dart';
 import '../providers/nutrition_provider.dart';
 import '../widgets/food_result_card.dart';
 import '../widgets/log_food_sheet.dart';
+import '../widgets/meal_menu_view.dart';
 
 class FoodSearchScreen extends ConsumerStatefulWidget {
   const FoodSearchScreen({super.key, this.initialMealType});
@@ -74,7 +75,10 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
             return const _EmptyResults();
           }
           if (results.isEmpty) {
-            return const _SearchHint();
+            return MealMenuView(
+              initialMeal: widget.initialMealType,
+              onSelect: _onFoodSelected,
+            );
           }
           return ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -135,20 +139,6 @@ class _FoodSearchScreenState extends ConsumerState<FoodSearchScreen> {
 }
 
 // ── Static sub-widgets ───────────────────────────────────────────────────────
-
-class _SearchHint extends StatelessWidget {
-  const _SearchHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return const EmptyState(
-      icon: PhosphorIconsRegular.magnifyingGlass,
-      imageName: 'obj_apple.png',
-      title: 'Search for food by name',
-      message: '"chicken breast", "oats", "banana"',
-    );
-  }
-}
 
 class _EmptyResults extends StatelessWidget {
   const _EmptyResults();
