@@ -1,6 +1,21 @@
 # Revive — Build Progress
 
 ## Last session
+**Date:** 2026-10-14 — branch `redesign/pastel-bento`, release `1.2.0+10`
+**What was built:** pastel-bento UI redesign finished; production prep. See `PRODUCTION_CHECKLIST.md`.
+
+- Community: challenges live on the main Community page; group challenge picks its group; personal challenges are community-less (`communityId` nullable); per-day notepad sheets (`ChallengeDayNote`)
+- Nutrition: cleaned local food data (257 items), Indian breakfast/lunch/dinner/snack menus (`mealTags`), 10 g minimum amount stepper with per-food servings
+- Navigation: back goes Home before exiting (`didPopRoute` + predictive-back notification)
+- Notifications: user-set time per reminder, dropdown quick-set (`ReminderKind`)
+- Profile: photo + name edit (`PATCH /user/me`, avatar stored as small data URI, kept out of community payloads)
+- Wearables: BLE pairing, device classification, Health Connect fallback with brand-specific steps
+- Docs: privacy policy + Data Safety refreshed
+- Backend deployed to Cloud Run (`zenfit-api-00038-dxc`); migrations through `20261015000000_challenge_day_notes` applied
+
+**Next:** work through `PRODUCTION_CHECKLIST.md` (owner actions + release smoke test), merge to `main`.
+
+## Previous session (archived)
 **Date:** 2026-10-12 (session 38) — branch `refactor/community`
 **What was built:** Major restructure approved in `REFACTOR_PLAN.md`
 
